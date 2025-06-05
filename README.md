@@ -1,6 +1,10 @@
-# MintPass - Decentralized Authentication for Plebbit
+# MintPass - NFT Authentication Middleware for Plebbit
 
-MintPass is an NFT-based authentication system that provides verified identity proofs for Plebbit communities. Users can mint verification NFTs (like SMS verification) that serve as anti-spam and identity verification mechanisms in decentralized communities.
+<img src="public/mintpass.png" alt="MintPass Logo" width="90" align="left" />
+
+MintPass is an NFT-based authentication system that provides verified identity proofs for Plebbit communities (subplebbits). Users can mint verification NFTs (like SMS verification) that serve as anti-spam and identity verification mechanisms in decentralized communities. MintPass enables subplebbit owners to tell their users apart, counting them, banning them and thus preventing sybil attacks such as fake upvotes/downvotes, fake conversations, etc. 
+
+<br clear="left" />
 
 ## Project Structure
 
@@ -56,4 +60,4 @@ MIT License - See [LICENSE](LICENSE) file for details.
 - ✅ Free to use, modify, and distribute
 - ✅ Perfect for developers and researchers  
 - ✅ Encourages ecosystem growth
-- 💰 Commercial services available at [plebbitlabs.com](https://plebbitlabs.com) 
+- 💰 Commercial plans to be released on [plebbitlabs.com](https://plebbitlabs.com) 
