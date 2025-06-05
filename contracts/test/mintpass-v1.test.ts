@@ -13,7 +13,7 @@ describe("MintPassV1", function () {
 
   const NAME = "MintPassV1";
   const SYMBOL = "MPSS";
-  const BASE_URI = "https://plebbitlabs.com/mintpass/mintpassV1/";
+  const BASE_URI = "https://plebbitlabs.com/mintpass/mintpass-v1/";
   const SMS_TOKEN_TYPE = 0;
   const EMAIL_TOKEN_TYPE = 1;
 

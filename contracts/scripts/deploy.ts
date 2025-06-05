@@ -11,7 +11,7 @@ async function main() {
   // Contract constructor arguments
   const name = "MintPassV1";
   const symbol = "MPSS";
-  const baseURI = "https://plebbitlabs.com/mintpass/mintpassV1/";
+  const baseURI = "https://plebbitlabs.com/mintpass/mintpass-v1/";
   const admin = deployer.address; // Can be changed to a hardware wallet later
   const minter = deployer.address; // Can be changed to a server address later
 
