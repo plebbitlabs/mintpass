@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Production builds
+dist/
+build/
+out/
+.next/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Smart contracts
+contracts/artifacts/
+contracts/cache/
+contracts/typechain/
+contracts/typechain-types/
+coverage/
+coverage.json
+gasReporterOutput.json
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+.tmp/
+*.tmp
+*.temp
+
+# Package manager locks (keep yarn.lock if using yarn)
+package-lock.json
+
+# Hardhat/Foundry artifacts
+artifacts/
+cache/
+out/
+
+# Deployment artifacts
+deployments/local/
+
+# Testing
+.coverage_artifacts/
+.coverage_cache/
+.coverage_contracts/
+
+# Docs
+docs/

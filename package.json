@@ -1,0 +1,41 @@
+{
+  "name": "MintPass",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NFT-based authentication system for Plebbit communities - verify users with SMS and other challenges",
+  "workspaces": [
+    "contracts",
+    "challenges",
+    "web"
+  ],
+  "scripts": {
+    "install:all": "yarn install && yarn install:contracts",
+    "install:contracts": "cd contracts && yarn install",
+    "build": "yarn build:contracts",
+    "build:contracts": "cd contracts && yarn compile",
+    "test": "yarn test:contracts",
+    "test:contracts": "cd contracts && yarn test",
+    "deploy:base-sepolia": "cd contracts && yarn deploy:base-sepolia",
+    "deploy:base": "cd contracts && yarn deploy:base",
+    "clean": "yarn clean:contracts",
+    "clean:contracts": "cd contracts && yarn clean"
+  },
+  "keywords": [
+    "nft",
+    "authentication",
+    "plebbit",
+    "decentralized",
+    "base",
+    "ethereum"
+  ],
+  "author": "Plebbit Labs Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "packageManager": "yarn@1.22.22"
+} 
