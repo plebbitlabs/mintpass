@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-contract-sizer";
+import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: {
