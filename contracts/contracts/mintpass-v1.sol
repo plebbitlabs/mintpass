@@ -22,6 +22,8 @@ contract MintPassV1 is ERC721, ERC721Enumerable, AccessControl {
     // Contract state
     uint256 private _tokenIdCounter;
     string private _baseTokenURI;
+    string private _contractName;
+    string private _contractSymbol;
 
     // Token type tracking: tokenId => tokenType
     mapping(uint256 => uint16) private _tokenTypes;
@@ -30,6 +32,8 @@ contract MintPassV1 is ERC721, ERC721Enumerable, AccessControl {
     event TokenMinted(address indexed to, uint256 indexed tokenId, uint16 indexed tokenType);
     event BatchMinted(address[] indexed recipients, uint16[] tokenTypes, uint256[] tokenIds);
     event BaseURIUpdated(string newBaseURI);
+    event NameUpdated(string newName);
+    event SymbolUpdated(string newSymbol);
 
     // Custom structs for utility functions
     struct TokenInfo {
@@ -38,13 +42,15 @@ contract MintPassV1 is ERC721, ERC721Enumerable, AccessControl {
     }
 
     constructor(
-        string memory name,
-        string memory symbol,
+        string memory contractName,
+        string memory contractSymbol,
         string memory baseURI,
         address admin,
         address minter
-    ) ERC721(name, symbol) {
+    ) ERC721(contractName, contractSymbol) {
         _baseTokenURI = baseURI;
+        _contractName = contractName;
+        _contractSymbol = contractSymbol;
         
         // Grant roles
         _grantRole(ADMIN_ROLE, admin);
@@ -254,6 +260,28 @@ contract MintPassV1 is ERC721, ERC721Enumerable, AccessControl {
         emit BaseURIUpdated(newBaseURI);
     }
 
+    /**
+     * @dev Updates the contract name (admin only)
+     * @param newName The new contract name
+     */
+    function setName(string calldata newName) external onlyRole(ADMIN_ROLE) {
+        // Note: This requires custom implementation as ERC721 name is immutable by default
+        // We'll store it in a private variable and override the name() function
+        _contractName = newName;
+        emit NameUpdated(newName);
+    }
+
+    /**
+     * @dev Updates the contract symbol (admin only)
+     * @param newSymbol The new contract symbol
+     */
+    function setSymbol(string calldata newSymbol) external onlyRole(ADMIN_ROLE) {
+        // Note: This requires custom implementation as ERC721 symbol is immutable by default
+        // We'll store it in a private variable and override the symbol() function
+        _contractSymbol = newSymbol;
+        emit SymbolUpdated(newSymbol);
+    }
+
     // View functions
 
     /**
@@ -268,6 +296,20 @@ contract MintPassV1 is ERC721, ERC721Enumerable, AccessControl {
      */
     function totalSupply() public view override returns (uint256) {
         return _tokenIdCounter;
+    }
+
+    /**
+     * @dev Returns the contract name (overrides ERC721 to allow admin updates)
+     */
+    function name() public view override returns (string memory) {
+        return _contractName;
+    }
+
+    /**
+     * @dev Returns the contract symbol (overrides ERC721 to allow admin updates)
+     */
+    function symbol() public view override returns (string memory) {
+        return _contractSymbol;
     }
 
     // Required overrides

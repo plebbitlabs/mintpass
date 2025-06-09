@@ -22,7 +22,7 @@ mintpass/
 
 ### Milestone 1 ✅ Planning & Setup
 - [x] Project structure and documentation
-- [ ] MintPassV1 NFT smart contract
+- [x] MintPassV1 NFT smart contract
 - [ ] Contract deployment to Base network
 - [ ] Automated tests for smart contract
 
