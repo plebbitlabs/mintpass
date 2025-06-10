@@ -6,7 +6,10 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network base",
     "deploy:base": "hardhat run scripts/deploy.ts --network base",
     "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
     "verify": "hardhat verify",
