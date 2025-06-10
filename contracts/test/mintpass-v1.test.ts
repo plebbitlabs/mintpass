@@ -240,6 +240,59 @@ describe("MintPassV1", function () {
         mintpass.connect(unauthorized).setBaseURI("https://hack.com/")
       ).to.be.reverted;
     });
+
+    it("Should allow admin to update contract name", async function () {
+      const newName = "MintPassV2";
+      
+      await expect(mintpass.connect(admin).setName(newName))
+        .to.emit(mintpass, "NameUpdated")
+        .withArgs(newName);
+
+      expect(await mintpass.name()).to.equal(newName);
+    });
+
+    it("Should not allow non-admin to update contract name", async function () {
+      await expect(
+        mintpass.connect(unauthorized).setName("HackedName")
+      ).to.be.reverted;
+    });
+
+    it("Should allow admin to update contract symbol", async function () {
+      const newSymbol = "MP2";
+      
+      await expect(mintpass.connect(admin).setSymbol(newSymbol))
+        .to.emit(mintpass, "SymbolUpdated")
+        .withArgs(newSymbol);
+
+      expect(await mintpass.symbol()).to.equal(newSymbol);
+    });
+
+    it("Should not allow non-admin to update contract symbol", async function () {
+      await expect(
+        mintpass.connect(unauthorized).setSymbol("HACK")
+      ).to.be.reverted;
+    });
+
+    it("Should allow admin to grant and revoke roles", async function () {
+      const MINTER_ROLE = await mintpass.MINTER_ROLE();
+      
+      // Grant minter role to user1
+      await mintpass.connect(admin).grantRole(MINTER_ROLE, user1.address);
+      expect(await mintpass.hasRole(MINTER_ROLE, user1.address)).to.be.true;
+      
+      // user1 should now be able to mint
+      await mintpass.connect(user1).mint(user2.address, SMS_TOKEN_TYPE);
+      expect(await mintpass.balanceOf(user2.address)).to.equal(1);
+      
+      // Revoke minter role from user1
+      await mintpass.connect(admin).revokeRole(MINTER_ROLE, user1.address);
+      expect(await mintpass.hasRole(MINTER_ROLE, user1.address)).to.be.false;
+      
+      // user1 should no longer be able to mint
+      await expect(
+        mintpass.connect(user1).mint(user2.address, EMAIL_TOKEN_TYPE)
+      ).to.be.reverted;
+    });
   });
 
   describe("ERC721 Compatibility", function () {
