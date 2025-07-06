@@ -148,22 +148,33 @@ async function main() {
     }
 
   } catch (error) {
-    console.error("❌ Test failed:", error);
-    if (error && typeof error === 'object') {
-      if ('message' in error) console.error('Error message:', error.message);
-      if ('stack' in error) console.error('Stack trace:', error.stack);
-    }
+    console.error("❌ Test failed:");
+    logError(error);
     process.exit(1);
   }
+}
+
+function logError(error: unknown) {
+  console.error(error);
+  if (isErrorWithMessage(error)) {
+    console.error('Error message:', error.message);
+  }
+  if (isErrorWithStack(error)) {
+    console.error('Stack trace:', error.stack);
+  }
+}
+
+function isErrorWithMessage(error: unknown): error is { message: string } {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string';
+}
+
+function isErrorWithStack(error: unknown): error is { stack: string } {
+  return typeof error === 'object' && error !== null && 'stack' in error && typeof (error as any).stack === 'string';
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
-    if (error && typeof error === 'object') {
-      if ('message' in error) console.error('Error message:', error.message);
-      if ('stack' in error) console.error('Stack trace:', error.stack);
-    }
+    logError(error);
     process.exit(1);
   });
