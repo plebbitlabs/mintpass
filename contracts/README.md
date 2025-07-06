@@ -15,7 +15,7 @@ This directory contains the MintPassV1 NFT smart contract for the MintPass authe
 
 - **Name**: MintPassV1
 - **Symbol**: MPSS
-- **Base URI**: `https://plebbitlabs.com/mintpass/mintpass-v1/`
+- **Base URI**: `https://plebbitlabs.com/mintpass/mint1/`
 - **Network**: Base (Layer 2)
 - **Token Types**: uint16 (65,536 possible types)
   - Type 0: SMS verification

@@ -11,8 +11,8 @@
   "timestamp": "2025-07-05T21:38:47.732Z",
   "constructorArgs": [
     "MintPassV1",
-    "MP1",
-    "https://plebbitlabs.com/mintpass/mintpassV1/",
+    "MINT1",
+    "https://plebbitlabs.com/mintpass/mint1/",
     "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
     "0x13087d38B78df0345D67c8CEE73b215589ae3A1f"
   ],

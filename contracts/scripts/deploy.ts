@@ -13,8 +13,8 @@ async function main() {
   
   // Contract constructor arguments
   const name = "MintPassV1";
-  const symbol = "MP1";
-  const baseURI = "https://plebbitlabs.com/mintpass/mintpassV1/";
+  const symbol = "MINT1";
+  const baseURI = "https://plebbitlabs.com/mintpass/mint1/";
   
   // Use environment variables for production addresses, fallback to deployer for testing
   const admin = process.env.ADMIN_ADDRESS || deployer.address;
