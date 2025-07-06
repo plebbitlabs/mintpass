@@ -13,8 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "typeRoots": ["node_modules/@types"],
-    "types": ["node", "mocha", "chai"]
+    "typeRoots": ["node_modules/@types"]
   },
   "include": [
     "./scripts",
