@@ -3,12 +3,12 @@
     "name": "baseSepolia",
     "chainId": 84532
   },
-  "contractAddress": "0x8638B1e105609eE8855634c8Dcfe5336940b7710",
+  "contractAddress": "0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9",
   "deployer": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
   "admin": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
   "minter": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
-  "blockNumber": 27991619,
-  "timestamp": "2025-07-05T21:38:47.732Z",
+  "blockNumber": 28031297,
+  "timestamp": "2025-07-06T19:41:23.891Z",
   "constructorArgs": [
     "MintPassV1",
     "MINT1",

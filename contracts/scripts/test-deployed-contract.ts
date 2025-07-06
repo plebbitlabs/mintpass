@@ -1,4 +1,6 @@
 import { ethers, network } from "hardhat";
+import * as fs from "fs";
+import * as path from "path";
 
 // Token type constants
 const SMS_TOKEN_TYPE = 0;
@@ -7,9 +9,16 @@ const EMAIL_TOKEN_TYPE = 1;
 async function main() {
   const [deployer] = await ethers.getSigners();
   
-  // Contract address - UPDATE THIS for different deployments
-  const contractAddress = "0x8638B1e105609eE8855634c8Dcfe5336940b7710"; // Base Sepolia
-  // For mainnet, update to the mainnet contract address
+  // Load contract address from deployment file
+  const deploymentsDir = path.join(__dirname, "..", "deployments");
+  const deploymentFile = path.join(deploymentsDir, `MintPassV1-${network.name}.json`);
+  
+  if (!fs.existsSync(deploymentFile)) {
+    throw new Error(`Deployment file not found: ${deploymentFile}`);
+  }
+  
+  const deployment = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
+  const contractAddress = deployment.contractAddress;
   
   console.log("🧪 Testing deployed MintPassV1 contract");
   console.log("=====================================");
