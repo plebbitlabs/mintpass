@@ -28,7 +28,7 @@
     "base",
     "ethereum"
   ],
-  "author": "Plebbit Labs Inc.",
+  "author": "Plebbit Labs",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.3.0"
