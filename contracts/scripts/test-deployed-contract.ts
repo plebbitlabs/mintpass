@@ -1,5 +1,9 @@
 import { ethers, network } from "hardhat";
 
+// Token type constants
+const SMS_TOKEN_TYPE = 0;
+const EMAIL_TOKEN_TYPE = 1;
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   
@@ -53,8 +57,6 @@ async function main() {
     if (isMinter) {
       console.log("🎯 Test 3: Single Token Minting");
       console.log("-------------------------------");
-      const SMS_TOKEN_TYPE = 0;
-      const EMAIL_TOKEN_TYPE = 1;
       
       console.log("Minting SMS token (type 0) to deployer...");
       const mintTx1 = await MintPassV1.mint(deployer.address, SMS_TOKEN_TYPE);
@@ -147,6 +149,10 @@ async function main() {
 
   } catch (error) {
     console.error("❌ Test failed:", error);
+    if (error && typeof error === 'object') {
+      if ('message' in error) console.error('Error message:', error.message);
+      if ('stack' in error) console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 }
@@ -155,5 +161,9 @@ main()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
+    if (error && typeof error === 'object') {
+      if ('message' in error) console.error('Error message:', error.message);
+      if ('stack' in error) console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   });
