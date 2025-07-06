@@ -1,7 +1,7 @@
 {
   "network": {
     "name": "baseSepolia",
-    "chainId": "84532"
+    "chainId": 84532
   },
   "contractAddress": "0x8638B1e105609eE8855634c8Dcfe5336940b7710",
   "deployer": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
@@ -12,7 +12,7 @@
   "constructorArgs": [
     "MintPassV1",
     "MP1",
-    "plebbitlabs.com/mintpass/mintpassV1",
+    "https://plebbitlabs.com/mintpass/mintpassV1/",
     "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
     "0x13087d38B78df0345D67c8CEE73b215589ae3A1f"
   ],

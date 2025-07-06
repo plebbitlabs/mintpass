@@ -14,7 +14,7 @@ async function main() {
   // Contract constructor arguments
   const name = "MintPassV1";
   const symbol = "MP1";
-  const baseURI = "plebbitlabs.com/mintpass/mintpassV1"; // As specified in milestones
+  const baseURI = "https://plebbitlabs.com/mintpass/mintpassV1/";
   
   // Use environment variables for production addresses, fallback to deployer for testing
   const admin = process.env.ADMIN_ADDRESS || deployer.address;
@@ -71,7 +71,7 @@ async function main() {
   const deploymentInfo = {
     network: {
       name: network.name,
-      chainId: (await ethers.provider.getNetwork()).chainId.toString()
+      chainId: Number((await ethers.provider.getNetwork()).chainId)
     },
     contractAddress: contractAddress,
     deployer: deployer.address,
