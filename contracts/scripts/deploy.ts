@@ -83,7 +83,7 @@ async function main() {
     console.log("Using local deterministic deployment...");
     
     // Use deterministic deployment via Hardhat's deterministic deployer
-    const MintPassV1Factory = await ethers.getContractFactory("MintPassV1");
+    // Reuse the factory already created above
     const contract = await MintPassV1Factory.deploy(
       constructorArgs[0], // name
       constructorArgs[1], // symbol  
