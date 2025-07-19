@@ -9,10 +9,10 @@
     2. challenge script sees missing NFT, he's prompted to either visit `plebbitlabs.com/mintpass/request/<his-eth-address>` or to do another challenge in the challenge list.
     
   milestone 1 should probably be to write the NFT contract, to deploy the NFT contract on base (or maybe arbitrum, not sure which one would be best). The contract features:
-    - be called "mintpassV1", as we dont want a proxy contract, it's OK to have more than 1 version.
+    - be called "MintPassV1" (contract name), with symbol "MINT1", as we dont want a proxy contract, it's OK to have more than 1 version.
     - each NFT should have a unique ID to prevent transfer spamming, it can just be totalSupply + 1
     - each NFT should have a tokenType, which could be uint16 (65536 possible types). the first type (0) could be sms. it could be kept track internally as mapping(uint256 => uint16) private _tokenTypes; // tokenId to tokenType
-    - the baseURI should be `plebbitlabs.com/mintpass/mintpassV1`, which is purely cosmetic, to display role strings as "traits" on etherscan, opensea, etc
+    - the baseURI should be `plebbitlabs.com/mintpass/mint1`, which is purely cosmetic, to display role strings as "traits" on etherscan, opensea, etc
     - the contract should use AccessControl (or modern equivalent), have an admin and minter role
     - the mint function should only be callable by the minter, it should have argument mint(to: address, type: uint16)
     - there should be a mintBatch(to: address[], type: uint16[]) to save on gas when minting multiple

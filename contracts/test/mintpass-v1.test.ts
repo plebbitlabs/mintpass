@@ -12,7 +12,7 @@ describe("MintPassV1", function () {
   let unauthorized: HardhatEthersSigner;
 
   const NAME = "MintPassV1";
-  const SYMBOL = "MPSS";
+  const SYMBOL = "MINT1";
   const BASE_URI = "https://plebbitlabs.com/mintpass/mint1/";
   const SMS_TOKEN_TYPE = 0;
   const EMAIL_TOKEN_TYPE = 1;

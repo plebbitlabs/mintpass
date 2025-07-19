@@ -24,59 +24,39 @@ MINTER_ADDRESS=0x0987654321098765432109876543210987654321
 
 ## Deployment Commands
 
-### Standard Deployment
+**All deployments use deterministic CREATE2 deployment for consistent addresses across networks.**
 
-#### Deploy to Base Sepolia (Testnet)
+### Deploy to Base Sepolia (Testnet)
 ```bash
 cd contracts
-yarn deploy --network baseSepolia
+yarn deploy:testnet
 ```
 
-#### Deploy to Base Mainnet
+### Deploy to Base Mainnet
 ```bash
 cd contracts
-yarn deploy --network base
+yarn deploy:mainnet
 ```
 
-#### Deploy to Local Network (Testing)
+### Deploy to Local Network (Testing)
 ```bash
 cd contracts
-# Start local node
+# Start local node (if you want persistent blockchain)
 yarn hardhat node
 
-# In another terminal
-yarn deploy --network localhost
+# In another terminal, or directly for ephemeral testing
+yarn deploy:local
 ```
 
-### Deterministic Deployment (Same Address on All Chains)
-
-For production use, deterministic deployment ensures the same contract address across all networks:
-
-#### Deploy Deterministically to Base Sepolia (Testnet)
+### Deploy and Test (Development)
 ```bash
 cd contracts
-yarn deploy:deterministic:testnet
+yarn deploy-and-test  # Deploys + tests in one command
 ```
 
-#### Deploy Deterministically to Base Mainnet
-```bash
-cd contracts
-yarn deploy:deterministic:mainnet
-```
-
-#### Deploy Deterministically to Local Network
-```bash
-cd contracts
-# Start local node
-yarn hardhat node
-
-# In another terminal
-yarn deploy:deterministic:local
-```
-
-**Benefits of Deterministic Deployment:**
+**Benefits of Our Deterministic Deployment:**
 - Same contract address on all chains (localhost, testnet, mainnet)
-- Predictable addresses for frontend integration
+- Predictable addresses for challenge integration
 - Better testing consistency
 - Uses CREATE2 factory for reliability
 
