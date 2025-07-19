@@ -8,7 +8,7 @@
   "admin": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
   "minter": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
   "blockNumber": 1,
-  "timestamp": "2025-07-19T22:21:20.305Z",
+  "timestamp": "2025-07-19T22:40:35.635Z",
   "constructorArgs": [
     "MintPassV1",
     "MINT1",
@@ -18,7 +18,7 @@
   ],
   "contractName": "MintPassV1",
   "deploymentMethod": "CREATE2",
-  "salt": "0x6f33b3884e6c8c7461cb928993d923072b2e29fa3aa66ec1756c531414e78d81",
+  "salt": "0x0690cb7b7fd7126497caf48dfa16d5e1e928c4d4386f29b8168b81a9588736e7",
   "create2Factory": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
   "alreadyDeployed": false
 }

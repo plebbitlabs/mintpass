@@ -5,7 +5,59 @@ import * as path from "path";
 // CREATE2 Factory address (deployed on most chains)
 const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C";
 
-
+/**
+ * Mine a vanity address by trying different salt values
+ * @param prefix The desired prefix (without 0x)
+ * @param creationCodeHash The keccak256 hash of the creation code
+ * @param factoryAddress The CREATE2 factory address
+ * @param maxAttempts Maximum number of attempts before giving up
+ * @returns The salt that produces the vanity address, or null if not found
+ */
+async function mineVanityAddress(
+  prefix: string, 
+  creationCodeHash: string, 
+  factoryAddress: string, 
+  maxAttempts: number = 100000
+): Promise<string | null> {
+  console.log(`🔍 Mining vanity address starting with 0x${prefix.toUpperCase()}...`);
+  console.log(`⏱️  This may take a few moments...`);
+  
+  const startTime = Date.now();
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    // Generate a random salt
+    const randomBytes = ethers.randomBytes(32);
+    const salt = ethers.hexlify(randomBytes);
+    
+    // Calculate the CREATE2 address
+    const address = ethers.getCreate2Address(factoryAddress, salt, creationCodeHash);
+    
+    // Check if it starts with our desired prefix (case insensitive)
+    if (address.toLowerCase().startsWith(`0x${prefix.toLowerCase()}`)) {
+      const endTime = Date.now();
+      const duration = (endTime - startTime) / 1000;
+      
+      console.log(`🎉 Found vanity address in ${attempts + 1} attempts!`);
+      console.log(`⏱️  Time taken: ${duration.toFixed(2)} seconds`);
+      console.log(`✨ Address: ${address}`);
+      console.log(`🔑 Salt: ${salt}`);
+      console.log("");
+      
+      return salt;
+    }
+    
+    attempts++;
+    
+    // Progress indicator
+    if (attempts % 10000 === 0) {
+      console.log(`🔄 Tried ${attempts} combinations...`);
+    }
+  }
+  
+  console.log(`❌ Could not find vanity address after ${maxAttempts} attempts`);
+  return null;
+}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -29,10 +81,6 @@ async function main() {
   console.log("Constructor args:", { name, symbol, baseURI, admin, minter });
   console.log("");
 
-  // Create a deterministic salt (you can change this to get different addresses)
-  const salt = ethers.keccak256(ethers.toUtf8Bytes("MintPassV1-v1.0.0"));
-  console.log("Salt:", salt);
-
   // Get contract factory
   const MintPassV1Factory = await ethers.getContractFactory("MintPassV1");
   
@@ -42,12 +90,22 @@ async function main() {
   
   // Get creation code with constructor arguments
   const creationCode = MintPassV1Factory.bytecode + encodedArgs.slice(2);
+  const creationCodeHash = ethers.keccak256(creationCode);
+
+  // Mine a vanity address starting with 9A55
+  let salt = await mineVanityAddress("9A55", creationCodeHash, CREATE2_FACTORY);
+  
+  if (!salt) {
+    console.log("❌ Failed to find vanity address, using fallback salt");
+    salt = ethers.keccak256(ethers.toUtf8Bytes("MintPassV1-v1.0.0"));
+    console.log("Fallback Salt:", salt);
+  }
   
   // Calculate the deterministic address
   const deterministicAddress = ethers.getCreate2Address(
     CREATE2_FACTORY,
     salt,
-    ethers.keccak256(creationCode)
+    creationCodeHash
   );
   
   console.log("📍 Predicted contract address:", deterministicAddress);
