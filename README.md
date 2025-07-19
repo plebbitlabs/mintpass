@@ -20,16 +20,19 @@ mintpass/
 
 ## Milestones
 
-### Milestone 1 ✅ Planning & Setup
+### Milestone 1 ✅ Contract & Infrastructure  
 - [x] Project structure and documentation
-- [x] MintPassV1 NFT smart contract
-- [ ] Contract deployment to Base network
-- [ ] Automated tests for smart contract
+- [x] MintPassV1 NFT smart contract with role-based access
+- [x] Contract deployment to Base Sepolia testnet
+- [x] Automated tests for smart contract functions
+- [x] Deterministic deployment system (CREATE2)
+- [x] Comprehensive testing scripts and workflows
 
 ### Milestone 2 🔄 Challenge Integration
 - [ ] Custom "mintpass" challenge for Plebbit
-- [ ] Transfer cooldown mechanism
-- [ ] Integration with existing challenge API
+- [ ] Transfer cooldown mechanism  
+- [ ] Integration with plebbit-js challenge system
+- [ ] Local blockchain testing with full integration
 
 ### Milestone 3 📅 Web Interface
 - [ ] Next.js website at plebbitlabs.com/mintpass
@@ -41,9 +44,34 @@ mintpass/
 - [ ] Multiple challenge options UI
 - [ ] Production testing and optimization
 
+## Current Status
+
+**✅ Milestone 1 Complete!** 
+- MintPassV1 NFT contract deployed and verified on Base Sepolia testnet
+- Full testing suite with automated deployment and verification scripts
+- Deterministic deployment ready for consistent addresses across networks
+
+**🔄 Now Working On:** Milestone 2 - Writing the "mintpass" challenge for plebbit-js integration
+
 ## Getting Started
 
-This repository is currently in development. Follow the milestones above to track progress.
+### Smart Contract Testing
+```bash
+cd contracts
+yarn install
+yarn deploy-and-test  # Deploy and test on local Hardhat network
+```
+
+### Deployment Scripts
+```bash
+# Deploy to testnet with deterministic addresses
+yarn deploy:deterministic:testnet
+
+# Deploy and test locally
+yarn deploy-and-test
+```
+
+This repository is actively in development. Follow the milestones above to track progress.
 
 ## Technology Stack
 
