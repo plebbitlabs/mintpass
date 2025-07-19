@@ -24,19 +24,21 @@ MINTER_ADDRESS=0x0987654321098765432109876543210987654321
 
 ## Deployment Commands
 
-### Deploy to Base Sepolia (Testnet)
+### Standard Deployment
+
+#### Deploy to Base Sepolia (Testnet)
 ```bash
 cd contracts
 yarn deploy --network baseSepolia
 ```
 
-### Deploy to Base Mainnet
+#### Deploy to Base Mainnet
 ```bash
 cd contracts
 yarn deploy --network base
 ```
 
-### Deploy to Local Network (Testing)
+#### Deploy to Local Network (Testing)
 ```bash
 cd contracts
 # Start local node
@@ -45,6 +47,38 @@ yarn hardhat node
 # In another terminal
 yarn deploy --network localhost
 ```
+
+### Deterministic Deployment (Same Address on All Chains)
+
+For production use, deterministic deployment ensures the same contract address across all networks:
+
+#### Deploy Deterministically to Base Sepolia (Testnet)
+```bash
+cd contracts
+yarn deploy:deterministic:testnet
+```
+
+#### Deploy Deterministically to Base Mainnet
+```bash
+cd contracts
+yarn deploy:deterministic:mainnet
+```
+
+#### Deploy Deterministically to Local Network
+```bash
+cd contracts
+# Start local node
+yarn hardhat node
+
+# In another terminal
+yarn deploy:deterministic:local
+```
+
+**Benefits of Deterministic Deployment:**
+- Same contract address on all chains (localhost, testnet, mainnet)
+- Predictable addresses for frontend integration
+- Better testing consistency
+- Uses CREATE2 factory for reliability
 
 ## Post-Deployment
 
