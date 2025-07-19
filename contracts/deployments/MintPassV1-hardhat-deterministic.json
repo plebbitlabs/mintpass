@@ -1,0 +1,24 @@
+{
+  "network": {
+    "name": "hardhat",
+    "chainId": 1337
+  },
+  "contractAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "admin": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "minter": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "blockNumber": 1,
+  "timestamp": "2025-07-19T13:42:23.645Z",
+  "constructorArgs": [
+    "MintPassV1",
+    "MP1",
+    "https://plebbitlabs.com/mintpass/mintpassV1/",
+    "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+    "0x13087d38B78df0345D67c8CEE73b215589ae3A1f"
+  ],
+  "contractName": "MintPassV1",
+  "deploymentMethod": "CREATE2",
+  "salt": "0x6f33b3884e6c8c7461cb928993d923072b2e29fa3aa66ec1756c531414e78d81",
+  "create2Factory": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+  "alreadyDeployed": false
+}

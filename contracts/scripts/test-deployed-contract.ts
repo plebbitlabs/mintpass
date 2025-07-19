@@ -9,12 +9,22 @@ const EMAIL_TOKEN_TYPE = 1;
 async function main() {
   const [deployer] = await ethers.getSigners();
   
-  // Load contract address from deployment file
+  // Load contract address from deployment file (try deterministic first, then regular)
   const deploymentsDir = path.join(__dirname, "..", "deployments");
-  const deploymentFile = path.join(deploymentsDir, `MintPassV1-${network.name}.json`);
+  const deterministicFile = path.join(deploymentsDir, `MintPassV1-${network.name}-deterministic.json`);
+  const regularFile = path.join(deploymentsDir, `MintPassV1-${network.name}.json`);
   
-  if (!fs.existsSync(deploymentFile)) {
-    throw new Error(`Deployment file not found: ${deploymentFile}`);
+  let deploymentFile: string;
+  let deploymentMethod: string;
+  
+  if (fs.existsSync(deterministicFile)) {
+    deploymentFile = deterministicFile;
+    deploymentMethod = "deterministic";
+  } else if (fs.existsSync(regularFile)) {
+    deploymentFile = regularFile;
+    deploymentMethod = "regular";
+  } else {
+    throw new Error(`No deployment file found for ${network.name}. Tried:\n- ${deterministicFile}\n- ${regularFile}`);
   }
   
   const deployment = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
@@ -23,6 +33,7 @@ async function main() {
   console.log("🧪 Testing deployed MintPassV1 contract");
   console.log("=====================================");
   console.log("Network:", network.name);
+  console.log("Deployment:", deploymentMethod);
   console.log("Contract:", contractAddress);
   console.log("Test account:", deployer.address);
   console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH");
