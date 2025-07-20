@@ -37,5 +37,8 @@
     "node": ">=18.0.0",
     "yarn": ">=1.22.0"
   },
-  "packageManager": "yarn@1.22.22"
-} 
+  "packageManager": "yarn@1.22.22",
+  "dependencies": {
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#49d31174f26ba9662f963324844cd6c145672717"
+  }
+}
