@@ -182,7 +182,7 @@ async function main() {
     tx = await deployer.sendTransaction({
       to: CREATE2_FACTORY,
       data: deployData,
-      gasLimit: 3000000 // Set a reasonable gas limit
+      gasLimit: 5000000 // Increased gas limit for contract deployment (~2.6M + overhead)
     });
   }
 
