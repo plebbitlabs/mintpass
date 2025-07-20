@@ -1,0 +1,24 @@
+{
+  "network": {
+    "name": "baseSepolia",
+    "chainId": 84532
+  },
+  "contractAddress": "0xcB60e1Dd6944dFC94920e28a277a51a06E9F20D2",
+  "deployer": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "admin": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "minter": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "blockNumber": 28622931,
+  "timestamp": "2025-07-20T12:22:31.500Z",
+  "constructorArgs": [
+    "MintPassV1",
+    "MINT1",
+    "https://plebbitlabs.com/mintpass/mint1/",
+    "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+    "0x13087d38B78df0345D67c8CEE73b215589ae3A1f"
+  ],
+  "contractName": "MintPassV1",
+  "deploymentMethod": "Custom CREATE2 Factory",
+  "salt": "0x6f33b3884e6c8c7461cb928993d923072b2e29fa3aa66ec1756c531414e78d81",
+  "factoryAddress": "0x9bA3fA7Df25ed2547D8bae45aa131951C68FecbC",
+  "alreadyDeployed": false
+}

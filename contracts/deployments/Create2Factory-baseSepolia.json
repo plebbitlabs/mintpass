@@ -1,0 +1,11 @@
+{
+  "network": {
+    "name": "baseSepolia",
+    "chainId": 84532
+  },
+  "factoryAddress": "0x9bA3fA7Df25ed2547D8bae45aa131951C68FecbC",
+  "deployer": "0x13087d38B78df0345D67c8CEE73b215589ae3A1f",
+  "blockNumber": 28622913,
+  "timestamp": "2025-07-20T12:21:55.111Z",
+  "contractName": "Create2Factory"
+}
