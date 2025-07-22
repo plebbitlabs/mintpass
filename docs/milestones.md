@@ -1,4 +1,4 @@
-  # MintPass milstones
+  # MintPass milstones (telegram messages from Esteban Abaroa)
 
   scenario 1:
     1. user requests challenge
@@ -7,6 +7,10 @@
   scenario 2:
     1. user requests challenge
     2. challenge script sees missing NFT, he's prompted to either visit `plebbitlabs.com/mintpass/request/<his-eth-address>` or to do another challenge in the challenge list.
+
+---
+
+  ## Milestone 1
     
   milestone 1 should probably be to write the NFT contract, to deploy the NFT contract on base (or maybe arbitrum, not sure which one would be best). The contract features:
     - be called "MintPassV1" (contract name), with symbol "MINT1", as we dont want a proxy contract, it's OK to have more than 1 version.
@@ -27,9 +31,30 @@
   Notes:
     - the challenge script need to keep track of which NFT id is associated with which plebbit account, and not allow quick transfers. for example if a plebbit account used NFT id at x date, another plebbit account can only use it 1 week later. this could also be done at the NFT smart contract level with a setting like transferCooldownSeconds but it seems better to do it in the plebbit challenge code.
     - the admin role can be kept in a hardware wallet, the minter role can be done on some server. if the minter role ever gets hacked, whatever token id range the hacker mints can be ignored by the challenge code, and the hacked minter address can be revoked by the admin role.
-    
+
+---
+
+  ## Milestone 2
+
   milestone 2 should be to write the challenge code, which will be similar to evm challenge, but should be custom, and be called "mintpass". has to be custom to handle things like transfer cooldowns.
+
+  Im actually not sure how to get started doing this, I guess you would use the same mintpass smart contract repo, but create a new folder, like plebbit-js-challenge or something, then you would use the same testing library to launch a local blockchain on localhost (hardhat does this / can do this I think), deploy your mintpass contract, send some NFTs, then you would setup the plebbit-js and subplebbit with the challenge, import plebbit-js, create a subplebbit, set subplebbit.settings.challenges = [{path: 'path to your challenge'}], then you would publish a post to that subplebbit, receive the challenge, etc.
+
+  basically you would write a test that recreates everything the user would be doing and everything would be running locally. you might only need to 2-3 tests, or maybe even just 1, but the setup for that test would be very tedious and long. and the plebbit-js challenge would use localhost eth rpc provided by hardhard instead of using the mainnet rpc. so the plebbit-js challenge would get tested against a real eth rpc, but local
+
+  this is pretty complicated and tedious, but it seems better to have automated tests that work locally than to deploy on some testest and develop against the testnet, it will probably save you time long term to set it up this way
+
+  im also not sure how long this would take so I cant set a price, let's see how long it takes you
+
+  oh another thing we need is we need to code / script to be able to generate the contract address deterministically, so that it always has the same address, and so that it can be published on other chains with the same address. I dont know how to do that, but AI should know
+
+---
+
+  ## Milestone 3
 
   milestone 3 should be to make the website and the `plebbitlabs.com/mintpass/request/<his-eth-address>` page, and link it to some sms verification service, and once verified, make the website mint the NFT
 
+---
+
+  ## Milestone 4
   milestone 4 should be to make the UX smooth on seedit, make the link clickable, test it, also we need to think how to display 2 optional challenges, like for example maybe the user can choose between 2 authentication methods, like ours and gitcoin passport, or 1 mintpass and an invite code, etc.
