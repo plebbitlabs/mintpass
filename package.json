@@ -7,20 +7,24 @@
   "license": "MIT",
   "workspaces": [
     "contracts",
-    "challenges",
-    "web"
+    "challenges"
   ],
   "scripts": {
-    "install:all": "yarn install && yarn install:contracts",
+    "install:all": "yarn install && yarn install:contracts && yarn install:challenges",
     "install:contracts": "cd contracts && yarn install",
-    "build": "yarn build:contracts",
+    "install:challenges": "cd challenges && yarn install",
+    "build": "yarn build:contracts && yarn build:challenges",
     "build:contracts": "cd contracts && yarn compile",
+    "build:challenges": "cd challenges && yarn build",
     "test": "yarn test:contracts",
     "test:contracts": "cd contracts && yarn test",
+    "test:challenges": "cd challenges && yarn test",
+    "test:challenges:local": "cd challenges && yarn test:local",
     "deploy:base-sepolia": "cd contracts && yarn deploy:base-sepolia",
     "deploy:base": "cd contracts && yarn deploy:base",
-    "clean": "yarn clean:contracts",
-    "clean:contracts": "cd contracts && yarn clean"
+    "clean": "yarn clean:contracts && yarn clean:challenges",
+    "clean:contracts": "cd contracts && yarn clean",
+    "clean:challenges": "cd challenges && yarn clean"
   },
   "keywords": [
     "nft",

@@ -1,0 +1,38 @@
+{
+  "name": "@mintpass/challenges",
+  "version": "1.0.0",
+  "description": "MintPass plebbit-js challenge implementation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/test/mintpass.test.js",
+    "test:local": "RPC_URL=http://localhost:8545 node dist/test/mintpass.test.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#49d31174f26ba9662f963324844cd6c145672717",
+    "viem": "^2.0.0",
+    "ethers": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "plebbit",
+    "challenge",
+    "nft",
+    "mintpass",
+    "authentication"
+  ],
+  "author": "Plebbit Labs",
+  "license": "MIT"
+} 
