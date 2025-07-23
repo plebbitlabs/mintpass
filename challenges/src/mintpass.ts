@@ -12,6 +12,7 @@ import type { Plebbit } from "@plebbit/plebbit-js/dist/node/plebbit/plebbit.js";
 import { derivePublicationFromChallengeRequest, isStringDomain } from "@plebbit/plebbit-js/dist/node/util.js";
 import { getPlebbitAddressFromPublicKey } from "@plebbit/plebbit-js/dist/node/signer/util.js";
 import { normalize } from "viem/ens";
+import { isAddress } from "viem";
 
 // Challenge option inputs for subplebbit configuration
 const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
@@ -109,6 +110,11 @@ const verifyAuthorMintPass = async (props: {
         if (resolvedWalletAddress !== publicationSignatureAddress) {
             return "The author wallet address's plebbit-author-address text record should resolve to the public key of the signature";
         }
+    }
+
+    // Validate wallet address format
+    if (!isAddress(authorWallet.address)) {
+        return "Invalid wallet address format";
     }
 
     // Verify the wallet signature

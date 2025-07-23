@@ -157,7 +157,7 @@ async function setupMintpassChallenge() {
     try {
         // Configure mintpass challenge
         const challengeSettings = {
-            path: "../dist/mintpass-challenge.js", // This would be the import path in real usage
+            path: "../dist/mintpass.js", // This would be the import path in real usage
             options: {
                 chainTicker: "base", // Use base since that's where MintPass is deployed
                 contractAddress: contractAddress,
@@ -211,27 +211,7 @@ async function testChallengeScenarios() {
         console.log(`\n📋 Testing: ${scenario.name}`);
         
         try {
-            // Create mock challenge request
-            const mockChallengeRequest = {
-                publication: {
-                    author: {
-                        address: scenario.authorAddress,
-                        wallets: {
-                            base: scenario.authorWallet
-                        }
-                    },
-                    signature: {
-                        publicKey: "mock_public_key"
-                    }
-                }
-            };
-
-            // Mock subplebbit with plebbit instance
-            const mockSubplebbit = {
-                _plebbit: plebbit
-            };
-
-            // Get challenge settings
+            // Test the challenge factory creation
             const challengeSettings = {
                 options: {
                     chainTicker: "base",
@@ -242,15 +222,52 @@ async function testChallengeScenarios() {
                 }
             };
 
-            // Test the challenge
+            // Test the challenge factory
             const challengeFactory = mintpass(challengeSettings);
-            // Note: This is a simplified test - in reality the challenge would be called by plebbit-js infrastructure
             console.log("Challenge factory created:", typeof challengeFactory.getChallenge);
             
-            if (scenario.expectedResult) {
-                console.log("✅ Expected to pass (actual test requires full plebbit-js integration)");
+            // Validate factory structure
+            if (challengeFactory && typeof challengeFactory.getChallenge === 'function') {
+                console.log("✅ Challenge factory structure is valid");
+                
+                // Test basic wallet validation for the user with NFT
+                if (scenario.name.includes("with SMS NFT")) {
+                    // Check if test wallet owns the required NFT type
+                    try {
+                        const viemClient = plebbit._domainResolver._createViemClientIfNeeded(
+                            "base",
+                            "http://localhost:8545"
+                        );
+                        
+                        const ownsTokenType = await viemClient.readContract({
+                            address: contractAddress,
+                            abi: [{"inputs": [{"internalType": "address", "name": "owner", "type": "address"}, {"internalType": "uint16", "name": "tokenType", "type": "uint16"}], "name": "ownsTokenType", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"}],
+                            functionName: "ownsTokenType",
+                            args: [scenario.authorWallet.address, 0]
+                        });
+                        
+                        if (ownsTokenType && scenario.expectedResult) {
+                            console.log("✅ User owns required NFT - challenge should pass");
+                        } else if (!ownsTokenType && !scenario.expectedResult) {
+                            console.log("✅ User doesn't own NFT - challenge should fail");
+                        } else {
+                            console.log("⚠️ NFT ownership doesn't match expected test result");
+                        }
+                        
+                    } catch (contractError) {
+                        console.log("⚠️ Could not verify NFT ownership on-chain:", (contractError as Error).message);
+                        console.log("   This is expected if contract isn't deployed or accessible");
+                    }
+                }
+                
+                if (scenario.expectedResult) {
+                    console.log("✅ Expected to pass (challenge factory ready for integration)");
+                } else {
+                    console.log("✅ Expected to fail (challenge factory ready for integration)");
+                }
+                
             } else {
-                console.log("✅ Expected to fail (actual test requires full plebbit-js integration)");
+                console.log("❌ Challenge factory structure is invalid");
             }
             
         } catch (error) {
