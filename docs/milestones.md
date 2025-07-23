@@ -1,4 +1,4 @@
-  # MintPass milstones (telegram messages from Esteban Abaroa)
+  # MintPass milestones (telegram messages from Esteban Abaroa)
 
   scenario 1:
     1. user requests challenge
