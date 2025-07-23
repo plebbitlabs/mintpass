@@ -12,26 +12,26 @@ This directory contains the MintPass challenge implementation for plebbit-js tha
 
 ## Installation
 
-For use in plebbit-js projects:
+For use in plebbit-js projects, clone the mintpass repo alongside your plebbit-js project:
 
 ```bash
-# Install the challenge package
-yarn add @mintpass/challenges
+# Clone mintpass repo 
+git clone https://github.com/your-username/mintpass.git
 
-# Peer dependency (plebbit-js) should already be installed in your project
+# Build the challenge
+cd mintpass
+yarn install:all
+yarn build:challenges
 ```
-
-**Note**: This package requires `@plebbit/plebbit-js` as a peer dependency. Since you're installing this in a plebbit-js project, this requirement is automatically satisfied.
 
 ## Usage
 
 ### Basic Challenge Configuration
 
 ```javascript
-import mintpass from '@mintpass/challenges';
-
+// Import via file path (not package import)
 const challengeSettings = {
-  name: 'mintpass', // or use path: './path/to/mintpass.js'
+  path: '../mintpass/challenges/dist/mintpass.js', // Relative path to built challenge
   options: {
     chainTicker: 'base',
     contractAddress: '0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9',
@@ -43,6 +43,18 @@ const challengeSettings = {
 
 // Set on subplebbit
 subplebbit.settings.challenges = [challengeSettings];
+```
+
+### Directory Structure
+
+Your project should look like:
+```
+your-project/
+├── plebbit-js/           # Your plebbit-js fork
+└── mintpass/             # Cloned mintpass repo
+    └── challenges/
+        └── dist/
+            └── mintpass.js  # Built challenge file
 ```
 
 ### Challenge Options
