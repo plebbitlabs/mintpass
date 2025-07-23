@@ -18,11 +18,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#49d31174f26ba9662f963324844cd6c145672717",
     "viem": "^2.0.0",
     "ethers": "^6.0.0"
   },
+  "peerDependencies": {
+    "@plebbit/plebbit-js": ">=0.0.1"
+  },
   "devDependencies": {
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#49d31174f26ba9662f963324844cd6c145672717",
     "typescript": "^5.3.0",
     "@types/node": "^20.0.0"
   },

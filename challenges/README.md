@@ -15,8 +15,13 @@ This directory contains the MintPass challenge implementation for plebbit-js tha
 For use in plebbit-js projects:
 
 ```bash
+# Install the challenge package
 yarn add @mintpass/challenges
+
+# Peer dependency (plebbit-js) should already be installed in your project
 ```
+
+**Note**: This package requires `@plebbit/plebbit-js` as a peer dependency. Since you're installing this in a plebbit-js project, this requirement is automatically satisfied.
 
 ## Usage
 
