@@ -10,6 +10,10 @@
 
 import { ethers } from "ethers";
 import Plebbit from "@plebbit/plebbit-js";
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Test configuration
 const RPC_URL = process.env.RPC_URL || "http://localhost:8545";
@@ -43,7 +47,7 @@ async function getContractAddress() {
         console.log("⚠️ Could not read deployment file");
     }
 
-    // Fallback to Base Sepolia testnet address
+    // Use Base Sepolia testnet address (production deployment)
     contractAddress = "0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9";
     console.log("✅ Using Base Sepolia contract at:", contractAddress);
     return contractAddress;
@@ -54,16 +58,17 @@ async function setupPlebbit() {
     console.log("RPC URL:", RPC_URL);
     
     try {
-        // Create plebbit instance
+        // Create plebbit instance connected to your remote node via RPC
         plebbit = await Plebbit({
+            plebbitRpcClientsOptions: [RPC_URL], // Connect to your remote Plebbit node
             chainProviders: {
                 eth: {
-                    urls: [RPC_URL],
+                    urls: [RPC_URL.includes("localhost") ? RPC_URL : "https://eth.drpc.org"],
                     chainId: RPC_URL.includes("localhost") ? 1337 : 1
                 },
                 base: {
-                    urls: [RPC_URL.includes("localhost") ? RPC_URL : "https://sepolia.base.org"], 
-                    chainId: RPC_URL.includes("localhost") ? 1337 : 84532
+                    urls: ["https://sepolia.base.org"], 
+                    chainId: 84532
                 }
             }
         });
@@ -88,7 +93,7 @@ async function createSubplebbitWithChallenge() {
                                                  challenges: [{
                     path: `${process.cwd()}/dist/mintpass.js`, // Dynamic path relative to challenges directory
                     options: {
-                        chainTicker: RPC_URL.includes("localhost") ? "base" : "base", // Use base for testing
+                        chainTicker: "base", // Base Sepolia for production testing
                         contractAddress: contractAddress,
                         requiredTokenType: "0", // SMS verification required
                         transferCooldownSeconds: "60", // 1 minute for testing
@@ -151,9 +156,9 @@ async function testChallengeDirectly() {
 }
 
 async function main() {
-    console.log("🚀 MintPass Challenge Direct Integration Test");
-    console.log("==============================================");
-    console.log("Testing Esteban's approach: createSubplebbit with challenge.path");
+    console.log("🚀 MintPass Challenge Remote Node Integration Test");
+    console.log("====================================================");
+    console.log("Testing: createSubplebbit on remote node with challenge.path");
     console.log("Time:", new Date().toISOString());
     console.log("");
 

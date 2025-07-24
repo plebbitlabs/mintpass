@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
+    "dotenv": "^17.2.1",
     "ethers": "^6.0.0",
     "viem": "^2.0.0"
   },
