@@ -61,3 +61,5 @@ deployments/local/
 .coverage_artifacts/
 .coverage_cache/
 .coverage_contracts/
+
+.plebbit/
