@@ -18,7 +18,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#49d31174f26ba9662f963324844cd6c145672717",
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
     "viem": "^2.0.0",
     "ethers": "^6.0.0"
   },
