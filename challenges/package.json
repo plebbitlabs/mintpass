@@ -19,12 +19,13 @@
   },
   "dependencies": {
     "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
-    "viem": "^2.0.0",
-    "ethers": "^6.0.0"
+    "ethers": "^6.0.0",
+    "viem": "^2.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.3.0",
-    "@types/node": "^20.0.0"
+    "@types/minimatch": "^6.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
   },
   "keywords": [
     "plebbit",
@@ -35,4 +36,4 @@
   ],
   "author": "Plebbit Labs",
   "license": "MIT"
-} 
+}
