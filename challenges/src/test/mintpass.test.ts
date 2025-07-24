@@ -85,8 +85,8 @@ async function createSubplebbitWithChallenge() {
             title: "MintPass Test Community",
             description: "Test community for MintPass challenge",
             settings: {
-                                 challenges: [{
-                     path: "./dist/mintpass.js", // Relative path to our built challenge
+                                                 challenges: [{
+                    path: `${process.cwd()}/dist/mintpass.js`, // Dynamic path relative to challenges directory
                     options: {
                         chainTicker: RPC_URL.includes("localhost") ? "base" : "base", // Use base for testing
                         contractAddress: contractAddress,
@@ -190,8 +190,8 @@ async function main() {
     }
 }
 
-// Run the test
-if (require.main === module) {
+// Run the test if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
     main().catch(console.error);
 }
 
