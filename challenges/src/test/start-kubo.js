@@ -1,5 +1,5 @@
 // Script to start IPFS (Kubo) for testing mintpass challenge
-// Based on Esteban's example from plebbit-react-hooks
+// Based on https://github.com/plebbit/plebbit-react-hooks/blob/master/test/test-server/start-ipfs.js
 
 import {exec, execSync} from 'child_process';
 import {temporaryDirectory as getTmpFolderPath} from 'tempy';

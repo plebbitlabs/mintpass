@@ -128,10 +128,10 @@ const testMintPassChallenge = async () => {
 ✅ Local testing setup working properly!
 
 🌐 To test on seedit.app:
-1. Go to https://p2p.seedit.app
+1. Go to https://seedit.app
 2. Click Settings (gear icon) 
 3. Set Plebbit Options to: {"kuboRpcClientsOptions":["http://127.0.0.1:5001/api/v0"],"pubsubKuboRpcClientsOptions":["http://127.0.0.1:5001/api/v0"]}
-4. Visit: https://p2p.seedit.app/#/${subplebbit.address}
+4. Visit: https://seedit.app/#/${subplebbit.address}
 
 🔄 Subplebbit is now running - you can test posting with/without MintPass NFTs!
 Press Ctrl+C to stop.
