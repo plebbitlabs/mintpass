@@ -2,6 +2,7 @@
   "name": "@mintpass/challenges",
   "version": "1.0.0",
   "description": "MintPass plebbit-js challenge implementation",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -13,19 +14,22 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "node dist/test/mintpass.test.js",
-    "test:local": "RPC_URL=http://localhost:8545 node dist/test/mintpass.test.js",
-    "clean": "rm -rf dist"
+    "test": "yarn build && node dist/test/mintpass.test.js",
+    "test:kubo:start": "node src/test/start-kubo.js",
+    "test:kubo": "yarn build && node dist/test/mintpass.test.js",
+    "clean": "rm -rf dist/"
   },
   "dependencies": {
     "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
-    "dotenv": "^17.2.1",
-    "ethers": "^6.0.0",
+    "dotenv": "^16.0.0",
+    "ethers": "^6.13.0",
+    "kubo": "0.36.0",
+    "tempy": "^3.1.0",
     "viem": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^22.7.8",
+    "typescript": "^5.6.3"
   },
   "keywords": [
     "plebbit",
@@ -36,4 +40,4 @@
   ],
   "author": "Plebbit Labs",
   "license": "MIT"
-}
+} 
