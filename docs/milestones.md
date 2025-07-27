@@ -53,6 +53,16 @@
   ## Milestone 3
 
   milestone 3 should be to make the website and the `plebbitlabs.com/mintpass/request/<his-eth-address>` page, and link it to some sms verification service, and once verified, make the website mint the NFT
+  
+  - everything should be server side rendered, least amount of api calls, client side loading and js as possible
+  - UI should be optimized for mobile first
+  - it should have these pages (these should use client side rendering and probably not change the route):
+    - page 1 - enter number
+    - page 2 - enter code
+    - page 3 - success (with transaction hash to block explorer) or failure with error message
+  - we should probably copy the UI of some popular app, like google, whatsapp, telegram, etc
+  - we want it to look modern and trustworthy, because nobody wants to enter their sms on some shady website
+  - we probably dont want automated tests for this, you can use nextjs hot reloading to manually test it. UI tests are very time consuming to write manually testing the entire app takes like 1min so it's a better ROI to just test it manually
 
 ---
 
