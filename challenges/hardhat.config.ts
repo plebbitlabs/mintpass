@@ -17,6 +17,17 @@ const config: HardhatUserConfig = {
     outDir: "../contracts/typechain-types",
     target: "ethers-v6",
   },
+  networks: {
+    ...baseConfig.networks,
+    hardhat: {
+      ...baseConfig.networks?.hardhat,
+      chainId: 1337,
+      mining: {
+        auto: true,
+        interval: 0
+      }
+    }
+  }
 };
 
 export default config; 

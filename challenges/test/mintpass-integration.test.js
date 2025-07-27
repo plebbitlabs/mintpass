@@ -5,6 +5,44 @@ const fs = require('fs');
 
 // Plebbit will be imported dynamically in the publishing tests
 
+// Function to generate ETH wallet from plebbit private key (from plebbit-react-hooks, https://github.com/plebbit/plebbit-react-hooks/blob/070e057ddeda7115077abf5aaa2c1cbee8cba37f/src/lib/chain/chain.ts#L127)
+const getEthWalletFromPlebbitPrivateKey = async (privateKeyBase64, authorAddress) => {
+  // ignore private key used in plebbit-js signer mock so tests run faster, also make sure nobody uses it
+  if (privateKeyBase64 === 'private key') {
+    return
+  }
+
+  const privateKeyBytes = Uint8Array.from(atob(privateKeyBase64), c => c.charCodeAt(0))
+  if (privateKeyBytes.length !== 32) {
+    throw Error('failed getting eth address from private key not 32 bytes')
+  }
+  // Convert bytes to hex string for ethers v6
+  const privateKeyHex = '0x' + Array.from(privateKeyBytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  // Create wallet from private key and get address
+  const wallet = new ethers.Wallet(privateKeyHex)
+  const ethAddress = wallet.address
+
+  // generate signature
+  const timestamp = Math.floor(Date.now() / 1000)
+  const messageToSign = JSON.stringify({
+    domainSeparator: 'plebbit-author-wallet',
+    authorAddress: authorAddress,
+    timestamp: timestamp
+  })
+  const signature = await wallet.signMessage(messageToSign)
+  
+  return {
+    address: ethAddress, 
+    timestamp, 
+    signature: {
+      signature, 
+      signedPropertyNames: ['timestamp'],
+      timestamp: timestamp
+    }
+  }
+}
+
 describe("MintPass Challenge Integration Test", function () {
   let mintpass;
   let admin;
@@ -456,17 +494,6 @@ describe("MintPass Challenge Integration Test", function () {
       this.timeout(60000); // Allow time for full publishing flow
       console.log("\n🧪 Test 5: Full comment publishing flow - should fail without NFT");
 
-      // Use a signer that doesn't have NFT
-      const signers = await ethers.getSigners();
-      const userWithoutNFT = signers[3];
-      
-      console.log(`💳 Testing with user: ${userWithoutNFT.address}`);
-      
-      // Verify user doesn't have NFT
-      const hasNFT = await mintpass.ownsTokenType(userWithoutNFT.address, SMS_TOKEN_TYPE);
-      expect(hasNFT).to.be.false;
-      console.log("✅ Confirmed user doesn't own MintPass NFT");
-
       // Import Plebbit dynamically
       const { default: Plebbit } = await import('@plebbit/plebbit-js');
       
@@ -482,6 +509,19 @@ describe("MintPass Challenge Integration Test", function () {
           }
         }
       });
+
+      // Create author signer - this is the plebbit signer
+      const authorSigner = await publishingPlebbit.createSigner();
+      console.log(`👤 Author plebbit address: ${authorSigner.address}`);
+      
+      // Generate ETH wallet from plebbit private key (Esteban's requirement)
+      const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
+      console.log(`💳 Author ETH address: ${ethWallet.address}`);
+      
+      // Verify user doesn't have NFT at the derived ETH address
+      const hasNFT = await mintpass.ownsTokenType(ethWallet.address, SMS_TOKEN_TYPE);
+      expect(hasNFT).to.be.false;
+      console.log("✅ Confirmed author doesn't own MintPass NFT at derived ETH address");
 
       // Create a new subplebbit instance that has proper IPFS configuration  
       console.log("🔄 Creating IPFS-enabled subplebbit...");
@@ -509,20 +549,7 @@ describe("MintPass Challenge Integration Test", function () {
       await ipfsEnabledSubplebbit.start();
       console.log("✅ IPFS-enabled subplebbit started and listening for comments");
 
-      // Create author signer
-      const authorSigner = await publishingPlebbit.createSigner();
-      
-      // Create proper wallet signature
-      const timestamp = Math.floor(Date.now() / 1000);
-      const messageToSign = JSON.stringify({
-        domainSeparator: 'plebbit-author-wallet',
-        authorAddress: authorSigner.address,
-        timestamp: timestamp
-      });
-      
-      const walletSignature = await userWithoutNFT.signMessage(messageToSign);
-
-      // Create comment for publishing
+      // Create comment for publishing - using proper wallet structure
       const comment = await publishingPlebbit.createComment({
         signer: authorSigner,
         subplebbitAddress: ipfsEnabledSubplebbit.address,
@@ -530,14 +557,7 @@ describe("MintPass Challenge Integration Test", function () {
         content: `This comment should fail the mintpass challenge`,
         author: {
           wallet: {
-            eth: {
-              address: userWithoutNFT.address,
-              signature: {
-                signature: walletSignature,
-                signedPropertyNames: ['timestamp'],
-                timestamp: timestamp
-              }
-            }
+            eth: ethWallet  // Use the properly derived ETH wallet
           }
         }
       });
@@ -604,20 +624,6 @@ describe("MintPass Challenge Integration Test", function () {
       this.timeout(60000); // Allow time for full publishing flow
       console.log("\n🧪 Test 6: Full comment publishing flow - should succeed with NFT");
 
-      // Use a signer that will get NFT
-      const signers = await ethers.getSigners();
-      const userWithNFT = signers[4];
-      
-      console.log(`💳 Testing with user: ${userWithNFT.address}`);
-      
-      // Mint NFT to this user
-      await mintpass.connect(minter).mint(userWithNFT.address, SMS_TOKEN_TYPE);
-      
-      // Verify user has NFT
-      const hasNFT = await mintpass.ownsTokenType(userWithNFT.address, SMS_TOKEN_TYPE);
-      expect(hasNFT).to.be.true;
-      console.log("✅ Confirmed user owns MintPass NFT");
-
       // Import Plebbit dynamically
       const { default: Plebbit } = await import('@plebbit/plebbit-js');
       
@@ -634,18 +640,22 @@ describe("MintPass Challenge Integration Test", function () {
         }
       });
 
-      // Create author signer
+      // Create author signer - this is the plebbit signer
       const authorSigner = await publishingPlebbit.createSigner();
+      console.log(`👤 Author plebbit address: ${authorSigner.address}`);
       
-      // Create proper wallet signature
-      const timestamp = Math.floor(Date.now() / 1000);
-      const messageToSign = JSON.stringify({
-        domainSeparator: 'plebbit-author-wallet',
-        authorAddress: authorSigner.address,
-        timestamp: timestamp
-      });
+      // Generate ETH wallet from plebbit private key (Esteban's requirement)
+      const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
+      console.log(`💳 Author ETH address: ${ethWallet.address}`);
       
-      const walletSignature = await userWithNFT.signMessage(messageToSign);
+      // Issue NFT to the author wallet (Esteban's requirement)
+      console.log("🎨 Minting MintPass NFT to derived ETH address...");
+      await mintpass.connect(minter).mint(ethWallet.address, SMS_TOKEN_TYPE);
+      
+      // Verify user has NFT at the derived ETH address
+      const hasNFT = await mintpass.ownsTokenType(ethWallet.address, SMS_TOKEN_TYPE);
+      expect(hasNFT).to.be.true;
+      console.log("✅ Confirmed author owns MintPass NFT at derived ETH address");
 
       // Create a new subplebbit instance that has proper IPFS configuration  
       console.log("🔄 Creating IPFS-enabled subplebbit...");
@@ -673,7 +683,7 @@ describe("MintPass Challenge Integration Test", function () {
       await ipfsEnabledSubplebbit.start();
       console.log("✅ IPFS-enabled subplebbit started and listening for comments");
 
-      // Create comment for publishing
+      // Create comment for publishing - using proper wallet structure
       const comment = await publishingPlebbit.createComment({
         signer: authorSigner,
         subplebbitAddress: ipfsEnabledSubplebbit.address,
@@ -681,14 +691,7 @@ describe("MintPass Challenge Integration Test", function () {
         content: `This comment should pass the mintpass challenge`,
         author: {
           wallet: {
-            eth: {
-              address: userWithNFT.address,
-              signature: {
-                signature: walletSignature,
-                signedPropertyNames: ['timestamp'],
-                timestamp: timestamp
-              }
-            }
+            eth: ethWallet  // Use the properly derived ETH wallet with NFT
           }
         }
       });
