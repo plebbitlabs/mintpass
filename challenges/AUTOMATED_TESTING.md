@@ -41,7 +41,7 @@ The automated testing system provides:
 
 ```bash
 cd challenges
-yarn test:integration
+yarn test
 ```
 
 ### Test Coverage

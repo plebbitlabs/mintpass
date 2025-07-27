@@ -96,7 +96,7 @@ For comprehensive testing instructions, see [TESTING.md](TESTING.md). Quick star
 
 ```bash
 cd challenges
-yarn test:integration
+yarn test
 ```
 
 ### Integration with plebbit-js

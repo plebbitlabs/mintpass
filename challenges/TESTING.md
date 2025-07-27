@@ -55,7 +55,7 @@ This will deploy the MintPassV1 contract and mint test NFTs.
 ```bash
 # Build and run the automated integration test
 cd challenges
-yarn test:integration
+yarn test
 ```
 
 ## Testing Scenarios
