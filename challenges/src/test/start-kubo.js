@@ -2,10 +2,10 @@
 // Based on https://github.com/plebbit/plebbit-react-hooks/blob/master/test/test-server/start-ipfs.js
 // Configured for local-only testing without external network dependencies
 
-const {exec, execSync} = require('child_process');
-const {temporaryDirectory: getTmpFolderPath} = require('tempy');
-const {path: ipfsPath} = require('kubo');
-const assert = require('assert');
+import {exec, execSync} from 'child_process';
+import {temporaryDirectory as getTmpFolderPath} from 'tempy';
+import {path as ipfsPath} from 'kubo';
+import assert from 'assert';
 
 const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-experiment'} = {}) => {
   assert.equal(typeof apiPort, 'number')
@@ -104,7 +104,7 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
 }
 
 // If run directly, start IPFS and keep it running
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('Starting IPFS daemon for mintpass automated testing...')
   console.log('🔧 Using Routing.Type=none for isolated local testing')
   const ipfsInstance = startIpfs()
@@ -114,4 +114,4 @@ if (require.main === module) {
   }).catch(console.error)
 }
 
-module.exports = startIpfs 
+export default startIpfs 
