@@ -13,8 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test:integration": "yarn build && cd ../contracts && npx hardhat test ../challenges/test/mintpass-integration.test.js",
-    "test:kubo:start": "node src/test/start-kubo.js",
+    "test": "yarn build && cd ../contracts && npx hardhat test ../challenges/test/mintpass-integration.test.js",
     "clean": "rm -rf dist/"
   },
   "dependencies": {
