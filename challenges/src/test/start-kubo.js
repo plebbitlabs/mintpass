@@ -1,10 +1,11 @@
 // Script to start IPFS (Kubo) for testing mintpass challenge
 // Based on https://github.com/plebbit/plebbit-react-hooks/blob/master/test/test-server/start-ipfs.js
+// Configured for local-only testing without external network dependencies
 
-import {exec, execSync} from 'child_process';
-import {temporaryDirectory as getTmpFolderPath} from 'tempy';
-import {path as ipfsPath} from 'kubo';
-import assert from 'assert';
+const {exec, execSync} = require('child_process');
+const {temporaryDirectory: getTmpFolderPath} = require('tempy');
+const {path: ipfsPath} = require('kubo');
+const assert = require('assert');
 
 const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-experiment'} = {}) => {
   assert.equal(typeof apiPort, 'number')
@@ -37,8 +38,9 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Addresses.API /ip4/127.0.0.1/tcp/${apiPort}`, {stdio: 'inherit'})
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Addresses.Gateway /ip4/127.0.0.1/tcp/${gatewayPort}`, {stdio: 'inherit'})
 
-  // disable dht (per Esteban's recommendation to prevent slow internet)
+  // Disable DHT routing for isolated local testing (prevents external network dependencies)
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Routing.Type none`, {stdio: 'inherit'})
+  console.log('✅ Set Routing.Type to none for isolated local testing')
 
   // add hello for monitoring
   try {
@@ -52,6 +54,7 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
   console.log(`IPFS daemon started with pid ${ipfsProcess.pid}`)
   console.log(`API: http://127.0.0.1:${apiPort}`)
   console.log(`Gateway: http://127.0.0.1:${gatewayPort}`)
+  console.log(`🔧 Local-only mode: Routing.Type = none (no external peers)`)
   
   ipfsProcess.stderr.on('data', (data) => {
     console.error('IPFS stderr:', data.toString())
@@ -87,21 +90,28 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
     new Promise((resolve) => {
       ipfsProcess.stdout.on('data', (data) => {
         if (data.toString().match('Daemon is ready')) {
-          console.log('✅ IPFS daemon is ready!')
+          console.log('✅ IPFS daemon is ready for local testing!')
           resolve()
         }
       })
     })
 
-  return ipfsDaemonIsReady()
+  return {
+    ipfsDaemonIsReady,
+    process: ipfsProcess,
+    dataPath: ipfsDataPath
+  }
 }
 
 // If run directly, start IPFS and keep it running
-if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('Starting IPFS daemon for mintpass testing...')
-  startIpfs().then(() => {
-    console.log('IPFS is ready. Press Ctrl+C to stop.')
+if (require.main === module) {
+  console.log('Starting IPFS daemon for mintpass automated testing...')
+  console.log('🔧 Using Routing.Type=none for isolated local testing')
+  const ipfsInstance = startIpfs()
+  ipfsInstance.ipfsDaemonIsReady().then(() => {
+    console.log('IPFS is ready for automated testing.')
+    console.log('This IPFS instance runs in local-only mode with no external peer discovery.')
   }).catch(console.error)
 }
 
-export default startIpfs 
+module.exports = startIpfs 

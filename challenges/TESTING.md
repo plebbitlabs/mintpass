@@ -53,12 +53,9 @@ This will deploy the MintPassV1 contract and mint test NFTs.
 ### 4. Build and Test Challenge
 
 ```bash
-# Build the challenge
+# Build and run the automated integration test
 cd challenges
-yarn build
-
-# Run the integration test
-yarn test:local
+yarn test:integration
 ```
 
 ## Testing Scenarios
@@ -153,7 +150,7 @@ subplebbit.settings.challenges = [challengeSettings];
 ### 4. Test with real plebbit-js:
 
 ```javascript
-// Use the example from Esteban's remove-spam repo
+    // Example usage for comment publishing
 import Plebbit from '@plebbit/plebbit-js'
 
 const plebbit = await Plebbit({

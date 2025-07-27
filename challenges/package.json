@@ -2,7 +2,6 @@
   "name": "@mintpass/challenges",
   "version": "1.0.0",
   "description": "MintPass plebbit-js challenge implementation",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -14,22 +13,24 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "yarn build && node dist/test/mintpass.test.js",
+    "test:integration": "yarn build && cd ../contracts && npx hardhat test ../challenges/test/mintpass-integration.test.js",
     "test:kubo:start": "node src/test/start-kubo.js",
-    "test:kubo": "yarn build && node dist/test/mintpass.test.js",
     "clean": "rm -rf dist/"
   },
   "dependencies": {
     "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
-    "dotenv": "^16.0.0",
-    "ethers": "^6.13.0",
     "kubo": "0.36.0",
     "tempy": "^3.1.0",
     "viem": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.8",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/chai": "^4.2.0",
+    "@types/mocha": "^10.0.10",
+    "chai": "^4.2.0",
+    "ethers": "^6.4.0",
+    "hardhat": "^2.19.0"
   },
   "keywords": [
     "plebbit",

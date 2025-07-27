@@ -92,13 +92,11 @@ yarn build
 
 ### Testing
 
-```bash
-# Start local hardhat node (in contracts dir)
-cd ../contracts && yarn hardhat node
+For comprehensive testing instructions, see [TESTING.md](TESTING.md). Quick start:
 
-# In another terminal, run tests
+```bash
 cd challenges
-yarn test:local
+yarn test:integration
 ```
 
 ### Integration with plebbit-js
