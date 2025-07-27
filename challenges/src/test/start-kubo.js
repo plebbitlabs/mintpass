@@ -7,7 +7,7 @@ import {temporaryDirectory as getTmpFolderPath} from 'tempy';
 import {path as ipfsPath} from 'kubo';
 import assert from 'assert';
 
-const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-experiment'} = {}) => {
+const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-experiment --enable-namesys-pubsub'} = {}) => {
   assert.equal(typeof apiPort, 'number')
   assert.equal(typeof gatewayPort, 'number')
 
