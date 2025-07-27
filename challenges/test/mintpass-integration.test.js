@@ -97,18 +97,14 @@ describe("MintPass Challenge Integration Test", function () {
     
     const plebbitOptions = {
       dataPath: plebbitDataPath,
+      // Use local kubo for IPFS operations
+      kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
       // Use minimal IPFS setup for testing
       ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
       // No external pubsub for isolated local testing
       pubsubKuboRpcClientsOptions: [],
-      // Override Base chain provider to point to local hardhat for testing
-      // In production, this override won't be needed - plebbit will use default Base RPC
-      chainProviders: {
-        base: {
-          urls: [chainProviderUrl],
-          chainId: network.config.chainId || 1337
-        }
-      },
+      // NO chainProviders - let the challenge handle its own blockchain connections
+      // The challenge uses its own RPC connection to avoid plebbit-js chain provider limitations
       resolveAuthorAddresses: false,
       validatePages: false,
     };
@@ -146,7 +142,8 @@ describe("MintPass Challenge Integration Test", function () {
         contractAddress: mintpassAddress,
         requiredTokenType: SMS_TOKEN_TYPE.toString(),
         transferCooldownSeconds: '0', // Disable cooldown for testing
-        error: 'You need a MintPass NFT to post in this community. This is a test message.'
+        error: 'You need a MintPass NFT to post in this community. This is a test message.',
+        rpcUrl: chainProviderUrl // Use local Hardhat RPC for testing
       }
     };
 
@@ -544,16 +541,11 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
-        chainProviders: {
-          eth: {
-            urls: [chainProviderUrl],
-            chainId: 1337
-          }
-        }
+        // NO chainProviders - let the challenge handle its own blockchain connections
       });
 
       // Create author signer - this is the plebbit signer
@@ -572,16 +564,11 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a separate plebbit instance for the subplebbit to avoid conflicts
       const subplebbitPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
-        chainProviders: {
-          eth: {
-            urls: [chainProviderUrl],
-            chainId: 1337
-          }
-        }
+        // NO chainProviders - let the challenge handle its own blockchain connections
       });
 
       // Create a new subplebbit instance that has proper IPFS configuration  
@@ -717,16 +704,11 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
-        chainProviders: {
-          eth: {
-            urls: [chainProviderUrl],
-            chainId: 1337
-          }
-        }
+        // NO chainProviders - let the challenge handle its own blockchain connections
       });
 
       // Create author signer - this is the plebbit signer
@@ -749,16 +731,11 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a separate plebbit instance for the subplebbit to avoid conflicts
       const subplebbitPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
-        chainProviders: {
-          eth: {
-            urls: [chainProviderUrl],
-            chainId: 1337
-          }
-        }
+        // NO chainProviders - let the challenge handle its own blockchain connections
       });
 
       // Create a new subplebbit instance that has proper IPFS configuration  

@@ -66,6 +66,13 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
         label: "Error Message",
         default: "You need a MintPass NFT to post in this community. Visit https://plebbitlabs.com/mintpass/request/{authorAddress} to get verified.",
         description: "Error message shown to users who don't have the required NFT"
+    },
+    {
+        option: "rpcUrl",
+        label: "Custom RPC URL",
+        default: "",
+        description: "Optional custom RPC URL for blockchain calls (for testing). If not provided, uses default chain RPC.",
+        placeholder: "http://127.0.0.1:8545"
     }
 ];
 
@@ -90,12 +97,88 @@ const MINTPASS_ABI = [
 ];
 
 /**
- * Get chain provider with safety checks
+ * Get chain provider with safety checks and fallbacks
  */
-const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: string) => {
-    const chainProvider = plebbit.chainProviders[chainTicker];
-    if (!chainProvider) throw Error(`plebbit.chainProviders[${chainTicker}] is not defined`);
-    return chainProvider;
+const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: string, customRpcUrl?: string) => {
+    // If custom RPC URL is provided (e.g., for testing), use it
+    if (customRpcUrl) {
+        return {
+            urls: [customRpcUrl],
+            chainId: customRpcUrl.includes('127.0.0.1') || customRpcUrl.includes('localhost') ? 1337 : 1
+        };
+    }
+    
+    // If plebbit has chainProviders configured, use them
+    if (plebbit.chainProviders && plebbit.chainProviders[chainTicker]) {
+        return plebbit.chainProviders[chainTicker];
+    }
+    
+    // Fallback to default RPC URLs if no chainProviders configured
+    const defaultProviders: Record<string, any> = {
+        eth: {
+            urls: ["https://rpc.ankr.com/eth"],
+            chainId: 1
+        },
+        base: {
+            urls: ["https://mainnet.base.org"],
+            chainId: 8453
+        }
+    };
+    
+    const defaultProvider = defaultProviders[chainTicker];
+    if (!defaultProvider) {
+        throw Error(`No chain provider found for ${chainTicker} and no default available`);
+    }
+    
+    return defaultProvider;
+};
+
+/**
+ * Create viem client for a specific chain and RPC URL
+ * This replaces the private plebbit-js API to avoid dependency on internal APIs
+ */
+const createViemClientForChain = async (chainTicker: string, rpcUrl: string) => {
+    const { createPublicClient, http } = await import('viem');
+    
+    // Define chain configurations
+    const chainConfigs: Record<string, any> = {
+        eth: {
+            id: 1,
+            name: 'Ethereum',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: { default: { http: [rpcUrl] } }
+        },
+        base: {
+            id: 8453,
+            name: 'Base',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: { default: { http: [rpcUrl] } }
+        },
+        // For local testing (hardhat)
+        hardhat: {
+            id: 1337,
+            name: 'Hardhat',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: { default: { http: [rpcUrl] } }
+        }
+    };
+
+    // Determine chain config based on RPC URL and chainTicker
+    let chainConfig = chainConfigs[chainTicker];
+    
+    // If using localhost, assume it's hardhat regardless of chainTicker
+    if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
+        chainConfig = chainConfigs.hardhat;
+    }
+
+    if (!chainConfig) {
+        throw new Error(`Unsupported chain ticker: ${chainTicker}`);
+    }
+
+    return createPublicClient({
+        chain: chainConfig,
+        transport: http(rpcUrl)
+    });
 };
 
 /**
@@ -109,6 +192,7 @@ const verifyAuthorMintPass = async (props: {
     transferCooldownSeconds: number;
     error: string;
     plebbit: Plebbit;
+    rpcUrl?: string;
 }): Promise<string | undefined> => {
     
     const authorWallet = props.publication.author.wallets?.[props.chainTicker];
@@ -132,9 +216,9 @@ const verifyAuthorMintPass = async (props: {
     }
 
     // Verify the wallet signature
-    const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
+    const viemClient = await createViemClientForChain(
         "eth",
-        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
+        _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
     );
 
     const messageToBeSigned: any = {};
@@ -176,7 +260,8 @@ const verifyAuthorMintPass = async (props: {
         transferCooldownSeconds: props.transferCooldownSeconds,
         authorAddress: props.publication.author.address,
         error: props.error,
-        plebbit: props.plebbit
+        plebbit: props.plebbit,
+        rpcUrl: props.rpcUrl
     });
 
     return mintPassValidationFailure;
@@ -194,24 +279,25 @@ const validateMintPassOwnership = async (props: {
     authorAddress: string;
     error: string;
     plebbit: Plebbit;
+    rpcUrl?: string;
 }): Promise<string | undefined> => {
 
     try {
         // Create viem client for the specified chain
-        const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
+        const viemClient = await createViemClientForChain(
             props.chainTicker,
-            _getChainProviderWithSafety(props.plebbit, props.chainTicker).urls[0]
+            _getChainProviderWithSafety(props.plebbit, props.chainTicker, props.rpcUrl).urls[0]
         );
 
         // Check if user owns the required token type
         let ownsTokenType: boolean = false;
         try {
             const result = await viemClient.readContract({
-                address: <"0x${string}">props.contractAddress,
-                abi: MINTPASS_ABI,
-                functionName: "ownsTokenType",
-                args: [props.authorWalletAddress, props.requiredTokenType]
-            });
+            address: <"0x${string}">props.contractAddress,
+            abi: MINTPASS_ABI,
+            functionName: "ownsTokenType",
+            args: [props.authorWalletAddress, props.requiredTokenType]
+        });
             ownsTokenType = Boolean(result);
         } catch (networkError: any) {
             // Handle network connectivity issues gracefully (common in test environments)
@@ -310,9 +396,9 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
         return "Author address is not an ENS domain";
     }
 
-    const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
+    const viemClient = await createViemClientForChain(
         "eth",
-        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
+        _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
     );
 
     const ownerOfAddress = await viemClient.getEnsAddress({
@@ -332,7 +418,8 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
         transferCooldownSeconds: props.transferCooldownSeconds,
         authorAddress: props.publication.author.address,
         error: props.error,
-        plebbit: props.plebbit
+        plebbit: props.plebbit,
+        rpcUrl: props.rpcUrl
     });
 
     return mintPassValidationFailure;
@@ -353,7 +440,8 @@ const getChallenge = async (
         contractAddress,
         requiredTokenType = "0",
         transferCooldownSeconds = "604800", // 1 week default
-        error 
+        error,
+        rpcUrl
     } = subplebbitChallengeSettings?.options || {};
 
     if (!contractAddress) {
@@ -380,7 +468,8 @@ const getChallenge = async (
         contractAddress,
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
-        error: error || `You need a MintPass NFT to post in this community. Visit https://plebbitlabs.com/mintpass/request/${publication.author.address} to get verified.`
+        error: error || `You need a MintPass NFT to post in this community. Visit https://plebbitlabs.com/mintpass/request/${publication.author.address} to get verified.`,
+        rpcUrl
     };
 
     // Try wallet verification first
