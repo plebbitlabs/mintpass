@@ -542,9 +542,11 @@ describe("MintPass Challenge Integration Test", function () {
       
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
-        ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
         pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
+        resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
+        validatePages: false,             // Critical: Disables page validation for local testing
         chainProviders: {
           eth: {
             urls: [chainProviderUrl],
@@ -557,7 +559,7 @@ describe("MintPass Challenge Integration Test", function () {
       const authorSigner = await publishingPlebbit.createSigner();
       console.log(`👤 Author plebbit address: ${authorSigner.address}`);
       
-      // Generate ETH wallet from plebbit private key (Esteban's requirement)
+      // Generate ETH wallet from plebbit private key
       const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
       console.log(`💳 Author ETH address: ${ethWallet.address}`);
       
@@ -566,10 +568,25 @@ describe("MintPass Challenge Integration Test", function () {
       expect(hasNFT).to.be.false;
       console.log("✅ Confirmed author doesn't own MintPass NFT at derived ETH address");
 
+      // Create a separate plebbit instance for the subplebbit to avoid conflicts
+      const subplebbitPlebbit = await Plebbit({
+        kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
+        resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
+        validatePages: false,             // Critical: Disables page validation for local testing
+        chainProviders: {
+          eth: {
+            urls: [chainProviderUrl],
+            chainId: 1337
+          }
+        }
+      });
+
       // Create a new subplebbit instance that has proper IPFS configuration  
       console.log("🔄 Creating IPFS-enabled subplebbit...");
       const testId = Math.random().toString(36).substring(7);
-      const ipfsEnabledSubplebbit = await publishingPlebbit.createSubplebbit({
+      const ipfsEnabledSubplebbit = await subplebbitPlebbit.createSubplebbit({
         title: `MintPass Test Community (No NFT Test) ${testId}`,
         description: 'Testing mintpass challenge integration with full publishing flow - should fail without NFT',
         settings: {
@@ -605,6 +622,9 @@ describe("MintPass Challenge Integration Test", function () {
       if (this.currentTest) {
         this.currentTest.ipfsEnabledSubplebbit = ipfsEnabledSubplebbit;
       }
+
+      // Wait a moment to ensure subplebbit is fully ready
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Create comment for publishing - using proper wallet structure
       const comment = await publishingPlebbit.createComment({
@@ -648,11 +668,15 @@ describe("MintPass Challenge Integration Test", function () {
         console.log("🚨 Comment error:", error.message);
       });
 
+      comment.on('publishingstatechange', (state) => {
+        console.log(`📊 Publishing state: ${state}`);
+      });
+
       // Publish the comment
       console.log("📤 Publishing comment...");
       await comment.publish();
 
-      // Wait for challenge verification (with timeout)
+      // Wait for challenge verification (with shorter timeout for local testing)
       const waitForChallengeVerification = new Promise((resolve) => {
         const checkInterval = setInterval(() => {
           if (challengeVerificationReceived) {
@@ -663,8 +687,9 @@ describe("MintPass Challenge Integration Test", function () {
         
         setTimeout(() => {
           clearInterval(checkInterval);
+          console.log("⏰ Challenge verification timeout - local testing should work faster");
           resolve(); // Resolve anyway after timeout
-        }, 30000);
+        }, 15000); // Shorter timeout for local testing
       });
 
       await waitForChallengeVerification;
@@ -690,9 +715,11 @@ describe("MintPass Challenge Integration Test", function () {
       
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
-        ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
         pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
+        resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
+        validatePages: false,             // Critical: Disables page validation for local testing
         chainProviders: {
           eth: {
             urls: [chainProviderUrl],
@@ -705,11 +732,11 @@ describe("MintPass Challenge Integration Test", function () {
       const authorSigner = await publishingPlebbit.createSigner();
       console.log(`👤 Author plebbit address: ${authorSigner.address}`);
       
-      // Generate ETH wallet from plebbit private key (Esteban's requirement)
+      // Generate ETH wallet from plebbit private key
       const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
       console.log(`💳 Author ETH address: ${ethWallet.address}`);
       
-      // Issue NFT to the author wallet (Esteban's requirement)
+      // Issue NFT to the author wallet
       console.log("🎨 Minting MintPass NFT to derived ETH address...");
       await mintpass.connect(minter).mint(ethWallet.address, SMS_TOKEN_TYPE);
       
@@ -718,10 +745,25 @@ describe("MintPass Challenge Integration Test", function () {
       expect(hasNFT).to.be.true;
       console.log("✅ Confirmed author owns MintPass NFT at derived ETH address");
 
+      // Create a separate plebbit instance for the subplebbit to avoid conflicts
+      const subplebbitPlebbit = await Plebbit({
+        kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+        httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
+        resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
+        validatePages: false,             // Critical: Disables page validation for local testing
+        chainProviders: {
+          eth: {
+            urls: [chainProviderUrl],
+            chainId: 1337
+          }
+        }
+      });
+
       // Create a new subplebbit instance that has proper IPFS configuration  
       console.log("🔄 Creating IPFS-enabled subplebbit...");
       const testId = Math.random().toString(36).substring(7);
-      const ipfsEnabledSubplebbit = await publishingPlebbit.createSubplebbit({
+      const ipfsEnabledSubplebbit = await subplebbitPlebbit.createSubplebbit({
         title: `MintPass Test Community (With NFT Test) ${testId}`,
         description: 'Testing mintpass challenge integration with full publishing flow - should succeed with NFT',
         settings: {
@@ -757,6 +799,9 @@ describe("MintPass Challenge Integration Test", function () {
       if (this.currentTest) {
         this.currentTest.ipfsEnabledSubplebbit = ipfsEnabledSubplebbit;
       }
+
+      // Wait a moment to ensure subplebbit is fully ready
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Create comment for publishing - using proper wallet structure
       const comment = await publishingPlebbit.createComment({
@@ -799,11 +844,15 @@ describe("MintPass Challenge Integration Test", function () {
         console.log("🚨 Comment error:", error.message);
       });
 
+      comment.on('publishingstatechange', (state) => {
+        console.log(`📊 Publishing state: ${state}`);
+      });
+
       // Publish the comment
       console.log("📤 Publishing comment...");
       await comment.publish();
 
-      // Wait for challenge verification (with timeout)
+      // Wait for challenge verification (with shorter timeout for local testing)
       const waitForChallengeVerification = new Promise((resolve) => {
         const checkInterval = setInterval(() => {
           if (challengeVerificationReceived) {
@@ -814,8 +863,9 @@ describe("MintPass Challenge Integration Test", function () {
         
         setTimeout(() => {
           clearInterval(checkInterval);
+          console.log("⏰ Challenge verification timeout - local testing should work faster");
           resolve(); // Resolve anyway after timeout
-        }, 30000);
+        }, 15000); // Shorter timeout for local testing
       });
 
       await waitForChallengeVerification;
