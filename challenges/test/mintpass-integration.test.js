@@ -101,9 +101,10 @@ describe("MintPass Challenge Integration Test", function () {
       ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
       // No external pubsub for isolated local testing
       pubsubKuboRpcClientsOptions: [],
-      // Custom chain providers pointing to our local hardhat network
+      // Override Base chain provider to point to local hardhat for testing
+      // In production, this override won't be needed - plebbit will use default Base RPC
       chainProviders: {
-        eth: {
+        base: {
           urls: [chainProviderUrl],
           chainId: network.config.chainId || 1337
         }
@@ -141,7 +142,7 @@ describe("MintPass Challenge Integration Test", function () {
     const challengeSettings = {
       path: challengePath,
       options: {
-        chainTicker: 'eth', // Use 'eth' as our local hardhat network identifier
+        chainTicker: 'base', // Use Base L2 (simulated locally for testing)
         contractAddress: mintpassAddress,
         requiredTokenType: SMS_TOKEN_TYPE.toString(),
         transferCooldownSeconds: '0', // Disable cooldown for testing
@@ -397,7 +398,7 @@ describe("MintPass Challenge Integration Test", function () {
       expect(subplebbit.settings.challenges).to.have.length(1);
       
       const challenge = subplebbit.settings.challenges[0];
-      expect(challenge.options.chainTicker).to.equal('eth');
+      expect(challenge.options.chainTicker).to.equal('base');
       expect(challenge.options.contractAddress).to.equal(await mintpass.getAddress());
       expect(challenge.options.requiredTokenType).to.equal('0');
       expect(challenge.options.transferCooldownSeconds).to.equal('0');
