@@ -53,6 +53,7 @@ describe("MintPass Challenge Integration Test", function () {
   let authorSigner;
   let authorWithoutNFTSigner;
   let chainProviderUrl;
+  let ipfsProcess;
 
   const NAME = "MintPassV1";
   const SYMBOL = "MINT1";
@@ -89,6 +90,17 @@ describe("MintPass Challenge Integration Test", function () {
     chainProviderUrl = network.config.url || "http://127.0.0.1:8545";
     console.log(`🔗 Using chain provider: ${chainProviderUrl}`);
 
+    // Start IPFS first (required for plebbit instances to connect properly)
+    console.log("🚀 Starting IPFS for all tests...");
+    const startKubo = await import('../src/test/start-kubo.js');
+    const result = await startKubo.default();
+    ipfsProcess = result.ipfsProcess;
+    console.log("✅ IPFS daemon ready for all tests");
+
+    // Wait a moment for IPFS API to be fully ready
+    console.log("⏳ Waiting for IPFS API to be fully ready...");
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     // Setup plebbit with minimal configuration for testing
     console.log("🌐 Setting up Plebbit instance...");
     
@@ -99,10 +111,10 @@ describe("MintPass Challenge Integration Test", function () {
       dataPath: plebbitDataPath,
       // Use local kubo for IPFS operations
       kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-      // Use minimal IPFS setup for testing
-      ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
-      // No external pubsub for isolated local testing
-      pubsubKuboRpcClientsOptions: [],
+      // Use local kubo for pubsub operations (Esteban's recommendation)
+      pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
+      // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
+      httpRoutersOptions: [],
       // NO chainProviders - let the challenge handle its own blockchain connections
       // The challenge uses its own RPC connection to avoid plebbit-js chain provider limitations
       resolveAuthorAddresses: false,
@@ -174,6 +186,16 @@ describe("MintPass Challenge Integration Test", function () {
         console.log("✅ Subplebbit stopped");
       } catch (error) {
         console.log("⚠️  Note: Error stopping subplebbit (may be expected):", error.message);
+      }
+    }
+
+    if (ipfsProcess) {
+      try {
+        console.log("🛑 Stopping IPFS daemon...");
+        ipfsProcess.kill('SIGTERM');
+        console.log("✅ IPFS daemon stopped");
+      } catch (error) {
+        console.log("⚠️  Note: Error stopping IPFS (may be expected):", error.message);
       }
     }
   });
@@ -465,51 +487,7 @@ describe("MintPass Challenge Integration Test", function () {
   });
 
   describe("Full Comment Publishing Flow", function () {
-    let ipfsInstance;
-
-    before(async function () {
-      this.timeout(90000); // Allow extra time for IPFS startup and API verification
-      
-      // Start IPFS for the publishing tests
-      console.log("\n🚀 Starting IPFS for comment publishing tests...");
-      const { default: startIpfs } = await import('../src/test/start-kubo.js');
-      ipfsInstance = startIpfs();
-      
-      // Wait for IPFS to be ready
-      await ipfsInstance.ipfsDaemonIsReady();
-      console.log("✅ IPFS daemon ready for comment publishing");
-      
-      // Additional wait to ensure IPFS API is fully accessible
-      console.log("⏳ Waiting for IPFS API to be fully ready...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Test IPFS connection with retries
-      let ipfsReady = false;
-      let retries = 0;
-      const maxRetries = 10;
-      
-      while (!ipfsReady && retries < maxRetries) {
-        try {
-          console.log(`🔍 Testing IPFS API connection (attempt ${retries + 1}/${maxRetries})...`);
-          const testResponse = await fetch('http://127.0.0.1:5001/api/v0/version', { method: 'POST' });
-          if (testResponse.ok) {
-            console.log("✅ IPFS API connection verified");
-            ipfsReady = true;
-          } else {
-            throw new Error('API not ready');
-          }
-        } catch (error) {
-          retries++;
-          console.log(`⚠️ IPFS API not yet accessible (attempt ${retries}), waiting...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-      }
-      
-      if (!ipfsReady) {
-        console.log("⚠️ IPFS API verification timed out, but proceeding with tests...");
-      }
-    });
-
+    
     afterEach(async function () {
       // Clean up subplebbits after each test
       if (this.currentTest && this.currentTest.ipfsEnabledSubplebbit) {
@@ -523,14 +501,6 @@ describe("MintPass Challenge Integration Test", function () {
       }
     });
 
-    after(async function () {
-      if (ipfsInstance && ipfsInstance.process) {
-        console.log("🛑 Stopping IPFS daemon...");
-        ipfsInstance.process.kill();
-        console.log("✅ IPFS daemon stopped");
-      }
-    });
-
     it("Should fail comment publishing without NFT (full flow)", async function () {
       this.timeout(60000); // Allow time for full publishing flow
       console.log("\n🧪 Test 5: Full comment publishing flow - should fail without NFT");
@@ -541,7 +511,7 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],  // Use local kubo for pubsub (Esteban's recommendation)
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
@@ -564,7 +534,7 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a separate plebbit instance for the subplebbit to avoid conflicts
       const subplebbitPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],  // Use local kubo for pubsub (Esteban's recommendation)
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
@@ -704,7 +674,7 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a new plebbit instance with IPFS
       const publishingPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],  // Use local kubo for pubsub (Esteban's recommendation)
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
@@ -731,7 +701,7 @@ describe("MintPass Challenge Integration Test", function () {
       // Create a separate plebbit instance for the subplebbit to avoid conflicts
       const subplebbitPlebbit = await Plebbit({
         kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],
-        pubsubKuboRpcClientsOptions: [],  // No external pubsub for isolated local testing
+        pubsubKuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'],  // Use local kubo for pubsub (Esteban's recommendation)
         httpRoutersOptions: [],           // Critical: Prevents plebbit-js from configuring trackers and shutting down kubo
         resolveAuthorAddresses: false,    // Critical: Disables address resolution for local testing
         validatePages: false,             // Critical: Disables page validation for local testing
