@@ -44,7 +44,7 @@ const createPlebbitConfig = (dataPath) => ({
 });
 
 // Helper to create challenge settings
-const createChallengeSettings = (contractAddress, chainTicker = 'eth') => ({
+const createChallengeSettings = (contractAddress, chainTicker = 'base') => ({
   name: 'mintpass',
   path: path.resolve(__dirname, '../dist/mintpass.js'),
   options: {
@@ -382,8 +382,13 @@ describe("MintPass Challenge Integration Test", function () {
 
       const { default: Plebbit } = await import('@plebbit/plebbit-js');
       
-      const publishingPlebbit = await Plebbit(createPlebbitConfig());
-      const subplebbitPlebbit = await Plebbit(createPlebbitConfig());
+      // Create unique data paths for test isolation
+      const testId = Math.random().toString(36).substring(7);
+      const publishingDataPath = `/tmp/plebbit-test-publishing-${testId}`;
+      const subplebbitDataPath = `/tmp/plebbit-test-subplebbit-${testId}`;
+      
+      const publishingPlebbit = await Plebbit(createPlebbitConfig(publishingDataPath));
+      const subplebbitPlebbit = await Plebbit(createPlebbitConfig(subplebbitDataPath));
       
       const authorSigner = await publishingPlebbit.createSigner();
       const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
@@ -395,73 +400,83 @@ describe("MintPass Challenge Integration Test", function () {
       expect(hasNFT).to.be.false;
       console.log("✅ Confirmed author doesn't own MintPass NFT");
 
-      // Create subplebbit
-      const testId = Math.random().toString(36).substring(7);
-      const testSubplebbit = await subplebbitPlebbit.createSubplebbit({
-        title: `MintPass Test Community (No NFT Test) ${testId}`,
-        description: 'Testing mintpass challenge integration with full publishing flow - should fail without NFT'
-      });
-      
-      const settings = { ...testSubplebbit.settings };
-      settings.challenges = [createChallengeSettings(await mintpass.getAddress())];
-      await testSubplebbit.edit({ settings });
-      await testSubplebbit.start();
-      console.log("✅ Test subplebbit started and listening for comments");
-      
-      const comment = await publishingPlebbit.createComment({
-        signer: authorSigner,
-        subplebbitAddress: testSubplebbit.address,
-        title: `Test comment without NFT`,
-        content: `This comment should fail the mintpass challenge`,
-        author: { wallet: { eth: ethWallet } }
-      });
-
-      let challengeReceived = false;
-      let challengeVerificationReceived = false;
-      let challengeSuccess = null;
-
-      comment.on('challenge', (challenge) => {
-        console.log("📧 Received challenge from subplebbit:", challenge.type);
-        challengeReceived = true;
-      });
-
-      comment.on('challengeverification', (verification) => {
-        console.log("✉️ Received challenge verification:", verification);
-        challengeVerificationReceived = true;
-        challengeSuccess = verification.challengeSuccess;
-      });
-
-      comment.on('publishingstatechange', (state) => {
-        console.log(`📊 Publishing state: ${state}`);
-      });
-
-      console.log("📤 Publishing comment...");
-      await comment.publish();
-
-      // Wait for challenge verification
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (challengeVerificationReceived) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 1000);
+      let testSubplebbit;
+      try {
+        // Create subplebbit
+        testSubplebbit = await subplebbitPlebbit.createSubplebbit({
+          title: `MintPass Test Community (No NFT Test) ${testId}`,
+          description: 'Testing mintpass challenge integration with full publishing flow - should fail without NFT'
+        });
         
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          console.log("⏰ Challenge verification timeout - local testing should work faster");
-          resolve();
-        }, 15000);
-      });
+        const settings = { ...testSubplebbit.settings };
+        settings.challenges = [createChallengeSettings(await mintpass.getAddress())];
+        await testSubplebbit.edit({ settings });
+        await testSubplebbit.start();
+        console.log("✅ Test subplebbit started and listening for comments");
+        
+        const comment = await publishingPlebbit.createComment({
+          signer: authorSigner,
+          subplebbitAddress: testSubplebbit.address,
+          title: `Test comment without NFT`,
+          content: `This comment should fail the mintpass challenge`,
+          author: { wallet: { eth: ethWallet } }
+        });
 
-      await testSubplebbit.stop();
-      
-      if (challengeVerificationReceived) {
-        expect(challengeSuccess).to.be.false;
-        console.log("✅ Full publishing flow completed - challenge correctly failed");
-      } else {
-        console.log("⏸️ Full publishing flow timed out (expected due to network isolation)");
-        console.log("✅ Test demonstrates proper setup - challenge would fail without NFT in production");
+        let challengeReceived = false;
+        let challengeVerificationReceived = false;
+        let challengeSuccess = null;
+
+        comment.on('challenge', (challenge) => {
+          console.log("📧 Received challenge from subplebbit:", challenge.type);
+          challengeReceived = true;
+        });
+
+        comment.on('challengeverification', (verification) => {
+          console.log("✉️ Received challenge verification:", verification);
+          challengeVerificationReceived = true;
+          challengeSuccess = verification.challengeSuccess;
+        });
+
+        comment.on('publishingstatechange', (state) => {
+          console.log(`📊 Publishing state: ${state}`);
+        });
+
+        console.log("📤 Publishing comment...");
+        await comment.publish();
+
+        // Wait for challenge verification
+        await new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (challengeVerificationReceived) {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 1000);
+          
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            console.log("⏰ Challenge verification timeout - local testing should work faster");
+            resolve();
+          }, 15000);
+        });
+        
+        if (challengeVerificationReceived) {
+          expect(challengeSuccess).to.be.false;
+          console.log("✅ Full publishing flow completed - challenge correctly failed");
+        } else {
+          console.log("⏸️ Full publishing flow timed out (expected due to network isolation)");
+          console.log("✅ Test demonstrates proper setup - challenge would fail without NFT in production");
+        }
+      } finally {
+        // Ensure cleanup happens even if errors occur
+        if (testSubplebbit) {
+          try {
+            await testSubplebbit.stop();
+            console.log("🧹 Test subplebbit stopped");
+          } catch (error) {
+            console.log("⚠️ Error stopping test subplebbit:", error.message);
+          }
+        }
       }
     });
 
@@ -471,8 +486,13 @@ describe("MintPass Challenge Integration Test", function () {
 
       const { default: Plebbit } = await import('@plebbit/plebbit-js');
       
-      const publishingPlebbit = await Plebbit(createPlebbitConfig());
-      const subplebbitPlebbit = await Plebbit(createPlebbitConfig());
+      // Create unique data paths for test isolation
+      const testId = Math.random().toString(36).substring(7);
+      const publishingDataPath = `/tmp/plebbit-test-publishing-${testId}`;
+      const subplebbitDataPath = `/tmp/plebbit-test-subplebbit-${testId}`;
+      
+      const publishingPlebbit = await Plebbit(createPlebbitConfig(publishingDataPath));
+      const subplebbitPlebbit = await Plebbit(createPlebbitConfig(subplebbitDataPath));
       
       const authorSigner = await publishingPlebbit.createSigner();
       const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address);
@@ -488,73 +508,83 @@ describe("MintPass Challenge Integration Test", function () {
       expect(hasNFT).to.be.true;
       console.log("✅ Confirmed author owns MintPass NFT");
 
-      // Create subplebbit
-      const testId = Math.random().toString(36).substring(7);
-      const testSubplebbit = await subplebbitPlebbit.createSubplebbit({
-        title: `MintPass Test Community (With NFT Test) ${testId}`,
-        description: 'Testing mintpass challenge integration with full publishing flow - should succeed with NFT'
-      });
-      
-      const settings = { ...testSubplebbit.settings };
-      settings.challenges = [createChallengeSettings(await mintpass.getAddress())];
-      await testSubplebbit.edit({ settings });
-      await testSubplebbit.start();
-      console.log("✅ Test subplebbit started and listening for comments");
-      
-      const comment = await publishingPlebbit.createComment({
-        signer: authorSigner,
-        subplebbitAddress: testSubplebbit.address,
-        title: `Test comment with NFT`,
-        content: `This comment should pass the mintpass challenge`,
-        author: { wallet: { eth: ethWallet } }
-      });
-
-      let challengeReceived = false;
-      let challengeVerificationReceived = false;
-      let challengeSuccess = null;
-
-      comment.on('challenge', (challenge) => {
-        console.log("📧 Received challenge from subplebbit:", challenge.type);
-        challengeReceived = true;
-      });
-
-      comment.on('challengeverification', (verification) => {
-        console.log("✉️ Received challenge verification:", verification);
-        challengeVerificationReceived = true;
-        challengeSuccess = verification.challengeSuccess;
-      });
-
-      comment.on('publishingstatechange', (state) => {
-        console.log(`📊 Publishing state: ${state}`);
-      });
-
-      console.log("📤 Publishing comment...");
-      await comment.publish();
-
-      // Wait for challenge verification
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (challengeVerificationReceived) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 1000);
+      let testSubplebbit;
+      try {
+        // Create subplebbit
+        testSubplebbit = await subplebbitPlebbit.createSubplebbit({
+          title: `MintPass Test Community (With NFT Test) ${testId}`,
+          description: 'Testing mintpass challenge integration with full publishing flow - should succeed with NFT'
+        });
         
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          console.log("⏰ Challenge verification timeout - local testing should work faster");
-          resolve();
-        }, 15000);
-      });
+        const settings = { ...testSubplebbit.settings };
+        settings.challenges = [createChallengeSettings(await mintpass.getAddress())];
+        await testSubplebbit.edit({ settings });
+        await testSubplebbit.start();
+        console.log("✅ Test subplebbit started and listening for comments");
+        
+        const comment = await publishingPlebbit.createComment({
+          signer: authorSigner,
+          subplebbitAddress: testSubplebbit.address,
+          title: `Test comment with NFT`,
+          content: `This comment should pass the mintpass challenge`,
+          author: { wallet: { eth: ethWallet } }
+        });
 
-      await testSubplebbit.stop();
-      
-      if (challengeVerificationReceived) {
-        expect(challengeSuccess).to.be.true;
-        console.log("✅ Full publishing flow completed - challenge correctly passed");
-      } else {
-        console.log("⏸️ Full publishing flow timed out (expected due to network isolation)");
-        console.log("✅ Test demonstrates proper setup - challenge would pass with NFT in production");
+        let challengeReceived = false;
+        let challengeVerificationReceived = false;
+        let challengeSuccess = null;
+
+        comment.on('challenge', (challenge) => {
+          console.log("📧 Received challenge from subplebbit:", challenge.type);
+          challengeReceived = true;
+        });
+
+        comment.on('challengeverification', (verification) => {
+          console.log("✉️ Received challenge verification:", verification);
+          challengeVerificationReceived = true;
+          challengeSuccess = verification.challengeSuccess;
+        });
+
+        comment.on('publishingstatechange', (state) => {
+          console.log(`📊 Publishing state: ${state}`);
+        });
+
+        console.log("📤 Publishing comment...");
+        await comment.publish();
+
+        // Wait for challenge verification
+        await new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (challengeVerificationReceived) {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 1000);
+          
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            console.log("⏰ Challenge verification timeout - local testing should work faster");
+            resolve();
+          }, 20000);
+        });
+        
+        if (challengeVerificationReceived) {
+          expect(challengeSuccess).to.be.true;
+          console.log("✅ Full publishing flow completed - challenge correctly passed");
+        } else {
+          console.log("⏸️ Full publishing flow timed out (expected due to network isolation)");
+          console.log("✅ Test demonstrates proper setup - challenge would pass with NFT in production");
+        }
+      } finally {
+        // Ensure cleanup happens even if errors occur
+        if (testSubplebbit) {
+          try {
+            await testSubplebbit.stop();
+            console.log("🧹 Test subplebbit stopped");
+          } catch (error) {
+            console.log("⚠️ Error stopping test subplebbit:", error.message);
+          }
+        }
       }
     });
   });
