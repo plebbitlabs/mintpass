@@ -204,12 +204,25 @@ const validateMintPassOwnership = async (props: {
         );
 
         // Check if user owns the required token type
-        const ownsTokenType = await viemClient.readContract({
-            address: <"0x${string}">props.contractAddress,
-            abi: MINTPASS_ABI,
-            functionName: "ownsTokenType",
-            args: [props.authorWalletAddress, props.requiredTokenType]
-        });
+        let ownsTokenType: boolean = false;
+        try {
+            const result = await viemClient.readContract({
+                address: <"0x${string}">props.contractAddress,
+                abi: MINTPASS_ABI,
+                functionName: "ownsTokenType",
+                args: [props.authorWalletAddress, props.requiredTokenType]
+            });
+            ownsTokenType = Boolean(result);
+        } catch (networkError: any) {
+            // Handle network connectivity issues gracefully (common in test environments)
+            if (networkError?.message?.includes?.('fetch failed') || 
+                networkError?.message?.includes?.('HTTP request failed') ||
+                networkError?.cause?.message?.includes?.('ECONNREFUSED')) {
+                return "Failed to check MintPass NFT ownership. Please try again.";
+            }
+            // Re-throw unexpected errors
+            throw networkError;
+        }
 
         if (!ownsTokenType) {
             // Replace {authorAddress} placeholder in error message
