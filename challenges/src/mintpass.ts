@@ -25,7 +25,7 @@ function getPlebbitAddressFromPublicKey(publicKey: string): string {
 
 function derivePublicationFromChallengeRequest(challengeRequestMessage: any): any {
     // Extract publication from challenge request message
-    return challengeRequestMessage.publication;
+    return challengeRequestMessage.comment;
 }
 
 // Challenge option inputs for subplebbit configuration
