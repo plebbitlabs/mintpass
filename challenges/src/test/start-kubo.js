@@ -38,7 +38,7 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Addresses.API /ip4/127.0.0.1/tcp/${apiPort}`, {stdio: 'inherit'})
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Addresses.Gateway /ip4/127.0.0.1/tcp/${gatewayPort}`, {stdio: 'inherit'})
 
-  // Disable DHT routing for isolated local testing (prevents external network dependencies)
+  // Enable Routing.Type none for isolated testing (now that core challenge bugs are fixed)
   execSync(`IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config Routing.Type none`, {stdio: 'inherit'})
   console.log('✅ Set Routing.Type to none for isolated local testing')
 
