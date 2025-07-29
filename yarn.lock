@@ -562,7 +562,7 @@
   resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.1.1.tgz#b9da6a878a371829a0502c9b6c1c143ef6663f4d"
   integrity sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==
 
-"@helia/bitswap@^2.1.2", "@helia/bitswap@^2.1.3":
+"@helia/bitswap@^2.1.3":
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/@helia/bitswap/-/bitswap-2.1.3.tgz#8621bedb69aabd30fd72e91d43e66a8aa573197e"
   integrity sha512-nK8clINmgKlD9FTh1hTWPxceitt7vZqKpZO8Q+OzcmU6HFC62VXWItxbaEAireJ7vnNRDhYeaLxyQ+94EfUS/g==
@@ -591,25 +591,7 @@
     uint8arraylist "^2.4.8"
     uint8arrays "^5.1.0"
 
-"@helia/block-brokers@4.2.2":
-  version "4.2.2"
-  resolved "https://registry.yarnpkg.com/@helia/block-brokers/-/block-brokers-4.2.2.tgz#7cc202bf39a800f104a7c2cfefed64202dc16a61"
-  integrity sha512-2Iq5basphEn8RcRK+wMiSfy5EJWgjI69wKH8CB66dSyaiduV7etP8E69eP5oGv43ShPycel4Xnmb2mNl6WWp5w==
-  dependencies:
-    "@helia/bitswap" "^2.1.2"
-    "@helia/interface" "^5.3.2"
-    "@helia/utils" "^1.3.2"
-    "@libp2p/interface" "^2.2.1"
-    "@libp2p/utils" "^6.2.1"
-    "@multiformats/multiaddr" "^12.3.3"
-    "@multiformats/multiaddr-matcher" "^1.6.0"
-    "@multiformats/multiaddr-to-uri" "^11.0.0"
-    interface-blockstore "^5.3.1"
-    interface-store "^6.0.2"
-    multiformats "^13.3.1"
-    progress-events "^1.0.1"
-
-"@helia/block-brokers@^4.2.2":
+"@helia/block-brokers@4.2.3", "@helia/block-brokers@^4.2.3":
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/@helia/block-brokers/-/block-brokers-4.2.3.tgz#8186c059b664685ac88e7f49cb9ff0e4dc8608d2"
   integrity sha512-Bv/CVJka2/XkD8SfnQloD6uQCu2hPHw57dEGPivTzyLR0s/TKC1HAP2nwaOcn64Bb29BQ18QK48/6agnVeEBaA==
@@ -648,7 +630,7 @@
     p-queue "^8.0.1"
     uint8arrays "^5.1.0"
 
-"@helia/interface@^5.3.2", "@helia/interface@^5.4.0":
+"@helia/interface@^5.4.0":
   version "5.4.0"
   resolved "https://registry.yarnpkg.com/@helia/interface/-/interface-5.4.0.tgz#c3684c15a7082e0c8b079b2c993e75a0c34ee4e0"
   integrity sha512-UfY/Xa2qYJ6Bh4XUUSgwU3s2VY69cKwRznkS9Ab0C3ciU+dUeyz3IPIn5qqRGVfNVM9SD2wISXmwA7FJvhdRAQ==
@@ -662,12 +644,12 @@
     multiformats "^13.3.1"
     progress-events "^1.0.1"
 
-"@helia/ipns@8.2.3":
-  version "8.2.3"
-  resolved "https://registry.yarnpkg.com/@helia/ipns/-/ipns-8.2.3.tgz#d66eb6e9211b910ac97354d2b407c0c811b81f47"
-  integrity sha512-BdoJ7W9kHGpwWrsd8hhStjZJ04Jcl8IrIrQq0LFynleN/TzCf2bTyVrWzvM/dBVzqRCndka7eeLwcPXS5mskWg==
+"@helia/ipns@8.2.4":
+  version "8.2.4"
+  resolved "https://registry.yarnpkg.com/@helia/ipns/-/ipns-8.2.4.tgz#290fded2be3aa60a0db2d9758deda4e96b2d514d"
+  integrity sha512-Jdx6yQvSDpV2IRQR06TlBjW5yOPxj820eoNK44P+kU/xU+dwREs8JJAj455SsDboj2XV9YnA9OQJVhu7SmtpBw==
   dependencies:
-    "@helia/interface" "^5.3.2"
+    "@helia/interface" "^5.4.0"
     "@libp2p/interface" "^2.2.1"
     "@libp2p/kad-dht" "^15.0.2"
     "@libp2p/logger" "^5.1.4"
@@ -679,7 +661,7 @@
     progress-events "^1.0.1"
     uint8arrays "^5.1.0"
 
-"@helia/routers@^3.1.2":
+"@helia/routers@^3.1.3":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@helia/routers/-/routers-3.1.3.tgz#076e5a49226e82a927bbd8548225c71c0a9918e8"
   integrity sha512-BPbzN3WCe6EF3yXjeORJbbb5hZjv0PKaJri1sSPHRZX6sKUCvRzwAc0AkQKUMHeMzTLrrAcl0yAz5x1r8z3Ynw==
@@ -695,12 +677,12 @@
     multiformats "^13.3.1"
     uint8arrays "^5.1.0"
 
-"@helia/unixfs@5.0.3":
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/@helia/unixfs/-/unixfs-5.0.3.tgz#c9fd55207515ee2b118a16d7af608e299b72c7c0"
-  integrity sha512-Z9R1l2Dso4CtgGqavwko2nEnNSSoOB8uWnkmmOE7C47uzQ2W/d5YIDmgPkptrSkT7h/OPH2O1ctKgLqsSLIAPQ==
+"@helia/unixfs@5.0.4":
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/@helia/unixfs/-/unixfs-5.0.4.tgz#b9aa954ba6444fa70304695ed698586d42991591"
+  integrity sha512-/s+S6xcXk750EyH2z5zq18m+Uw0Ngdu53OSiaDGvSdJi0zpkSSrspO0CDzn+d7SGD5G7HESzOMa32tcRtAYrGQ==
   dependencies:
-    "@helia/interface" "^5.3.2"
+    "@helia/interface" "^5.4.0"
     "@ipld/dag-pb" "^4.1.3"
     "@libp2p/interface" "^2.2.1"
     "@libp2p/logger" "^5.1.4"
@@ -721,7 +703,7 @@
     sparse-array "^1.3.2"
     uint8arrays "^5.1.0"
 
-"@helia/utils@^1.3.2", "@helia/utils@^1.4.0":
+"@helia/utils@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@helia/utils/-/utils-1.4.0.tgz#bbcab48b7f5f68ed77c37bcb6d1bf8744e8c65f8"
   integrity sha512-xXwhQbfSQEC5uHd6HVwdGXksZayy5xnYB5aOk0TU1fDnwbaeJz46o/GdWcxkTxnbfGyxqs9hyK5NqHw1B58yAw==
@@ -1912,17 +1894,17 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
-"@plebbit/plebbit-js@https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed":
+"@plebbit/plebbit-js@https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14":
   version "0.0.7"
-  resolved "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed"
+  resolved "https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14"
   dependencies:
     "@bonfida/spl-name-service" "3.0.10"
     "@chainsafe/libp2p-gossipsub" "14.1.1"
     "@enhances/with-resolvers" "0.0.5"
-    "@helia/block-brokers" "4.2.2"
+    "@helia/block-brokers" "4.2.3"
     "@helia/delegated-routing-v1-http-api-client" "4.2.5"
-    "@helia/ipns" "8.2.3"
-    "@helia/unixfs" "5.0.3"
+    "@helia/ipns" "8.2.4"
+    "@helia/unixfs" "5.0.4"
     "@libp2p/fetch" "3.0.21"
     "@libp2p/identify" "3.0.38"
     "@libp2p/interfaces" "3.3.2"
@@ -1943,7 +1925,7 @@
     err-code "3.0.1"
     ethers "6.14.0"
     ext-name "5.0.0"
-    helia "5.4.2"
+    helia "5.5.0"
     hpagent "1.2.0"
     it-all "3.0.6"
     jose "4.11.0"
@@ -4188,7 +4170,7 @@ domutils@^3.0.1, domutils@^3.2.1, domutils@^3.2.2:
     domelementtype "^2.3.0"
     domhandler "^5.0.3"
 
-dotenv@^16.0.0, dotenv@^16.5.0:
+dotenv@^16.5.0:
   version "16.6.1"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.6.1.tgz#773f0e69527a8315c7285d5ee73c4459d20a8020"
   integrity sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==
@@ -4517,7 +4499,7 @@ ethers@^5.7.2:
     "@ethersproject/web" "5.8.0"
     "@ethersproject/wordlists" "5.8.0"
 
-ethers@^6.13.0, ethers@^6.4.0:
+ethers@^6.4.0:
   version "6.15.0"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-6.15.0.tgz#2980f2a3baf0509749b7e21f8692fa8a8349c0e3"
   integrity sha512-Kf/3ZW54L4UT0pZtsY/rf+EkBU7Qi5nnhonjUb8yTXcxH3cdcWrV2cRyk0Xk/4jK6OoHhxxZHriyhje20If2hQ==
@@ -5292,18 +5274,18 @@ he@^1.2.0:
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.7.tgz#1e6adf711d3f27ce35a81fe3b7bd576c2260a8fc"
   integrity sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==
 
-helia@5.4.2:
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/helia/-/helia-5.4.2.tgz#d5abbd55c7f771ad505ed3de44464616f3334f82"
-  integrity sha512-4jFBFE+dn+1UClCDbJBP+dA6OT9TrD+f8m5VIle7TCTAYTkDfR4mi0VtaWM4CWvrbDYwBk26xR9roYtXlG9oHw==
+helia@5.5.0:
+  version "5.5.0"
+  resolved "https://registry.yarnpkg.com/helia/-/helia-5.5.0.tgz#ec21e3f81afadf7ed82e018b0a0d6d1d334176e9"
+  integrity sha512-nQT+447bM1WYOrKjy0jQkhwSsvoTlfeu0yjSaoa6/3iFCQp9dsoIo5SbKeiSLumiOM+JAkrBz8w2Y9fSJQA+bQ==
   dependencies:
     "@chainsafe/libp2p-noise" "^16.0.1"
     "@chainsafe/libp2p-yamux" "^7.0.1"
-    "@helia/block-brokers" "^4.2.2"
+    "@helia/block-brokers" "^4.2.3"
     "@helia/delegated-routing-v1-http-api-client" "^4.2.1"
-    "@helia/interface" "^5.3.2"
-    "@helia/routers" "^3.1.2"
-    "@helia/utils" "^1.3.2"
+    "@helia/interface" "^5.4.0"
+    "@helia/routers" "^3.1.3"
+    "@helia/utils" "^1.4.0"
     "@ipshipyard/libp2p-auto-tls" "^1.0.0"
     "@libp2p/autonat" "^2.0.19"
     "@libp2p/bootstrap" "^11.0.20"
@@ -5325,10 +5307,9 @@ helia@5.4.2:
     "@multiformats/dns" "^1.0.6"
     blockstore-core "^5.0.2"
     datastore-core "^10.0.2"
-    interface-blockstore "^5.3.1"
     interface-datastore "^8.3.1"
     ipns "^10.0.0"
-    libp2p "^2.3.1"
+    libp2p "^2.9.0"
     multiformats "^13.3.1"
 
 hmac-drbg@^1.0.1:
@@ -6426,7 +6407,7 @@ libp2p-crypto@0.21.2, libp2p-crypto@^0.21.0:
     protobufjs "^6.11.2"
     uint8arrays "^3.0.0"
 
-libp2p@^2.3.1, libp2p@^2.9.0:
+libp2p@^2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/libp2p/-/libp2p-2.9.0.tgz#390ab280b9716910819f421ba8adaa4c72e6d140"
   integrity sha512-gzRnhLY+k9KjYifWQCYbdEfmWqCFdM0TZ5Q7qqdY13sAUKXixK0MF5+Z9LMrm5ELGDPWX7pRVLGK8BOSv5/v3Q==

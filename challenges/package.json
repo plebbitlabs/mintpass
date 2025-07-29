@@ -17,7 +17,7 @@
     "clean": "rm -rf dist/"
   },
   "dependencies": {
-    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#431b25fd4353f91b08369ebfa6bda095031af0ed",
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14",
     "kubo": "0.36.0",
     "tempy": "^3.1.0",
     "viem": "^2.0.0"
