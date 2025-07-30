@@ -30,10 +30,10 @@ Edit `challenges/.env` and set your RPC_URL:
 
 ```env
 # For local hardhat testing
-RPC_URL=http://localhost:8545
+RPC_URL=http://127.0.0.1:8545
 
 # OR for plebbit node testing  
-RPC_URL=ws://localhost:9138/your-secret-key
+RPC_URL=ws://127.0.0.1:9138/your-secret-key
 ```
 
 ### 3. Deploy Contract Locally (for testing)

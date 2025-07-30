@@ -30,7 +30,7 @@ const startIpfs = ({apiPort = 5001, gatewayPort = 8080, args = '--enable-pubsub-
 
   // disable subdomain gateway
   execSync(
-    `IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config --json Gateway.PublicGateways '${JSON.stringify({localhost: {Paths: ['/ipfs', '/ipns'], UseSubdomains: false}})}'`,
+    `IPFS_PATH="${ipfsDataPath}" "${ipfsPath()}" config --json Gateway.PublicGateways '${JSON.stringify({'127.0.0.1': {Paths: ['/ipfs', '/ipns'], UseSubdomains: false}})}'`,
     {stdio: 'inherit'}
   )
 
