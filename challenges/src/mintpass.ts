@@ -215,30 +215,25 @@ const verifyAuthorMintPass = async (props: {
         return "Invalid wallet address format";
     }
 
-    // Test mode: bypass signature validation for localhost RPC (following plebbit-js pattern)
-    if (props.rpcUrl && (props.rpcUrl.includes('localhost') || props.rpcUrl.includes('127.0.0.1'))) {
-        console.log('🧪 Test mode detected - bypassing wallet signature validation');
-    } else {
-        // Verify the wallet signature (production mode)
-        const viemClient = await createViemClientForChain(
-            "eth",
-            _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
-        );
+    // Verify the wallet signature
+    const viemClient = await createViemClientForChain(
+        "eth",
+        _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
+    );
 
-        const messageToBeSigned: any = {};
-        messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
-        messageToBeSigned["authorAddress"] = props.publication.author.address;
-        messageToBeSigned["timestamp"] = authorWallet.timestamp;
+    const messageToBeSigned: any = {};
+    messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
+    messageToBeSigned["authorAddress"] = props.publication.author.address;
+    messageToBeSigned["timestamp"] = authorWallet.timestamp;
 
-        const valid = await viemClient.verifyMessage({
-            address: <"0x${string}">authorWallet.address,
-            message: JSON.stringify(messageToBeSigned),
-            signature: <"0x${string}">authorWallet.signature.signature
-        });
+    const valid = await viemClient.verifyMessage({
+        address: <"0x${string}">authorWallet.address,
+        message: JSON.stringify(messageToBeSigned),
+        signature: <"0x${string}">authorWallet.signature.signature
+    });
 
-        if (!valid) {
-            return "The signature of the wallet is invalid";
-        }
+    if (!valid) {
+        return "The signature of the wallet is invalid";
     }
 
     // Cache timestamp to prevent replay attacks
@@ -287,32 +282,7 @@ const validateMintPassOwnership = async (props: {
     rpcUrl?: string;
 }): Promise<string | undefined> => {
 
-    // Test mode mocking (following plebbit-js pattern for EVM challenges)
-    // Mock NFT ownership when using localhost RPC (isolated test environment)
-    if (props.rpcUrl && (props.rpcUrl.includes('localhost') || props.rpcUrl.includes('127.0.0.1'))) {
-        console.log('🧪 Test mode detected - mocking NFT ownership verification');
-        console.log(`🔍 Author wallet: ${props.authorWalletAddress}`);
-        
-        // Use controlled test authors approach (following plebbit-js pattern)
-        // Fixed wallet addresses with known outcomes for predictable testing
-        const walletAddress = props.authorWalletAddress.toLowerCase();
-        
-        // Test wallet addresses with NO NFT (for Test 1 - should fail)
-        const noNftWallets = [
-            '0x45dd52693c7c473753a670f1052ce0ee530b9371', // Test 1 pattern
-            '0xd8efa6cbce67f53d2d3563ec4df21788cbc5f603',  // Additional no-NFT pattern
-            '0xb0e16b53549c1470118a3843df5b7b85c26da54a'   // Additional no-NFT pattern
-        ];
-        
-        if (noNftWallets.includes(walletAddress)) {
-            console.log('❌ Mock: Author does NOT own required NFT (controlled test wallet)');
-            const errorMessage = props.error.replace("{authorAddress}", props.authorAddress);
-            return errorMessage;
-        } else {
-            console.log('✅ Mock: Author owns required NFT (controlled test wallet)');
-            return undefined; // No error = success
-        }
-    }
+
 
     try {
         // Create viem client for the specified chain

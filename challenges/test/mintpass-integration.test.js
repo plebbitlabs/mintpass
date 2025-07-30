@@ -160,18 +160,7 @@ describe("MintPass Challenge Integration Test", function () {
     console.log("\n🧪 Test 1: Publishing should fail when author has no NFT");
 
     const authorSigner = await plebbitForPublishing.createSigner();
-    // Use FIXED wallet for Test 1 (following plebbit-js controlled approach)
-    // This specific address is configured in mintpass.ts to always return "NO NFT"
-    const ethWallet = {
-      address: '0x45dd52693C7C473753A670F1052cE0eE530b9371', // Fixed "no NFT" wallet
-      timestamp: Math.floor(Date.now() / 1000),
-      signature: {
-        signature: 'test-signature-for-no-nft-wallet',
-        publicKey: authorSigner.publicKey,
-        type: 'eip191',
-        signedPropertyNames: ['domainSeparator', 'authorAddress', 'timestamp']
-      }
-    };
+    const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address, authorSigner.publicKey);
     console.log(`👤 Author plebbit address: ${authorSigner.address}`);
     console.log(`💳 Author ETH address: ${ethWallet.address}`);
     
@@ -256,18 +245,7 @@ describe("MintPass Challenge Integration Test", function () {
     console.log("\n🧪 Test 2: Publishing should succeed when author has NFT");
 
     const authorSigner = await plebbitForPublishing.createSigner();
-    // Use FIXED wallet for Test 2 (following plebbit-js controlled approach)
-    // This address is NOT in noNftWallets list, so will always return "HAS NFT"
-    const ethWallet = {
-      address: '0x1234567890123456789012345678901234567890', // Fixed "has NFT" wallet
-      timestamp: Math.floor(Date.now() / 1000),
-      signature: {
-        signature: 'test-signature-for-has-nft-wallet',
-        publicKey: authorSigner.publicKey,
-        type: 'eip191',
-        signedPropertyNames: ['domainSeparator', 'authorAddress', 'timestamp']
-      }
-    };
+    const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address, authorSigner.publicKey);
     console.log(`👤 Author plebbit address: ${authorSigner.address}`);
     console.log(`💳 Author ETH address: ${ethWallet.address}`);
     
