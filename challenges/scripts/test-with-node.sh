@@ -12,8 +12,25 @@ echo -e "${GREEN}🚀 Starting MintPass integration test with automated node man
 cleanup() {
     if [ ! -z "$NODE_PID" ]; then
         echo -e "${YELLOW}🧹 Cleaning up Hardhat node (PID: $NODE_PID)...${NC}"
-        kill $NODE_PID 2>/dev/null
-        wait $NODE_PID 2>/dev/null
+        
+        # First try graceful termination
+        if kill $NODE_PID 2>/dev/null; then
+            # Wait a moment for graceful shutdown
+            sleep 2
+            
+            # If still running, force kill
+            if kill -0 $NODE_PID 2>/dev/null; then
+                echo -e "${YELLOW}⚠️ Graceful shutdown failed, force killing...${NC}"
+                kill -9 $NODE_PID 2>/dev/null
+            fi
+        fi
+        
+        # Clean up any remaining node processes on port 8545
+        if lsof -ti:8545 >/dev/null 2>&1; then
+            echo -e "${YELLOW}🧹 Cleaning up remaining processes on port 8545...${NC}"
+            lsof -ti:8545 | xargs kill -9 2>/dev/null || true
+        fi
+        
         echo -e "${GREEN}✅ Hardhat node stopped${NC}"
     fi
 }
@@ -31,6 +48,7 @@ cd ../challenges
 # Wait for node to be ready
 echo -e "${YELLOW}⏳ Waiting for Hardhat node to be ready...${NC}"
 for i in {1..30}; do
+    # Check if Hardhat node is responding to JSON-RPC calls
     if curl -s -X POST -H "Content-Type: application/json" \
         --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
         http://127.0.0.1:8545 > /dev/null 2>&1; then
