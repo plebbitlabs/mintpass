@@ -109,17 +109,17 @@ describe("MintPass Challenge Integration Test", function () {
     console.log("🌐 Setting up Plebbit instance for local testing...");
     const { default: Plebbit } = await import('@plebbit/plebbit-js');
     
-    // Use exact plebbitOptions from Esteban's working example - NO default chain providers
+    // Configure plebbit for local testing - no default chain providers to avoid conflicts
     const plebbitOptions = {
       httpRoutersOptions: [],
       kuboRpcClientsOptions: ['http://127.0.0.1:5001/api/v0'], 
       updateInterval: 1000
-      // DO NOT use default plebbit chain providers - use custom RPC in challenge settings instead
+      // Custom RPC configuration is handled in challenge settings instead
     };
     
     plebbit = await Plebbit(plebbitOptions);
     
-    // Create second plebbit instance for publishing (Esteban's bug workaround)
+    // Create second plebbit instance for publishing (workaround for instance conflicts)
     plebbitForPublishing = await Plebbit(plebbitOptions);
     console.log("✅ Plebbit instances created for local testing");
   });
@@ -175,19 +175,19 @@ describe("MintPass Challenge Integration Test", function () {
       description: 'Testing mintpass challenge integration with local publishing'
     });
     
-    // Configure challenge with custom RPC URL and chainId (NO default chain providers)
+    // Configure challenge with custom RPC URL and chainId (no default chain providers)
     const settings = { ...subplebbit.settings };
     settings.challenges = [createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337)];
     await subplebbit.edit({ settings });
     console.log("✅ Subplebbit configured with challenges");
     
-    // Start subplebbit and wait for it to be ready (critical step per Esteban)
+    // Start subplebbit and wait for it to be ready (critical for proper test execution)
     await subplebbit.start();
     await waitForCondition(subplebbit, (s) => typeof s.updatedAt === "number");
     console.log("✅ Subplebbit started and ready");
 
     try {
-      // Create comment using DIFFERENT plebbit instance (Esteban's bug workaround)
+      // Create comment using different plebbit instance (workaround for instance conflicts)
       const comment = await plebbitForPublishing.createComment({
         signer: authorSigner,
         subplebbitAddress: subplebbit.address,
@@ -262,19 +262,19 @@ describe("MintPass Challenge Integration Test", function () {
       description: 'Testing mintpass challenge integration with local publishing'
     });
     
-    // Configure challenge with custom RPC URL and chainId (as per Esteban's requirements)
+    // Configure challenge with custom RPC URL and chainId for local testing
     const settings = { ...subplebbit.settings };
     settings.challenges = [createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337)];
     await subplebbit.edit({ settings });
     console.log("✅ Subplebbit configured with challenges");
     
-    // Start subplebbit and wait for it to be ready (critical step per Esteban)
+    // Start subplebbit and wait for it to be ready (critical for proper test execution)
     await subplebbit.start();
     await waitForCondition(subplebbit, (s) => typeof s.updatedAt === "number");
     console.log("✅ Subplebbit started and ready");
 
     try {
-      // Create comment using DIFFERENT plebbit instance (Esteban's bug workaround)
+      // Create comment using different plebbit instance (workaround for instance conflicts)
       const comment = await plebbitForPublishing.createComment({
         signer: authorSigner,
         subplebbitAddress: subplebbit.address,

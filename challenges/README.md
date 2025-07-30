@@ -92,12 +92,39 @@ yarn build
 
 ### Testing
 
-For comprehensive testing instructions, see [TESTING.md](TESTING.md). Quick start:
+The challenge includes comprehensive automated testing that covers both the challenge logic and complete user publishing flow.
 
+#### Quick Start
 ```bash
 cd challenges
 yarn test
 ```
+
+This command automatically:
+- Starts a local Hardhat blockchain node
+- Deploys the MintPass contract
+- Runs the full integration test suite
+- Cleans up all processes when complete
+
+#### Manual Testing
+For situations where you need to manage the test infrastructure manually:
+
+```bash
+# Terminal 1: Start the Hardhat node
+cd contracts && npx hardhat node
+
+# Terminal 2: Run tests against the running node
+cd challenges && yarn test:manual
+```
+
+#### Test Coverage
+The automated test suite includes:
+- **NFT Ownership Verification**: Tests both success and failure scenarios
+- **Complete Publishing Flow**: Simulates real user posting experience
+- **Local IPFS Integration**: Tests with isolated local IPFS daemon
+- **Challenge/Verification Exchange**: Validates complete challenge workflow
+
+For detailed testing information, see [AUTOMATED_TESTING.md](AUTOMATED_TESTING.md).
 
 ### Integration with plebbit-js
 
