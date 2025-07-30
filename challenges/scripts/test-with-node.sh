@@ -25,6 +25,9 @@ cleanup() {
             fi
         fi
         
+        # Wait for the process to be fully reaped to prevent zombie processes
+        wait $NODE_PID 2>/dev/null || true
+        
         # Clean up any remaining node processes on port 8545
         if lsof -ti:8545 >/dev/null 2>&1; then
             echo -e "${YELLOW}🧹 Cleaning up remaining processes on port 8545...${NC}"
