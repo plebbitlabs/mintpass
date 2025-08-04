@@ -64,7 +64,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "error",
         label: "Error Message",
-        default: "You need a MintPass NFT to post in this community. Visit https://plebbitlabs.com/mintpass/request/{authorAddress} to get verified.",
+        default: "You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/{authorAddress} to get verified.",
         description: "Error message shown to users who don't have the required NFT"
     },
     {
@@ -470,7 +470,7 @@ const getChallenge = async (
         contractAddress,
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
-        error: error || `You need a MintPass NFT to post in this community. Visit https://plebbitlabs.com/mintpass/request/${publication.author.address} to get verified.`,
+        error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
         rpcUrl
     };
 

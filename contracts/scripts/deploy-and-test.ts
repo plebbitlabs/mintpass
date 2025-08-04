@@ -21,7 +21,7 @@ async function deployContract() {
   // Contract constructor arguments
   const name = "MintPassV1";
   const symbol = "MINT1";
-  const baseURI = "https://plebbitlabs.com/mintpass/mint1/";
+  const baseURI = "https://mintpass.org/mint1/";
   
   // For local testing, always use deployer as admin and minter
   let admin, minter;

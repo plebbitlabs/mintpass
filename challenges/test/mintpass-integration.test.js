@@ -79,7 +79,7 @@ describe("MintPass Challenge Integration Test", function () {
   
   const NAME = "MintPassV1";
   const SYMBOL = "MINT1";
-  const BASE_URI = "https://plebbitlabs.com/mintpass/mint1/";
+  const BASE_URI = "https://mintpass.org/mint1/";
   const SMS_TOKEN_TYPE = 0;
 
   this.timeout(300000);

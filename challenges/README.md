@@ -37,7 +37,7 @@ const challengeSettings = {
     contractAddress: '0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9',
     requiredTokenType: '0', // 0 = SMS verification
     transferCooldownSeconds: '604800', // 1 week
-    error: 'You need a MintPass NFT to post. Visit https://plebbitlabs.com/mintpass/request/{authorAddress}'
+    error: 'You need a MintPass NFT to post. Visit https://mintpass.org/request/{authorAddress}'
   }
 };
 

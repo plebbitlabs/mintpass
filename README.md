@@ -12,7 +12,7 @@ MintPass is an NFT-based authentication system that provides verified identity p
 mintpass/
 ├── contracts/           # Smart contracts (MintPassV1 NFT contract)
 ├── challenges/          # Plebbit challenge implementations
-├── web/                 # Next.js website (plebbitlabs.com/mintpass)
+├── web/                 # Next.js website (mintpass.org)
 ├── docs/                # Documentation and specifications
 ├── tests/               # Cross-component integration tests
 └── scripts/             # Deployment and utility scripts
@@ -35,7 +35,7 @@ mintpass/
 - [ ] Local blockchain testing with full integration
 
 ### Milestone 3 📅 Web Interface
-- [ ] Next.js website at plebbitlabs.com/mintpass
+- [ ] Next.js website at mintpass.org
 - [ ] SMS verification service integration
 - [ ] NFT minting interface at `/request/<eth-address>`
 
@@ -88,4 +88,4 @@ MIT License - See [LICENSE](LICENSE) file for details.
 - ✅ Free to use, modify, and distribute
 - ✅ Perfect for developers and researchers  
 - ✅ Encourages ecosystem growth
-- 💰 Commercial plans to be released on [plebbitlabs.com](https://plebbitlabs.com) 
+- 💰 Commercial plans could be released on [mintpass.org](https://mintpass.org) 

@@ -6,7 +6,7 @@
     
   scenario 2:
     1. user requests challenge
-    2. challenge script sees missing NFT, he's prompted to either visit `plebbitlabs.com/mintpass/request/<his-eth-address>` or to do another challenge in the challenge list.
+    2. challenge script sees missing NFT, he's prompted to either visit `mintpass.org/request/<his-eth-address>` or to do another challenge in the challenge list.
 
 ---
 
@@ -16,7 +16,7 @@
     - be called "MintPassV1" (contract name), with symbol "MINT1", as we dont want a proxy contract, it's OK to have more than 1 version.
     - each NFT should have a unique ID to prevent transfer spamming, it can just be totalSupply + 1
     - each NFT should have a tokenType, which could be uint16 (65536 possible types). the first type (0) could be sms. it could be kept track internally as mapping(uint256 => uint16) private _tokenTypes; // tokenId to tokenType
-    - the baseURI should be `plebbitlabs.com/mintpass/mint1`, which is purely cosmetic, to display role strings as "traits" on etherscan, opensea, etc
+    - the baseURI should be `mintpass.org/mint1`, which is purely cosmetic, to display role strings as "traits" on etherscan, opensea, etc
     - the contract should use AccessControl (or modern equivalent), have an admin and minter role
     - the mint function should only be callable by the minter, it should have argument mint(to: address, type: uint16)
     - there should be a mintBatch(to: address[], type: uint16[]) to save on gas when minting multiple
@@ -52,7 +52,7 @@
 
   ## Milestone 3
 
-  milestone 3 should be to make the website and the `plebbitlabs.com/mintpass/request/<his-eth-address>` page, and link it to some sms verification service, and once verified, make the website mint the NFT
+  milestone 3 should be to make the website and the `mintpass.org/request/<his-eth-address>` page, and link it to some sms verification service, and once verified, make the website mint the NFT
   
   - everything should be server side rendered, least amount of api calls, client side loading and js as possible
   - UI should be optimized for mobile first

@@ -90,7 +90,7 @@ async function main() {
   // Contract constructor arguments  
   const name = "MintPassV1";
   const symbol = "MINT1"; // Using MINT1 as specified in memories
-  const baseURI = "https://plebbitlabs.com/mintpass/mint1/";
+      const baseURI = "https://mintpass.org/mint1/";
   
   // Use deployer address for testing (avoid env var issues)
   const admin = deployer.address;

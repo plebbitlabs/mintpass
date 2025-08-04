@@ -13,7 +13,7 @@ describe("MintPassV1", function () {
 
   const NAME = "MintPassV1";
   const SYMBOL = "MINT1";
-  const BASE_URI = "https://plebbitlabs.com/mintpass/mint1/";
+  const BASE_URI = "https://mintpass.org/mint1/";
   const SMS_TOKEN_TYPE = 0;
   const EMAIL_TOKEN_TYPE = 1;
 
@@ -223,7 +223,7 @@ describe("MintPassV1", function () {
 
   describe("Admin Functions", function () {
     it("Should allow admin to update base URI", async function () {
-      const newBaseURI = "https://newplebbitlabs.com/mintpass/v1/";
+              const newBaseURI = "https://newmintpass.org/v1/";
       
       await expect(mintpass.connect(admin).setBaseURI(newBaseURI))
         .to.emit(mintpass, "BaseURIUpdated")

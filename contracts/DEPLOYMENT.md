@@ -74,7 +74,7 @@ After successful deployment:
 The contract is deployed with:
 - **Name**: "MintPassV1"
 - **Symbol**: "MINT1" 
-- **Base URI**: "plebbitlabs.com/mintpass/mint1"
+- **Base URI**: "mintpass.org/mint1"
 - **Admin**: From `ADMIN_ADDRESS` env var (or deployer if not set)
 - **Minter**: From `MINTER_ADDRESS` env var (or deployer if not set)
 
@@ -98,5 +98,5 @@ After deployment, the admin can:
 If automatic verification fails, manually verify with:
 
 ```bash
-yarn hardhat verify --network baseSepolia CONTRACT_ADDRESS "MintPassV1" "MINT1" "plebbitlabs.com/mintpass/mint1" "ADMIN_ADDRESS" "MINTER_ADDRESS"
+yarn hardhat verify --network baseSepolia CONTRACT_ADDRESS "MintPassV1" "MINT1" "mintpass.org/mint1" "ADMIN_ADDRESS" "MINTER_ADDRESS"
 ```
