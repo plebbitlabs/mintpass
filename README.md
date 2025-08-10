@@ -62,15 +62,6 @@ Privacy and data handling (summary):
 - [ ] Multiple challenge options UI
 - [ ] Production testing and optimization
 
-## Current Status
-
-**✅ Milestone 1 Complete!** 
-- MintPassV1 NFT contract deployed and verified on Base Sepolia testnet
-- Full testing suite with automated deployment and verification scripts
-- Deterministic deployment ready for consistent addresses across networks
-
-**🔄 Now Working On:** Milestone 3 - Website backend (API) and anti-sybil controls
-
 ## Docs & Subprojects
 
 - Contracts: `contracts/` — see `contracts/README.md`
