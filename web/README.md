@@ -12,6 +12,7 @@ Serverless backend scaffolding for SMS verification and NFT minting.
 - **Audit trail (optional)**: Log key events to a separate store with redaction.
  - **VPN/Proxy detection (optional)**: If `IPQS_API_KEY` is set, block VPNs/proxies/cloud provider IPs.
  - **Disposable/VOIP phone detection (optional)**: If `ABSTRACTAPI_PHONE_KEY` is set, block disposable/VOIP/high-risk numbers.
+ - **Cooldowns**: Per-IP mint cooldown and per-IP/phone SMS send cooldowns configurable via env.
 
 ### Vercel Setup (exact steps)
 1. Create a new Vercel project and select this repo. Set root directory to `web`.
@@ -23,6 +24,8 @@ Serverless backend scaffolding for SMS verification and NFT minting.
    - `RATE_LIMIT_WINDOW_SECONDS`, `RATE_LIMIT_MAX_REQUESTS` (optional)
    - `IPQS_API_KEY` (optional) to enable IP reputation checks
    - `ABSTRACTAPI_PHONE_KEY` (optional) to enable disposable/VOIP phone checks
+    - `SMS_SEND_COOLDOWN_SECONDS` (optional) default 120
+    - `MINT_IP_COOLDOWN_SECONDS` (optional) default 604800 (7 days)
 4. Deploy. After first deploy, add the domain `mintpass.org` in Domains, set as primary.
 5. Ensure the KV database is scoped to the production environment and not shared with preview.
 
@@ -49,3 +52,7 @@ Copy `.env.example` to `.env.local` and fill in values. Do not commit `.env.loca
 - Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).
 
 This project is a backend scaffold meant to be deployed on Vercel. UI will be added later.
+
+### Operational recommendations
+- Put Cloudflare in front of Vercel for additional DDoS protection and WAF/challenge. Set `CF-Connecting-IP` pass-through so backend uses real client IP.
+- Monitor rate-limit headers (`X-RateLimit-*`) and adjust envs based on traffic.

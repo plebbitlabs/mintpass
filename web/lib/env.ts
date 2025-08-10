@@ -16,6 +16,10 @@ const envSchema = z.object({
   // Rate limiting
   RATE_LIMIT_WINDOW_SECONDS: z.string().optional(),
   RATE_LIMIT_MAX_REQUESTS: z.string().optional(),
+
+  // Cooldowns
+  SMS_SEND_COOLDOWN_SECONDS: z.string().optional(),
+  MINT_IP_COOLDOWN_SECONDS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -38,6 +42,8 @@ export const env = {
     .filter(Boolean),
   RATE_LIMIT_WINDOW_SECONDS: Number(process.env.RATE_LIMIT_WINDOW_SECONDS || '60'),
   RATE_LIMIT_MAX_REQUESTS: Number(process.env.RATE_LIMIT_MAX_REQUESTS || '10'),
+  SMS_SEND_COOLDOWN_SECONDS: Number(process.env.SMS_SEND_COOLDOWN_SECONDS || '120'),
+  MINT_IP_COOLDOWN_SECONDS: Number(process.env.MINT_IP_COOLDOWN_SECONDS || String(7 * 24 * 60 * 60)),
 };
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {

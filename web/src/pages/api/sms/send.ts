@@ -4,6 +4,8 @@ import { globalIpRatelimit } from '../../../../lib/rate-limit';
 import { saveSmsCode } from '../../../../lib/kv';
 import { assessIpReputation } from '../../../../lib/ip-reputation';
 import { analyzePhone } from '../../../../lib/phone-intel';
+import { getClientIp } from '../../../../lib/request-ip';
+import { isSmsSendInCooldown, setSmsSendCooldown } from '../../../../lib/cooldowns';
 
 const Body = z.object({
   phoneE164: z.string().min(5),
@@ -18,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Rate limit by IP
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const ip = getClientIp(req);
   const { success, limit, reset, remaining } = await globalIpRatelimit.limit(ip);
   res.setHeader('X-RateLimit-Limit', String(limit));
   res.setHeader('X-RateLimit-Remaining', String(remaining));
@@ -35,6 +37,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'VPNs and proxies are not allowed' });
   }
 
+  // Cooldown checks per IP and phone
+  if (await isSmsSendInCooldown(ip, phoneE164)) {
+    return res.status(429).json({ error: 'Please wait before requesting another code' });
+  }
+
   // Reject disposable/VOIP/high-risk numbers if phone intelligence is configured
   const pcheck = await analyzePhone(phoneE164);
   if (pcheck.isHighRisk) {
@@ -43,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const code = generateCode();
   await saveSmsCode(phoneE164, code);
+  await setSmsSendCooldown(ip, phoneE164);
 
   // TODO: integrate SMS provider here using env.SMS_PROVIDER_API_KEY
   // For now, we do not expose the code in responses for security.
