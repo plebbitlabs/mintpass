@@ -28,16 +28,34 @@ mintpass/
 - [x] Deterministic deployment system (CREATE2)
 - [x] Comprehensive testing scripts and workflows
 
-### Milestone 2 🔄 Challenge Integration
-- [ ] Custom "mintpass" challenge for Plebbit
-- [ ] Transfer cooldown mechanism  
-- [ ] Integration with plebbit-js challenge system
-- [ ] Local blockchain testing with full integration
+### Milestone 2 ✅ Challenge Integration
+- [x] Custom "mintpass" challenge for Plebbit
+- [x] Transfer cooldown mechanism  
+- [x] Integration with plebbit-js challenge system
+- [x] Local blockchain testing with full integration
 
-### Milestone 3 📅 Web Interface
-- [ ] Next.js website at mintpass.org
-- [ ] SMS verification service integration
-- [ ] NFT minting interface at `/request/<eth-address>`
+### Milestone 3 🔄 Web Backend & Interface
+- [ ] Next.js backend at `mintpass.org` (Pages Router, TypeScript)
+- [ ] SMS verification flow (send, verify)
+- [ ] NFT minting API after verification
+- [ ] Anti-sybil controls (rate limits, cooldowns, optional VPN/VOIP checks)
+- [ ] Public-facing UI at `/request/<eth-address>` (to be built)
+
+Anti-sybil summary (backend):
+- Per-IP rate limiting and server-side cooldowns (SMS send and mint attempts)
+- Optional VPN/proxy/cloud IP detection (IPQS)
+- Optional disposable/VOIP phone detection (AbstractAPI)
+- Optional geoblocking via middleware; Cloudflare WAF recommended in front of Vercel
+
+See `web/README.md` for exact environment variables and Vercel/Cloudflare setup steps.
+
+Privacy and data handling (summary):
+- Phone numbers (E.164) and IPs are used strictly for verification, rate limiting, cooldowns, and preventing duplicate mints. No additional PII is collected by default.
+- SMS codes are stored with a short TTL (5 minutes). Verification markers also expire after 5 minutes. SMS send cooldowns default to 120 seconds. IP mint cooldown defaults to 7 days. Rate-limit state is short-lived.
+- Mint state associates wallet address and phone to prevent reuse; by design this record is retained to enforce anti-sybil guarantees. Cooldown and code entries expire automatically.
+- Behind Cloudflare/Vercel, client IP is extracted in this order: `CF-Connecting-IP` → `X-Real-IP` → first `X-Forwarded-For` → socket address. Ensure Cloudflare proxying is enabled so the true client IP is preserved.
+- Logs should redact phone numbers and never include SMS codes or private keys. Secrets are stored only in Vercel environment variables; no secrets in the repository.
+- UI must present a clear notice and obtain consent before sending an SMS, including a link to the privacy policy. Data access/deletion requests should be honored where legally required, noting that removing mint association records weakens anti-sybil protections.
 
 ### Milestone 4 📅 UX & Integration
 - [ ] Seamless integration with Seedit
@@ -51,25 +69,20 @@ mintpass/
 - Full testing suite with automated deployment and verification scripts
 - Deterministic deployment ready for consistent addresses across networks
 
-**🔄 Now Working On:** Milestone 2 - Writing the "mintpass" challenge for plebbit-js integration
+**🔄 Now Working On:** Milestone 3 - Website backend (API) and anti-sybil controls
+
+## Docs & Subprojects
+
+- Contracts: `contracts/` — see `contracts/README.md`
+- Challenge (plebbit-js): `challenges/` — see `challenges/README.md`
+- Website backend (Next.js): `web/` — see `web/README.md`
+- Docs and specs: `docs/` — see `docs/README.md` and `docs/milestones.md`
 
 ## Getting Started
 
-### Smart Contract Testing
-```bash
-cd contracts
-yarn install
-yarn deploy-and-test  # Deploy and test on local Hardhat network
-```
-
-### Deployment Scripts
-```bash
-# Deploy to testnet with deterministic addresses
-yarn deploy:deterministic:testnet
-
-# Deploy and test locally
-yarn deploy-and-test
-```
+- Smart contracts: see `contracts/README.md` for local deploy and tests
+- Challenge (plebbit-js): see `challenges/README.md` for building and tests
+- Web backend: see `web/README.md` for Vercel/KV setup, env vars, and API routes
 
 This repository is actively in development. Follow the milestones above to track progress.
 
