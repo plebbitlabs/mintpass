@@ -16,7 +16,11 @@ Serverless backend scaffolding for SMS verification and NFT minting.
 
 ### Vercel Setup (exact steps)
 1. Create a new Vercel project and select this repo. Set root directory to `web`.
-2. Add the Vercel KV integration. This will provision `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+2. Add storage via Marketplace: Upstash → Redis. Create separate databases per environment (recommended):
+   - `mintpass-kv-prod` (Production)
+   - `mintpass-kv-preview` (Preview)
+   - `mintpass-kv-dev` (optional local)
+   Settings for each DB: Plan = Pay as You Go, Primary Region = `iad1` (US‑East), Read Regions = none, Eviction = off, Auto‑upgrade = on.
 3. In Project Settings → Environment Variables, add:
    - `MINTER_PRIVATE_KEY` (server only)
    - `SMS_PROVIDER_API_KEY` and `SMS_SENDER_ID` (if/when integrating a provider)
@@ -26,8 +30,35 @@ Serverless backend scaffolding for SMS verification and NFT minting.
    - `ABSTRACTAPI_PHONE_KEY` (optional) to enable disposable/VOIP phone checks
     - `SMS_SEND_COOLDOWN_SECONDS` (optional) default 120
     - `MINT_IP_COOLDOWN_SECONDS` (optional) default 604800 (7 days)
+   - Map Upstash credentials to app envs per environment:
+     - Production: `KV_REST_API_URL` = Upstash prod REST URL; `KV_REST_API_TOKEN` = Upstash prod REST token
+     - Preview: `KV_REST_API_URL` = Upstash preview REST URL; `KV_REST_API_TOKEN` = Upstash preview REST token
+     - Local dev (optional): set the same in `.env.local` pointing to `mintpass-kv-dev`
 4. Deploy. After first deploy, add the domain `mintpass.org` in Domains, set as primary.
 5. Ensure the KV database is scoped to the production environment and not shared with preview.
+
+### Runtime regions
+- Vercel Project → Settings → Functions → Region: set to `iad1` to co‑locate with Redis and reduce latency.
+
+### Storage notes
+- Why Redis/KV: fast TTL keys for OTPs and cooldowns, atomic counters, and simple idempotency.
+- Cost model (Pay as You Go): ~$0.20 per 100k commands. Typical flow is ~20 commands per successful mint.
+
+### Environments and KV mapping (prod/preview/local)
+- **Databases to create**:
+  - `mintpass-kv-prod` → used by Vercel Production
+  - `mintpass-kv-preview` → used by Vercel Preview (and local dev by default)
+  - Optional later: `mintpass-kv-dev` → used only for local dev
+
+- **Vercel → Project → Settings → Environment Variables**:
+  - Production: set `KV_REST_API_URL` and `KV_REST_API_TOKEN` from `mintpass-kv-prod`
+  - Preview: set `KV_REST_API_URL` and `KV_REST_API_TOKEN` from `mintpass-kv-preview`
+  - Do not point local or preview to prod.
+
+- **Local development**:
+  - Copy `.env.example` to `.env.local`
+  - Set `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the preview DB (or to `mintpass-kv-dev` if you created it)
+  - Run `yarn dev`
 
 ### API Routes
 - `POST /api/sms/send` → request SMS code (rate-limited)
