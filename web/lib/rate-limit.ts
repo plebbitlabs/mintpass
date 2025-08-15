@@ -1,6 +1,7 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { requireEnv, env } from './env';
+import { requireEnv } from './env';
+import { policy } from './policy';
 
 // Single Redis instance for the app using Vercel KV credentials
 const redis = new Redis({
@@ -11,7 +12,7 @@ const redis = new Redis({
 // Global IP rate limiter (used as default)
 export const globalIpRatelimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(env.RATE_LIMIT_MAX_REQUESTS, `${env.RATE_LIMIT_WINDOW_SECONDS} s`),
+  limiter: Ratelimit.slidingWindow(policy.RATE_LIMIT_MAX_REQUESTS, `${policy.RATE_LIMIT_WINDOW_SECONDS} s`),
   analytics: true,
   prefix: 'rl:ip',
 });
