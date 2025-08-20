@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted } from '../../../lib/kv';
 import { getClientIp } from '../../../lib/request-ip';
 import { isMintIpInCooldown, setMintIpCooldown } from '../../../lib/cooldowns';
+import { env, requireEnv } from '../../../lib/env';
+import { MintPassV1Abi } from '../../../lib/abi';
+import { Wallet, JsonRpcProvider, Contract } from 'ethers';
 
 const Body = z.object({
   address: z.string().min(1),
@@ -32,11 +35,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Mint cooldown active for this IP' });
   }
 
-  // TODO: Integrate on-chain mint using MINTER_PRIVATE_KEY and deployed contract address.
+  // If on-chain envs are configured, perform on-chain mint; otherwise, stub-mark as minted
+  let txHash: string | null = null;
+  if (
+    env.MINTER_PRIVATE_KEY &&
+    env.BASE_SEPOLIA_RPC_URL &&
+    env.MINTPASSV1_ADDRESS_BASE_SEPOLIA
+  ) {
+    try {
+      const provider = new JsonRpcProvider(
+        env.BASE_SEPOLIA_RPC_URL
+      );
+      const wallet = new Wallet(
+        env.MINTER_PRIVATE_KEY,
+        provider
+      );
+      const contract = new Contract(
+        env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
+        MintPassV1Abi,
+        wallet
+      );
+      const tx = await contract.mint(address, tokenType);
+      const receipt = await tx.wait();
+      txHash = receipt?.hash ?? tx.hash;
+    } catch {
+      return res.status(500).json({ error: 'On-chain mint failed' });
+    }
+  }
+
   await markMinted(address, phoneE164);
   await setMintIpCooldown(ip);
 
-  return res.status(200).json({ ok: true, txHash: null, tokenType });
+  return res.status(200).json({ ok: true, txHash, tokenType });
 }
 
 

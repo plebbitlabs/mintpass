@@ -7,8 +7,17 @@ const envSchema = z.object({
 
   // Secrets and provider keys (server-only)
   MINTER_PRIVATE_KEY: z.string().min(1).optional(),
-  SMS_PROVIDER_API_KEY: z.string().optional(),
-  SMS_SENDER_ID: z.string().optional(),
+  SMS_PROVIDER_API_KEY: z.string().optional(), // legacy/generic
+  SMS_SENDER_ID: z.string().optional(),        // generic sender id/from
+
+  // Twilio (preferred)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
+
+  // On-chain Mint (Base Sepolia)
+  MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
+  BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -25,6 +34,11 @@ export const env = {
   MINTER_PRIVATE_KEY: process.env.MINTER_PRIVATE_KEY,
   SMS_PROVIDER_API_KEY: process.env.SMS_PROVIDER_API_KEY,
   SMS_SENDER_ID: process.env.SMS_SENDER_ID,
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_MESSAGING_SERVICE_SID: process.env.TWILIO_MESSAGING_SERVICE_SID,
+  MINTPASSV1_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
+  BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
 };
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {

@@ -61,10 +61,10 @@ Serverless backend scaffolding for SMS verification and NFT minting.
   - Run `yarn dev`
 
 ### API Routes
-- `POST /api/sms/send` → request SMS code (rate-limited)
+- `POST /api/sms/send` → request SMS code (rate-limited; sends via Twilio if configured)
 - `POST /api/sms/verify` → verify code and mark phone as verified
 - `POST /api/check-eligibility` → confirm address + phone can mint
-- `POST /api/mint` → mint NFT after verification (stub; integrate contract call)
+- `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state
 
 ### Local Development
 ```bash
@@ -93,6 +93,7 @@ KV_REST_API_TOKEN=
 PREVIEW_BASE_URL=https://<your-preview>.vercel.app
 PHONE=+15555550123
 ADDR=0x1111111111111111111111111111111111111111
+BYPASS_TOKEN=...
 ```
 
 Run the script:
@@ -106,14 +107,26 @@ Notes:
 - The script loads ENVFILE (if provided), then `.env.smoke.{prod|preview}`, then `.env.local`, then `.env`.
 - No SMS provider needed yet; the OTP is read from KV via REST for testing.
 - Cooldowns and rate limits apply; you may need to wait 120s for repeated runs.
+ - If your Preview custom domain is protected via Vercel Auth and proxied by Cloudflare, prefer the vercel.app URL for smoke tests.
 
 ### Environment Variables
 Copy `.env.example` to `.env.local` and fill in values. Do not commit `.env.local`.
 
+Required for runtime:
+- `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+
+Optional for SMS provider (Twilio preferred):
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`
+- One of: `TWILIO_MESSAGING_SERVICE_SID` or `SMS_SENDER_ID`
+
+Optional for on-chain mint (Base Sepolia):
+- `MINTER_PRIVATE_KEY`
+- `MINTPASSV1_ADDRESS_BASE_SEPOLIA`
+- `BASE_SEPOLIA_RPC_URL`
+
 ### Next Steps
-- Integrate SMS provider (e.g., Twilio or Vonage) in `src/pages/api/sms/send.ts`.
-- Implement on-chain mint in `src/pages/api/mint.ts` using the `MINTER_PRIVATE_KEY` and the deployed MintPassV1 address (Base testnet for now).
 - Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).
+- Build minimal UI (`request/[address].tsx`) and wire to these APIs.
 
 This project is a backend scaffold meant to be deployed on Vercel. UI will be added later.
 
