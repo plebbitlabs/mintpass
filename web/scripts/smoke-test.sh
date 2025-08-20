@@ -26,6 +26,8 @@ fi
 PHONE=${PHONE:-+15555550123}
 ADDR=${ADDR:-0x1111111111111111111111111111111111111111}
 BASE_URL=${BASE_URL:-}
+COOKIE_JAR=${COOKIE_JAR:-/tmp/mintpass_smoke_cookies.$$}
+trap 'rm -f "$COOKIE_JAR" >/dev/null 2>&1 || true' EXIT
 
 if [[ "$ENVIRONMENT" == "prod" ]]; then
   BASE_URL=${BASE_URL:-https://mintpass.org}
@@ -51,36 +53,56 @@ echo "Address:     $ADDR"
 
 PHONE_ESC=${PHONE//+/%2B}
 
+with_bypass_param() {
+  local url="$1"
+  if [[ -n "${BYPASS_TOKEN:-}" ]]; then
+    if [[ "$url" == *"?"* ]]; then
+      echo "$url&x-vercel-protection-bypass=$BYPASS_TOKEN"
+    else
+      echo "$url?x-vercel-protection-bypass=$BYPASS_TOKEN"
+    fi
+  else
+    echo "$url"
+  fi
+}
+
 post_json() {
   local url="$1"; shift
   local body="$1"; shift
-  curl --fail --silent --show-error \
-    --connect-timeout 10 --max-time 30 \
-    -X POST "$url" \
-    -H 'content-type: application/json' \
-    -d "$body"
+  if [[ -n "${BYPASS_TOKEN:-}" ]]; then
+    local u
+    u=$(with_bypass_param "$url")
+    curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$u" \
+      -H "x-vercel-protection-bypass: $BYPASS_TOKEN" \
+      -H 'content-type: application/json' \
+      -d "$body"
+  else
+    curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$url" \
+      -H 'content-type: application/json' \
+      -d "$body"
+  fi
 }
 
 kv_get_code() {
   # Returns the code or empty
   local resp
-  resp=$(curl --fail-with-body --silent --show-error \
-    --connect-timeout 10 --max-time 30 \
-    -H "Authorization: Bearer $KV_REST_API_TOKEN" \
+  resp=$(curl -sS -H "Authorization: Bearer $KV_REST_API_TOKEN" \
     "$KV_REST_API_URL/get/sms:code:$PHONE_ESC")
-  # Expecting JSON like: {"result":"123456"} or {"result":123456} or {"result":null}
-  if command -v jq >/dev/null 2>&1; then
-    echo "$resp" | jq -r '.result // empty' | grep -oE '^[0-9]{6}$' || true
-  else
-    # Fallback: match quoted or unquoted result then extract 6 digits
-    echo "$resp" | grep -oE '"result":("[^"]+"|[0-9]+)' | grep -oE '[0-9]{6}' || true
-  fi
+  # Expecting JSON like: {"result":"123456"} or {"result":null}
+  echo "$resp" | grep -oE '"result":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
 }
 
 step() {
   echo
   echo "==> $1"
 }
+
+if [[ -n "${BYPASS_TOKEN:-}" ]]; then
+  step "Set Vercel bypass cookie"
+  # Set the Vercel protection bypass cookie for this domain
+  curl -sS -i -c "$COOKIE_JAR" \
+    "$(with_bypass_param "$BASE_URL/?x-vercel-set-bypass-cookie=true")" >/dev/null || true
+fi
 
 step "Request SMS code"
 post_json "$BASE_URL/api/sms/send" "{\"phoneE164\":\"$PHONE\",\"address\":\"$ADDR\"}"
