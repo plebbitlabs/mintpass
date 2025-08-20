@@ -54,7 +54,9 @@ PHONE_ESC=${PHONE//+/%2B}
 post_json() {
   local url="$1"; shift
   local body="$1"; shift
-  curl -sS -i -X POST "$url" \
+  curl --fail --silent --show-error \
+    --connect-timeout 10 --max-time 30 \
+    -X POST "$url" \
     -H 'content-type: application/json' \
     -d "$body"
 }
@@ -62,10 +64,17 @@ post_json() {
 kv_get_code() {
   # Returns the code or empty
   local resp
-  resp=$(curl -sS -H "Authorization: Bearer $KV_REST_API_TOKEN" \
+  resp=$(curl --fail-with-body --silent --show-error \
+    --connect-timeout 10 --max-time 30 \
+    -H "Authorization: Bearer $KV_REST_API_TOKEN" \
     "$KV_REST_API_URL/get/sms:code:$PHONE_ESC")
-  # Expecting JSON like: {"result":"123456"} or {"result":null}
-  echo "$resp" | grep -oE '"result":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
+  # Expecting JSON like: {"result":"123456"} or {"result":123456} or {"result":null}
+  if command -v jq >/dev/null 2>&1; then
+    echo "$resp" | jq -r '.result // empty' | grep -oE '^[0-9]{6}$' || true
+  else
+    # Fallback: match quoted or unquoted result then extract 6 digits
+    echo "$resp" | grep -oE '"result":("[^"]+"|[0-9]+)' | grep -oE '[0-9]{6}' || true
+  fi
 }
 
 step() {
