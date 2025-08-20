@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "smoke:prod": "bash scripts/smoke-test.sh prod",
+    "smoke:preview": "bash scripts/smoke-test.sh preview"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.6",

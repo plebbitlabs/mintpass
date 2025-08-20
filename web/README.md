@@ -74,6 +74,39 @@ yarn dev
 
 To test API calls locally, use `curl` or your preferred REST client.
 
+### Smoke test (prod/preview)
+Create local env files (not committed) with the correct Upstash REST URL/Token and target base URL:
+
+- `.env.smoke.prod` (for Production)
+```
+KV_REST_API_URL=
+KV_REST_API_TOKEN=
+BASE_URL=https://mintpass.org
+PHONE=+15555550123
+ADDR=0x1111111111111111111111111111111111111111
+```
+
+- `.env.smoke.preview` (for Preview)
+```
+KV_REST_API_URL=
+KV_REST_API_TOKEN=
+PREVIEW_BASE_URL=https://<your-preview>.vercel.app
+PHONE=+15555550123
+ADDR=0x1111111111111111111111111111111111111111
+```
+
+Run the script:
+```bash
+yarn smoke:prod
+# or
+yarn smoke:preview
+```
+
+Notes:
+- The script loads ENVFILE (if provided), then `.env.smoke.{prod|preview}`, then `.env.local`, then `.env`.
+- No SMS provider needed yet; the OTP is read from KV via REST for testing.
+- Cooldowns and rate limits apply; you may need to wait 120s for repeated runs.
+
 ### Environment Variables
 Copy `.env.example` to `.env.local` and fill in values. Do not commit `.env.local`.
 
