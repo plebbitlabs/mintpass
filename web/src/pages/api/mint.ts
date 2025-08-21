@@ -47,7 +47,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const wallet = new Wallet(env.MINTER_PRIVATE_KEY, provider);
       const contract = new Contract(env.MINTPASSV1_ADDRESS_BASE_SEPOLIA, MintPassV1Abi, wallet) as unknown as {
         estimateGas: { mint: (to: string, tokenType: number) => Promise<bigint> };
-        mint: (to: string, tokenType: number, overrides?: { gasLimit?: bigint }) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number }> }>;
+        mint: (
+          to: string,
+          tokenType: number,
+          overrides?: { gasLimit?: bigint }
+        ) => Promise<{
+          hash: string;
+          wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>;
+        }>;
       };
 
       // Estimate gas and add a safety margin
@@ -61,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('[mint] Receipt status not successful', { hash: tx.hash, address, tokenType, status });
         return res.status(500).json({ error: 'On-chain mint failed (status)' });
       }
-      txHash = receipt?.hash ?? tx.hash;
+      txHash = receipt?.transactionHash ?? receipt?.hash ?? tx.hash;
     } catch (err) {
       console.error('[mint] On-chain mint error', {
         address,
