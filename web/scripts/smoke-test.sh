@@ -72,14 +72,29 @@ post_json() {
   if [[ -n "${BYPASS_TOKEN:-}" ]]; then
     local u
     u=$(with_bypass_param "$url")
-    curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$u" \
-      -H "x-vercel-protection-bypass: $BYPASS_TOKEN" \
-      -H 'content-type: application/json' \
-      -d "$body"
+    if [[ -n "${SMOKE_TEST_TOKEN:-}" ]]; then
+      curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$u" \
+        -H "x-vercel-protection-bypass: $BYPASS_TOKEN" \
+        -H "x-smoke-test-token: $SMOKE_TEST_TOKEN" \
+        -H 'content-type: application/json' \
+        -d "$body"
+    else
+      curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$u" \
+        -H "x-vercel-protection-bypass: $BYPASS_TOKEN" \
+        -H 'content-type: application/json' \
+        -d "$body"
+    fi
   else
-    curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$url" \
-      -H 'content-type: application/json' \
-      -d "$body"
+    if [[ -n "${SMOKE_TEST_TOKEN:-}" ]]; then
+      curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$url" \
+        -H "x-smoke-test-token: $SMOKE_TEST_TOKEN" \
+        -H 'content-type: application/json' \
+        -d "$body"
+    else
+      curl -sS -i -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$url" \
+        -H 'content-type: application/json' \
+        -d "$body"
+    fi
   fi
 }
 

@@ -18,6 +18,9 @@ const envSchema = z.object({
   // On-chain Mint (Base Sepolia)
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
   BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
+
+  // Preview-only smoke test helper
+  SMOKE_TEST_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -39,6 +42,7 @@ export const env = {
   TWILIO_MESSAGING_SERVICE_SID: process.env.TWILIO_MESSAGING_SERVICE_SID,
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
+  SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
 };
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {
