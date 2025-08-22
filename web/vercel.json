@@ -1,9 +1,0 @@
-{
-  "functions": {
-    "api/**": {
-      "regions": ["iad1"]
-    }
-  }
-}
-
-
