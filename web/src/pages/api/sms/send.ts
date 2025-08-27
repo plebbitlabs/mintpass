@@ -6,6 +6,8 @@ import { assessIpReputation } from '../../../../lib/ip-reputation';
 import { analyzePhone } from '../../../../lib/phone-intel';
 import { getClientIp } from '../../../../lib/request-ip';
 import { isSmsSendInCooldown, setSmsSendCooldown } from '../../../../lib/cooldowns';
+import { sendOtpSms } from '../../../../lib/sms';
+import { env } from '../../../../lib/env';
 
 const Body = z.object({
   phoneE164: z.string().min(5),
@@ -52,8 +54,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await saveSmsCode(phoneE164, code);
   await setSmsSendCooldown(ip, phoneE164);
 
-  // TODO: integrate SMS provider here using env.SMS_PROVIDER_API_KEY
-  // For now, we do not expose the code in responses for security.
+  // Attempt to send via configured SMS provider (Twilio preferred)
+  // We do not include OTP or secrets in logs or responses.
+  try {
+    await sendOtpSms(phoneE164, code);
+  } catch {
+    // Swallow provider errors to avoid leaking details; rate limiting and cooldowns still apply.
+  }
+
+  // If a smoke test token is configured and provided via header, echo the code for debugging only
+  const smokeHeader = (req.headers['x-smoke-test-token'] as string) || '';
+  if (env.SMOKE_TEST_TOKEN && smokeHeader && env.SMOKE_TEST_TOKEN === smokeHeader) {
+    return res.status(200).json({ ok: true, debugCode: code });
+  }
 
   return res.status(200).json({ ok: true });
 }

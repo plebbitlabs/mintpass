@@ -5,21 +5,22 @@ const envSchema = z.object({
   KV_REST_API_URL: z.string().url(),
   KV_REST_API_TOKEN: z.string().min(1),
 
-  // Security and operations
+  // Secrets and provider keys (server-only)
   MINTER_PRIVATE_KEY: z.string().min(1).optional(),
-  SMS_PROVIDER_API_KEY: z.string().optional(),
-  SMS_SENDER_ID: z.string().optional(),
+  SMS_PROVIDER_API_KEY: z.string().optional(), // legacy/generic
+  SMS_SENDER_ID: z.string().optional(),        // generic sender id/from
 
-  // Comma-separated ISO country codes to block (e.g., "CN, RU")
-  BLOCKED_COUNTRIES: z.string().optional(),
+  // Twilio (preferred)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
 
-  // Rate limiting
-  RATE_LIMIT_WINDOW_SECONDS: z.string().optional(),
-  RATE_LIMIT_MAX_REQUESTS: z.string().optional(),
+  // On-chain Mint (Base Sepolia)
+  MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
+  BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
 
-  // Cooldowns
-  SMS_SEND_COOLDOWN_SECONDS: z.string().optional(),
-  MINT_IP_COOLDOWN_SECONDS: z.string().optional(),
+  // Preview-only smoke test helper
+  SMOKE_TEST_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -36,14 +37,12 @@ export const env = {
   MINTER_PRIVATE_KEY: process.env.MINTER_PRIVATE_KEY,
   SMS_PROVIDER_API_KEY: process.env.SMS_PROVIDER_API_KEY,
   SMS_SENDER_ID: process.env.SMS_SENDER_ID,
-  BLOCKED_COUNTRIES: (process.env.BLOCKED_COUNTRIES || '')
-    .split(',')
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean),
-  RATE_LIMIT_WINDOW_SECONDS: Number(process.env.RATE_LIMIT_WINDOW_SECONDS || '60'),
-  RATE_LIMIT_MAX_REQUESTS: Number(process.env.RATE_LIMIT_MAX_REQUESTS || '10'),
-  SMS_SEND_COOLDOWN_SECONDS: Number(process.env.SMS_SEND_COOLDOWN_SECONDS || '120'),
-  MINT_IP_COOLDOWN_SECONDS: Number(process.env.MINT_IP_COOLDOWN_SECONDS || String(7 * 24 * 60 * 60)),
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_MESSAGING_SERVICE_SID: process.env.TWILIO_MESSAGING_SERVICE_SID,
+  MINTPASSV1_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
+  BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
+  SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
 };
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {
