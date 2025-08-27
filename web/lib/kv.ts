@@ -35,8 +35,9 @@ export async function markPhoneVerified(phoneE164: string) {
 }
 
 export async function isPhoneVerified(phoneE164: string) {
-  const v = await kv.get<string>(verifiedKey(phoneE164));
-  return v === '1';
+  const v = await kv.get<string | number>(verifiedKey(phoneE164));
+  // Normalize potential numeric deserialization from KV
+  return String(v) === '1';
 }
 
 export async function markMinted(address: string, phoneE164: string) {
