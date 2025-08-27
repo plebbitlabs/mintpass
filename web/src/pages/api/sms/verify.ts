@@ -18,11 +18,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const stored = await readSmsCode(phoneE164);
   if (!stored) return res.status(400).json({ error: 'Code expired or not found' });
 
+  // Normalize both sides to string to tolerate provider/SDK returning numbers
+  const storedStr = typeof stored === 'string' ? stored : String(stored);
+  const codeStr = String(code);
+
   const smokeHeader = (req.headers['x-smoke-test-token'] as string) || '';
   const isSmoke = Boolean(env.SMOKE_TEST_TOKEN && smokeHeader && env.SMOKE_TEST_TOKEN === smokeHeader);
-  if (stored !== code) {
+  if (storedStr !== codeStr) {
     if (isSmoke) {
-      return res.status(400).json({ error: 'Invalid code', debug: { posted: code, stored } });
+      return res.status(400).json({ error: 'Invalid code', debug: { posted: codeStr, stored: storedStr } });
     }
     return res.status(400).json({ error: 'Invalid code' });
   }
