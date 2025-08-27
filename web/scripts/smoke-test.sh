@@ -107,6 +107,21 @@ kv_get_code() {
   echo "$resp" | grep -oE '"result":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
 }
 
+debug_get_code() {
+  # Returns the code from the Preview function (requires SMOKE_TEST_TOKEN) or empty
+  if [[ -z "${SMOKE_TEST_TOKEN:-}" ]]; then
+    return 0
+  fi
+  local url
+  url=$(with_bypass_param "$BASE_URL/api/debug/code")
+  local resp
+  resp=$(curl -sS -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$url" \
+    -H "x-smoke-test-token: $SMOKE_TEST_TOKEN" \
+    -H 'content-type: application/json' \
+    -d "{\"phoneE164\":\"$PHONE\"}")
+  echo "$resp" | grep -oE '"code":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
+}
+
 step() {
   echo
   echo "==> $1"
@@ -122,13 +137,25 @@ fi
 step "Request SMS code"
 post_json "$BASE_URL/api/sms/send" "{\"phoneE164\":\"$PHONE\",\"address\":\"$ADDR\"}"
 
-step "Fetch code from Upstash"
+step "Fetch code"
 CODE=""
-for i in {1..8}; do
-  CODE=$(kv_get_code)
-  if [[ -n "$CODE" ]]; then break; fi
-  sleep 2
-done
+# Try preview debug endpoint first when SMOKE_TEST_TOKEN is set
+if [[ -n "${SMOKE_TEST_TOKEN:-}" ]]; then
+  for i in {1..4}; do
+    CODE=$(debug_get_code)
+    if [[ -n "$CODE" ]]; then break; fi
+    sleep 1
+  done
+fi
+
+# Fallback to Upstash REST if needed
+if [[ -z "$CODE" ]]; then
+  for i in {1..8}; do
+    CODE=$(kv_get_code)
+    if [[ -n "$CODE" ]]; then break; fi
+    sleep 2
+  done
+fi
 if [[ -z "$CODE" ]]; then
   echo "ERROR: No code found in KV for $PHONE."
   exit 1
