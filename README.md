@@ -35,10 +35,13 @@ mintpass/
 - [x] Local blockchain testing with full integration
 
 ### Milestone 3 🔄 Web Backend & Interface
-- [ ] Next.js backend at `mintpass.org` (Pages Router, TypeScript)
-- [ ] SMS verification flow (send, verify)
-- [ ] NFT minting API after verification
-- [ ] Anti-sybil controls (rate limits, cooldowns, optional VPN/VOIP checks)
+- [x] Next.js backend at `mintpass.org` (Pages Router, TypeScript)
+- [x] SMS verification flow (send, verify)
+- [x] NFT minting API after verification
+- [x] Anti-sybil controls (rate limits, cooldowns, optional VPN/VOIP checks)
+- [x] Vercel Preview/Production setup with environment variables and Upstash KV (Redis)
+- [x] End-to-end smoke tests (Preview/Prod), hardened with HMAC-pepper, curl failure/timeout handling, and robust OTP parsing
+- [ ] Twilio SMS provider integration (setup and verification)
 - [ ] Public-facing UI at `/request/<eth-address>` (to be built)
 
 Anti-sybil summary (backend):
