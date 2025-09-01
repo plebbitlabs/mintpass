@@ -13,6 +13,7 @@ Serverless backend scaffolding for SMS verification and NFT minting.
  - **VPN/Proxy detection (optional)**: If `IPQS_API_KEY` is set, block VPNs/proxies/cloud provider IPs.
  - **Disposable/VOIP phone detection (optional)**: If `ABSTRACTAPI_PHONE_KEY` is set, block disposable/VOIP/high-risk numbers.
  - **Cooldowns**: Per-IP mint cooldown and per-IP/phone SMS send cooldowns configurable via env.
+ - **Keyed hashing (pepper)**: If `HASH_PEPPER` is set, phone numbers and IPs are stored as HMAC-SHA256 digests (domain-separated) in KV keys to reduce offline brute-force risk if a DB-only leak occurs.
 
 ### Vercel Setup (exact steps)
 1. Create a new Vercel project and select this repo. Set root directory to `web`.
@@ -127,6 +128,7 @@ Copy `.env.example` to `.env.local` and fill in values. Do not commit `.env.loca
 
 Required for runtime:
 - `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- `HASH_PEPPER` (optional; HMAC key for hashing identifiers used in KV keys)
 
 Optional for SMS provider (Twilio preferred):
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`
@@ -139,6 +141,7 @@ Optional for on-chain mint (Base Sepolia):
 
 Optional for smoke testing (Preview only):
 - `SMOKE_TEST_TOKEN` (debug-only echo of OTP when `x-smoke-test-token` header is present)
+- `HASH_PEPPER` (optional; if set, `scripts/smoke-test.sh` derives the hashed OTP KV key via OpenSSL when available)
 
 ### Next Steps
 - Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).

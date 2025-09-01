@@ -21,6 +21,8 @@ const envSchema = z.object({
 
   // Preview-only smoke test helper
   SMOKE_TEST_TOKEN: z.string().optional(),
+  // Keyed hashing pepper for identifiers (HMAC key)
+  HASH_PEPPER: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -43,6 +45,7 @@ export const env = {
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
   SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
+  HASH_PEPPER: process.env.HASH_PEPPER,
 };
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {

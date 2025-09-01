@@ -100,9 +100,21 @@ post_json() {
 
 kv_get_code() {
   # Returns the code or empty
+  local key
+  if [[ -n "${HASH_PEPPER:-}" ]] && command -v openssl >/dev/null 2>&1; then
+    # Compute HMAC-SHA256("phone:" + PHONE) in hex (domain-separated)
+    local msg
+    msg="phone:${PHONE}"
+    local hex
+    # Compatible parsing across OpenSSL variants
+    hex=$(printf "%s" "$msg" | openssl dgst -sha256 -hmac "$HASH_PEPPER" 2>/dev/null | sed 's/^.*= //')
+    key="sms:code:${hex}"
+  else
+    key="sms:code:${PHONE_ESC}"
+  fi
   local resp
   resp=$(curl -sS -H "Authorization: Bearer $KV_REST_API_TOKEN" \
-    "$KV_REST_API_URL/get/sms:code:$PHONE_ESC")
+    "$KV_REST_API_URL/get/$key")
   # Expecting JSON like: {"result":"123456"} or {"result":null}
   echo "$resp" | grep -oE '"result":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
 }

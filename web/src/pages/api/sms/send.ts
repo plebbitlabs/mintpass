@@ -8,6 +8,7 @@ import { getClientIp } from '../../../../lib/request-ip';
 import { isSmsSendInCooldown, setSmsSendCooldown } from '../../../../lib/cooldowns';
 import { sendOtpSms } from '../../../../lib/sms';
 import { env } from '../../../../lib/env';
+import { hashIdentifier } from '../../../../lib/hash';
 
 const Body = z.object({
   phoneE164: z.string().min(5),
@@ -23,7 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Rate limit by IP
   const ip = getClientIp(req);
-  const { success, limit, reset, remaining } = await globalIpRatelimit.limit(ip);
+  const hashedIp = hashIdentifier('ip', ip);
+  const { success, limit, reset, remaining } = await globalIpRatelimit.limit(hashedIp);
   res.setHeader('X-RateLimit-Limit', String(limit));
   res.setHeader('X-RateLimit-Remaining', String(remaining));
   res.setHeader('X-RateLimit-Reset', String(reset));

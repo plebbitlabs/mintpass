@@ -1,16 +1,20 @@
 import { kv } from '@vercel/kv';
 import { policy } from './policy';
+import { hashIdentifier } from './hash';
 
 function smsPhoneCooldownKey(phoneE164: string) {
-  return `cd:sms:phone:${phoneE164}`;
+  const h = hashIdentifier('phone', phoneE164);
+  return `cd:sms:phone:${h}`;
 }
 
 function smsIpCooldownKey(ip: string) {
-  return `cd:sms:ip:${ip}`;
+  const h = hashIdentifier('ip', ip);
+  return `cd:sms:ip:${h}`;
 }
 
 function mintIpCooldownKey(ip: string) {
-  return `cd:mint:ip:${ip}`;
+  const h = hashIdentifier('ip', ip);
+  return `cd:mint:ip:${h}`;
 }
 
 export async function isSmsSendInCooldown(ip: string, phoneE164: string) {
@@ -18,7 +22,11 @@ export async function isSmsSendInCooldown(ip: string, phoneE164: string) {
     kv.get(smsPhoneCooldownKey(phoneE164)),
     kv.get(smsIpCooldownKey(ip)),
   ]);
-  return Boolean(p || i);
+  if (p || i) return true;
+  // Legacy plaintext keys fallback
+  const legacyP = await kv.get(`cd:sms:phone:${phoneE164}`);
+  const legacyI = await kv.get(`cd:sms:ip:${ip}`);
+  return Boolean(legacyP || legacyI);
 }
 
 export async function setSmsSendCooldown(ip: string, phoneE164: string) {
@@ -33,7 +41,9 @@ export async function setSmsSendCooldown(ip: string, phoneE164: string) {
 
 export async function isMintIpInCooldown(ip: string) {
   const v = await kv.get(mintIpCooldownKey(ip));
-  return Boolean(v);
+  if (v) return true;
+  const legacy = await kv.get(`cd:mint:ip:${ip}`);
+  return Boolean(legacy);
 }
 
 export async function setMintIpCooldown(ip: string) {
