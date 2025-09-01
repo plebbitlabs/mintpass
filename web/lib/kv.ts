@@ -1,21 +1,27 @@
 import { kv } from '@vercel/kv';
+import { hashIdentifier } from './hash';
 
 const CODE_TTL_SECONDS = 5 * 60; // 5 minutes
 
 function codeKey(phoneE164: string) {
-  return `sms:code:${phoneE164}`;
+  const h = hashIdentifier('phone', phoneE164);
+  return `sms:code:${h}`;
 }
 
 function verifiedKey(phoneE164: string) {
-  return `sms:verified:${phoneE164}`;
+  const h = hashIdentifier('phone', phoneE164);
+  return `sms:verified:${h}`;
 }
 
 function mintedKey(address: string) {
-  return `mint:address:${address.toLowerCase()}`;
+  const lower = address.toLowerCase();
+  const h = hashIdentifier('addr', lower);
+  return `mint:address:${h}`;
 }
 
 function phoneMintedKey(phoneE164: string) {
-  return `mint:phone:${phoneE164}`;
+  const h = hashIdentifier('phone', phoneE164);
+  return `mint:phone:${h}`;
 }
 
 export async function saveSmsCode(phoneE164: string, code: string) {
@@ -23,11 +29,17 @@ export async function saveSmsCode(phoneE164: string, code: string) {
 }
 
 export async function readSmsCode(phoneE164: string) {
-  return kv.get<string>(codeKey(phoneE164));
+  // Try hashed key; if missing, fall back to legacy plaintext key for backwards compatibility
+  const primary = await kv.get<string>(codeKey(phoneE164));
+  if (primary !== null && primary !== undefined) return primary;
+  const legacyKey = `sms:code:${phoneE164}`;
+  return kv.get<string>(legacyKey);
 }
 
 export async function clearSmsCode(phoneE164: string) {
   await kv.del(codeKey(phoneE164));
+  // Also remove legacy key if present
+  await kv.del(`sms:code:${phoneE164}`);
 }
 
 export async function markPhoneVerified(phoneE164: string) {
@@ -35,23 +47,34 @@ export async function markPhoneVerified(phoneE164: string) {
 }
 
 export async function isPhoneVerified(phoneE164: string) {
-  const v = await kv.get<string>(verifiedKey(phoneE164));
-  return v === '1';
+  let v = await kv.get<string | number>(verifiedKey(phoneE164));
+  if (v === null || v === undefined) {
+    v = await kv.get<string | number>(`sms:verified:${phoneE164}`);
+  }
+  // Normalize potential numeric deserialization from KV
+  return String(v) === '1';
 }
 
 export async function markMinted(address: string, phoneE164: string) {
   // Persist indefinitely to prevent reuse; can add TTL policy later if needed
   await kv.set(mintedKey(address), phoneE164);
   await kv.set(phoneMintedKey(phoneE164), address.toLowerCase());
+  // Optionally, we could migrate legacy keys here, but we avoid writing plaintext keys.
 }
 
 export async function hasMinted(address: string) {
-  const v = await kv.get<string>(mintedKey(address));
+  let v = await kv.get<string>(mintedKey(address));
+  if (!(typeof v === 'string' && v.length > 0)) {
+    v = await kv.get<string>(`mint:address:${address.toLowerCase()}`);
+  }
   return typeof v === 'string' && v.length > 0;
 }
 
 export async function hasPhoneMinted(phoneE164: string) {
-  const v = await kv.get<string>(phoneMintedKey(phoneE164));
+  let v = await kv.get<string>(phoneMintedKey(phoneE164));
+  if (!(typeof v === 'string' && v.length > 0)) {
+    v = await kv.get<string>(`mint:phone:${phoneE164}`);
+  }
   return typeof v === 'string' && v.length > 0;
 }
 

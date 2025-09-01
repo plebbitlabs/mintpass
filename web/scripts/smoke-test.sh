@@ -100,9 +100,29 @@ post_json() {
 
 kv_get_code() {
   # Returns the code or empty
+  local key
+  if [[ -n "${HASH_PEPPER:-}" ]]; then
+    # Compute HMAC-SHA256("phone:" + PHONE) in hex (domain-separated)
+    local hex
+    if command -v openssl >/dev/null 2>&1; then
+      local msg
+      msg="phone:${PHONE}"
+      # Compatible parsing across OpenSSL variants
+      hex=$(printf "%s" "$msg" | openssl dgst -sha256 -hmac "$HASH_PEPPER" 2>/dev/null | sed 's/^.*= //')
+    elif command -v node >/dev/null 2>&1; then
+      hex=$(HASH_PEPPER="$HASH_PEPPER" PHONE="$PHONE" node -e "const c=require('crypto');const p=process.env.HASH_PEPPER;const ph=process.env.PHONE||'';const h=c.createHmac('sha256',p).update('phone:'+ph).digest('hex');console.log(h)" 2>/dev/null)
+    else
+      echo "ERROR: HASH_PEPPER is set but neither openssl nor node is available to compute the HMAC." 1>&2
+      echo "Install openssl or node, or unset HASH_PEPPER for plaintext fallback (not recommended for preview/prod)." 1>&2
+      exit 1
+    fi
+    key="sms:code:${hex}"
+  else
+    key="sms:code:${PHONE_ESC}"
+  fi
   local resp
   resp=$(curl -sS -H "Authorization: Bearer $KV_REST_API_TOKEN" \
-    "$KV_REST_API_URL/get/sms:code:$PHONE_ESC")
+    "$KV_REST_API_URL/get/$key")
   # Expecting JSON like: {"result":"123456"} or {"result":null}
   echo "$resp" | grep -oE '"result":"[0-9]{6}"' | grep -oE '[0-9]{6}' || true
 }

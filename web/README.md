@@ -13,6 +13,7 @@ Serverless backend scaffolding for SMS verification and NFT minting.
  - **VPN/Proxy detection (optional)**: If `IPQS_API_KEY` is set, block VPNs/proxies/cloud provider IPs.
  - **Disposable/VOIP phone detection (optional)**: If `ABSTRACTAPI_PHONE_KEY` is set, block disposable/VOIP/high-risk numbers.
  - **Cooldowns**: Per-IP mint cooldown and per-IP/phone SMS send cooldowns configurable via env.
+ - **Keyed hashing (pepper)**: If `HASH_PEPPER` is set, phone numbers and IPs are stored as HMAC-SHA256 digests (domain-separated) in KV keys to reduce offline brute-force risk if a DB-only leak occurs.
 
 ### Vercel Setup (exact steps)
 1. Create a new Vercel project and select this repo. Set root directory to `web`.
@@ -94,6 +95,7 @@ PREVIEW_BASE_URL=https://<your-preview>.vercel.app
 PHONE=+15555550123
 ADDR=0x1111111111111111111111111111111111111111
 BYPASS_TOKEN=...
+SMOKE_TEST_TOKEN=...
 ```
 
 Run the script:
@@ -109,11 +111,24 @@ Notes:
 - Cooldowns and rate limits apply; you may need to wait 120s for repeated runs.
  - If your Preview custom domain is protected via Vercel Auth and proxied by Cloudflare, prefer the vercel.app URL for smoke tests.
 
+### Contributor quickstart: Preview smoke test
+- Create/connect a Preview Upstash KV to this project and ensure the Preview env has `KV_REST_API_URL` and `KV_REST_API_TOKEN` (use the plain names; avoid double prefixes). Optionally set `SMOKE_TEST_TOKEN` to enable a debug echo of the OTP.
+- If Deployment Protection is enabled, create a Protection Bypass token and use it as `BYPASS_TOKEN` in the `.env.smoke.preview` file. The script will set the bypass cookie and header automatically.
+- Trigger a new Preview deployment and copy its per-deployment vercel.app URL from Vercel → Deployments. Use that URL as `PREVIEW_BASE_URL`.
+- Create `web/.env.smoke.preview` with:
+  - `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+  - `PREVIEW_BASE_URL`, `PHONE`, `ADDR`
+  - `BYPASS_TOKEN` (only if protection is enabled)
+  - `SMOKE_TEST_TOKEN` (optional; returns `debugCode` during send)
+- Run `yarn install` then `yarn smoke:preview`.
+- Expected: send → verify → eligibility=true → mint ok (stubbed unless on-chain envs are set).
+
 ### Environment Variables
 Copy `.env.example` to `.env.local` and fill in values. Do not commit `.env.local`.
 
 Required for runtime:
 - `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- `HASH_PEPPER` (optional; HMAC key for hashing identifiers used in KV keys)
 
 Optional for SMS provider (Twilio preferred):
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`
@@ -123,6 +138,10 @@ Optional for on-chain mint (Base Sepolia):
 - `MINTER_PRIVATE_KEY`
 - `MINTPASSV1_ADDRESS_BASE_SEPOLIA`
 - `BASE_SEPOLIA_RPC_URL`
+
+Optional for smoke testing (Preview only):
+- `SMOKE_TEST_TOKEN` (debug-only echo of OTP when `x-smoke-test-token` header is present)
+- `HASH_PEPPER` (optional; if set, `scripts/smoke-test.sh` derives the hashed OTP KV key via OpenSSL when available)
 
 ### Next Steps
 - Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).

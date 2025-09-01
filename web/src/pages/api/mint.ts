@@ -6,6 +6,7 @@ import { isMintIpInCooldown, setMintIpCooldown } from '../../../lib/cooldowns';
 import { env } from '../../../lib/env';
 import { MintPassV1Abi } from '../../../lib/abi';
 import { Wallet, JsonRpcProvider, Contract } from 'ethers';
+import { hashIdentifier } from '../../../lib/hash';
 
 const Body = z.object({
   address: z.string().min(1),

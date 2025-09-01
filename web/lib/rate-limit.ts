@@ -2,6 +2,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { requireEnv } from './env';
 import { policy } from './policy';
+import { hashIdentifier } from './hash';
 
 // Single Redis instance for the app using Vercel KV credentials
 const redis = new Redis({
@@ -24,6 +25,11 @@ export function createRatelimit(prefix: string, maxRequests: number, windowSecon
     analytics: true,
     prefix,
   });
+}
+
+// Helper to normalize IP key before rate limiting if callers forget to hash.
+export function ratelimitKeyForIp(rawIp: string): string {
+  return hashIdentifier('ip', rawIp);
 }
 
 
