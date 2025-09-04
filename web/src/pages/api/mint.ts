@@ -7,6 +7,7 @@ import { env } from '../../../lib/env';
 import { MintPassV1Abi } from '../../../lib/abi';
 import { Wallet, JsonRpcProvider, Contract } from 'ethers';
 import { hashIdentifier } from '../../../lib/hash';
+import { globalIpRatelimit } from '../../../lib/rate-limit';
 
 const Body = z.object({
   address: z.string().min(1),
@@ -21,6 +22,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
   const { address, phoneE164, tokenType = 0 } = parse.data;
   const ip = getClientIp(req);
+
+  // Global IP rate limiting
+  const hashedIp = hashIdentifier('ip', ip);
+  const { success, limit, reset, remaining } = await globalIpRatelimit.limit(hashedIp);
+  res.setHeader('X-RateLimit-Limit', String(limit));
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(reset));
+  if (!success) return res.status(429).json({ error: 'Too many requests' });
 
   const [mintedAddr, mintedPhone, verified] = await Promise.all([
     hasMinted(address),
