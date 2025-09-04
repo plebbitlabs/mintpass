@@ -2124,7 +2124,12 @@ describe("MintPass Challenge Integration Test", function () {
     const walletA = await getEthWalletFromPlebbitPrivateKey(authorA.privateKey, authorA.address, authorA.publicKey);
 
     // Mint NFT bound to authorA address
-    await mintpass.connect(minter).mintWithData(walletA.address, SMS_TOKEN_TYPE, authorA.address, 'US');
+    await mintpass.connect(minter).mintWithData(
+      walletA.address,
+      SMS_TOKEN_TYPE,
+      authorA.address,
+      ethers.hexlify(ethers.toUtf8Bytes('US'))
+    );
     const hasForAuthorA = await mintpass.ownsTokenTypeForAuthor(walletA.address, SMS_TOKEN_TYPE, authorA.address);
     expect(hasForAuthorA).to.be.true;
 

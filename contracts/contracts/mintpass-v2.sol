@@ -67,19 +67,12 @@ contract MintPassV2 is ERC721, ERC721Enumerable, AccessControl {
         _grantRole(MINTER_ROLE, minter);
     }
 
-    /**
-     * @dev Mints a single NFT with immutable author-bound metadata
-     * @param to Recipient address
-     * @param tokenTypeValue Token type (e.g., 0 for SMS verification)
-     * @param authorAddress Author identifier string (arbitrary, e.g., IPNS key or ENS)
-     * @param country Two-letter ISO-3166-1 alpha-2 uppercase code
-     */
-    function mintWithData(
+    function _mintWithDataInternal(
         address to,
         uint16 tokenTypeValue,
-        string calldata authorAddress,
+        string memory authorAddress,
         bytes2 country
-    ) external onlyRole(MINTER_ROLE) {
+    ) internal {
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter++;
 
@@ -96,10 +89,26 @@ contract MintPassV2 is ERC721, ERC721Enumerable, AccessControl {
     }
 
     /**
+     * @dev Mints a single NFT with immutable author-bound metadata
+     * @param to Recipient address
+     * @param tokenTypeValue Token type (e.g., 0 for SMS verification)
+     * @param authorAddress Author identifier string (arbitrary, e.g., IPNS key or ENS)
+     * @param country Two-letter ISO-3166-1 alpha-2 uppercase code
+     */
+    function mintWithData(
+        address to,
+        uint16 tokenTypeValue,
+        string calldata authorAddress,
+        bytes2 country
+    ) external onlyRole(MINTER_ROLE) {
+        _mintWithDataInternal(to, tokenTypeValue, authorAddress, country);
+    }
+
+    /**
      * @dev Backwards-compatible mint without author data (for legacy callers/tests)
      */
     function mint(address to, uint16 tokenTypeValue) external onlyRole(MINTER_ROLE) {
-        mintWithData(to, tokenTypeValue, "", bytes2(0));
+        _mintWithDataInternal(to, tokenTypeValue, "", bytes2(0));
     }
 
     /**
