@@ -17,6 +17,7 @@ const envSchema = z.object({
 
   // On-chain Mint (Base Sepolia)
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
+  MINTPASSV2_ADDRESS_BASE_SEPOLIA: z.string().optional(),
   BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
 
   // Preview-only smoke test helper
@@ -43,6 +44,7 @@ export const env = {
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
   TWILIO_MESSAGING_SERVICE_SID: process.env.TWILIO_MESSAGING_SERVICE_SID,
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV1_ADDRESS_BASE_SEPOLIA,
+  MINTPASSV2_ADDRESS_BASE_SEPOLIA: process.env.MINTPASSV2_ADDRESS_BASE_SEPOLIA,
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
   SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
   HASH_PEPPER: process.env.HASH_PEPPER,

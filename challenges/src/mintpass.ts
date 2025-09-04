@@ -55,6 +55,13 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
         required: true
     },
     {
+        option: "requireAuthorMatch",
+        label: "Require Author Address Match",
+        default: "false",
+        description: "When true, the NFT must be bound to the same Plebbit author address (strict anti-sybil)",
+        placeholder: "false"
+    },
+    {
         option: "transferCooldownSeconds",
         label: "Transfer Cooldown (seconds)",
         default: "604800", // 1 week
@@ -90,6 +97,17 @@ const MINTPASS_ABI = [
     {
         "inputs": [{"internalType": "address", "name": "owner", "type": "address"}, {"internalType": "uint16", "name": "tokenType", "type": "uint16"}],
         "name": "ownsTokenType",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "owner", "type": "address"},
+            {"internalType": "uint16", "name": "tokenTypeValue", "type": "uint16"},
+            {"internalType": "string", "name": "authorAddress", "type": "string"}
+        ],
+        "name": "ownsTokenTypeForAuthor",
         "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
         "stateMutability": "view",
         "type": "function"
@@ -261,7 +279,8 @@ const verifyAuthorMintPass = async (props: {
         authorAddress: props.publication.author.address,
         error: props.error,
         plebbit: props.plebbit,
-        rpcUrl: props.rpcUrl
+        rpcUrl: props.rpcUrl,
+        requireAuthorMatch: (<any>props).requireAuthorMatch === true
     });
 
     return mintPassValidationFailure;
@@ -280,6 +299,7 @@ const validateMintPassOwnership = async (props: {
     error: string;
     plebbit: Plebbit;
     rpcUrl?: string;
+    requireAuthorMatch?: boolean;
 }): Promise<string | undefined> => {
 
 
@@ -291,16 +311,26 @@ const validateMintPassOwnership = async (props: {
             _getChainProviderWithSafety(props.plebbit, props.chainTicker, props.rpcUrl).urls[0]
         );
 
-        // Check if user owns the required token type
-        let ownsTokenType: boolean = false;
+        // Check if user owns the required token type (optionally bound to author)
+        let owns: boolean = false;
         try {
-            const result = await viemClient.readContract({
-            address: <"0x${string}">props.contractAddress,
-            abi: MINTPASS_ABI,
-            functionName: "ownsTokenType",
-            args: [props.authorWalletAddress, props.requiredTokenType]
-        });
-            ownsTokenType = Boolean(result);
+            if (props.requireAuthorMatch) {
+                const result = await viemClient.readContract({
+                    address: <"0x${string}">props.contractAddress,
+                    abi: MINTPASS_ABI,
+                    functionName: "ownsTokenTypeForAuthor",
+                    args: [props.authorWalletAddress, props.requiredTokenType, props.authorAddress]
+                });
+                owns = Boolean(result);
+            } else {
+                const result = await viemClient.readContract({
+                    address: <"0x${string}">props.contractAddress,
+                    abi: MINTPASS_ABI,
+                    functionName: "ownsTokenType",
+                    args: [props.authorWalletAddress, props.requiredTokenType]
+                });
+                owns = Boolean(result);
+            }
         } catch (networkError: any) {
             // Handle network connectivity issues gracefully (common in test environments)
             if (networkError?.message?.includes?.('fetch failed') || 
@@ -312,7 +342,7 @@ const validateMintPassOwnership = async (props: {
             throw networkError;
         }
 
-        if (!ownsTokenType) {
+        if (!owns) {
             // Replace {authorAddress} placeholder in error message
             const errorMessage = props.error.replace("{authorAddress}", props.authorAddress);
             return errorMessage;
@@ -445,6 +475,8 @@ const getChallenge = async (
         error,
         rpcUrl
     } = subplebbitChallengeSettings?.options || {};
+    const requireAuthorMatchRaw = (<any>subplebbitChallengeSettings?.options)?.requireAuthorMatch ?? "false";
+    const requireAuthorMatch = String(requireAuthorMatchRaw).toLowerCase() === 'true' || String(requireAuthorMatchRaw) === '1';
 
     if (!contractAddress) {
         throw Error("Missing option contractAddress");
@@ -471,7 +503,8 @@ const getChallenge = async (
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
         error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
-        rpcUrl
+        rpcUrl,
+        requireAuthorMatch
     };
 
     // Try wallet verification first

@@ -8,6 +8,7 @@ import { hashIdentifier } from '../../../lib/hash';
 const Body = z.object({
   address: z.string().min(1),
   phoneE164: z.string().min(5),
+  authorAddress: z.string().min(1).optional(),
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -37,8 +37,8 @@ async function deployContract() {
   console.log("Constructor args:", { name, symbol, baseURI, admin, minter });
 
   // For local networks, use standard deployment for simplicity
-  const MintPassV1Factory = await ethers.getContractFactory("MintPassV1");
-  const contract = await MintPassV1Factory.deploy(name, symbol, baseURI, admin, minter);
+  const MintPassV2Factory = await ethers.getContractFactory("MintPassV2");
+  const contract = await MintPassV2Factory.deploy(name, symbol, baseURI, admin, minter);
   await contract.waitForDeployment();
   
   const contractAddress = await contract.getAddress();
@@ -57,14 +57,14 @@ async function testContract(contractAddress: string) {
   console.log("");
 
   // Get contract instance
-  const MintPassV1 = await ethers.getContractAt("MintPassV1", contractAddress);
+  const MintPassV2 = await ethers.getContractAt("MintPassV2", contractAddress);
 
   // Test 1: Basic Contract Info
   console.log("📋 Test 1: Basic Contract Information");
   console.log("-----------------------------------");
-  const name = await MintPassV1.name();
-  const symbol = await MintPassV1.symbol();
-  const totalSupply = await MintPassV1.totalSupply();
+  const name = await MintPassV2.name();
+  const symbol = await MintPassV2.symbol();
+  const totalSupply = await MintPassV2.totalSupply();
   
   console.log("✅ Name:", name);
   console.log("✅ Symbol:", symbol);
@@ -74,10 +74,10 @@ async function testContract(contractAddress: string) {
   // Test 2: Role Verification
   console.log("🔐 Test 2: Role Verification");
   console.log("----------------------------");
-  const ADMIN_ROLE = await MintPassV1.ADMIN_ROLE();
-  const MINTER_ROLE = await MintPassV1.MINTER_ROLE();
-  const isAdmin = await MintPassV1.hasRole(ADMIN_ROLE, deployer.address);
-  const isMinter = await MintPassV1.hasRole(MINTER_ROLE, deployer.address);
+  const ADMIN_ROLE = await MintPassV2.ADMIN_ROLE();
+  const MINTER_ROLE = await MintPassV2.MINTER_ROLE();
+  const isAdmin = await MintPassV2.hasRole(ADMIN_ROLE, deployer.address);
+  const isMinter = await MintPassV2.hasRole(MINTER_ROLE, deployer.address);
   
   console.log("✅ Is Admin:", isAdmin);
   console.log("✅ Is Minter:", isMinter);
@@ -88,25 +88,25 @@ async function testContract(contractAddress: string) {
   console.log("------------------------");
   
   console.log("Minting SMS token (type 0)...");
-  const mintTx1 = await MintPassV1.mint(deployer.address, SMS_TOKEN_TYPE);
+  const mintTx1 = await MintPassV2.mintWithData(deployer.address, SMS_TOKEN_TYPE, "author://local/test", 'US');
   await mintTx1.wait();
   console.log("✅ SMS token minted, tx:", mintTx1.hash);
 
   console.log("Minting EMAIL token (type 1)...");
-  const mintTx2 = await MintPassV1.mint(deployer.address, EMAIL_TOKEN_TYPE);
+  const mintTx2 = await MintPassV2.mintWithData(deployer.address, EMAIL_TOKEN_TYPE, "author://local/test", 'US');
   await mintTx2.wait();
   console.log("✅ EMAIL token minted, tx:", mintTx2.hash);
 
-  const newTotalSupply = await MintPassV1.totalSupply();
+  const newTotalSupply = await MintPassV2.totalSupply();
   console.log("✅ New Total Supply:", newTotalSupply.toString());
   console.log("");
 
   // Test 4: Token Queries
   console.log("🔍 Test 4: Token Queries");
   console.log("------------------------");
-  const owner0 = await MintPassV1.ownerOf(0);
-  const tokenType0 = await MintPassV1.tokenType(0);
-  const tokenURI0 = await MintPassV1.tokenURI(0);
+  const owner0 = await MintPassV2.ownerOf(0);
+  const tokenType0 = await MintPassV2.tokenType(0);
+  const tokenURI0 = await MintPassV2.tokenURI(0);
   
   console.log("✅ Token 0 owner:", owner0);
   console.log("✅ Token 0 type:", tokenType0.toString(), "(SMS)");
@@ -116,10 +116,10 @@ async function testContract(contractAddress: string) {
   // Test 5: Ownership Functions
   console.log("👤 Test 5: Ownership Functions");
   console.log("------------------------------");
-  const balance = await MintPassV1.balanceOf(deployer.address);
-  const tokensOfOwner = await MintPassV1.tokensOfOwner(deployer.address);
-  const ownsSMS = await MintPassV1.ownsTokenType(deployer.address, SMS_TOKEN_TYPE);
-  const ownsEmail = await MintPassV1.ownsTokenType(deployer.address, EMAIL_TOKEN_TYPE);
+  const balance = await MintPassV2.balanceOf(deployer.address);
+  const tokensOfOwner = await MintPassV2.tokensOfOwner(deployer.address);
+  const ownsSMS = await MintPassV2.ownsTokenType(deployer.address, SMS_TOKEN_TYPE);
+  const ownsEmail = await MintPassV2.ownsTokenType(deployer.address, EMAIL_TOKEN_TYPE);
   
   console.log("✅ Balance:", balance.toString());
   console.log("✅ Owns SMS type:", ownsSMS);
@@ -134,7 +134,12 @@ async function testContract(contractAddress: string) {
   const tokenTypes = [SMS_TOKEN_TYPE, EMAIL_TOKEN_TYPE];
   
   console.log("Batch minting 2 more tokens...");
-  const batchTx = await MintPassV1.mintBatch(recipients, tokenTypes);
+  // V2 does not include public batch mint; mint individually
+  const txA = await MintPassV2.mintWithData(recipients[0], tokenTypes[0], "author://local/test", 'US');
+  await txA.wait();
+  const txB = await MintPassV2.mintWithData(recipients[1], tokenTypes[1], "author://local/test", 'US');
+  await txB.wait();
+  const batchTx = { hash: txB.hash } as any;
   await batchTx.wait();
   console.log("✅ Batch mint completed, tx:", batchTx.hash);
   

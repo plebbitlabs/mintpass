@@ -66,6 +66,7 @@ Serverless backend scaffolding for SMS verification and NFT minting.
 - `POST /api/sms/verify` → verify code and mark phone as verified
 - `POST /api/check-eligibility` → confirm address + phone can mint
 - `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state
+ - `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state. Requires `authorAddress` string; country is derived from `x-vercel-ip-country` header.
 
 ### Local Development
 ```bash

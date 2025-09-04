@@ -9,6 +9,7 @@ This directory contains the MintPass challenge implementation for plebbit-js tha
 - **Chain Flexibility**: Supports different chains where MintPass contracts are deployed
 - **ENS Support**: Works with ENS addresses and wallet addresses
 - **Type-specific Requirements**: Can require specific token types (SMS=0, Email=1, etc.)
+ - **Author-bound Check (optional)**: Enforce that the NFT was minted for the same Plebbit author address
 
 ## Installation
 
@@ -65,6 +66,7 @@ your-project/
 | `contractAddress` | string | Required | MintPass contract address |
 | `requiredTokenType` | string | `"0"` | Required token type (0=SMS, 1=Email, etc.) |
 | `transferCooldownSeconds` | string | `"604800"` | Cooldown period after NFT transfer (1 week) |
+| `requireAuthorMatch` | string | `"false"` | When `true`, NFT must be bound to the same Plebbit author address |
 | `error` | string | Default message | Custom error message for users without NFT |
 
 ### Token Types

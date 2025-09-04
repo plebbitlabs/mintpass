@@ -89,9 +89,9 @@ describe("MintPass Challenge Integration Test", function () {
     
     [admin, minter] = await ethers.getSigners();
     
-    console.log("📋 Deploying MintPass contract...");
-    const MintPassV1Factory = await ethers.getContractFactory("MintPassV1");
-    mintpass = await MintPassV1Factory.deploy(NAME, SYMBOL, BASE_URI, admin.address, minter.address);
+    console.log("📋 Deploying MintPassV2 contract...");
+    const MintPassV2Factory = await ethers.getContractFactory("MintPassV2");
+    mintpass = await MintPassV2Factory.deploy(NAME, SYMBOL, BASE_URI, admin.address, minter.address);
     await mintpass.waitForDeployment();
     console.log(`✅ MintPass deployed at: ${await mintpass.getAddress()}`);
 
@@ -2109,6 +2109,85 @@ describe("MintPass Challenge Integration Test", function () {
       await subplebbit.stop();
       await subplebbit.delete();
       console.log("🧹 Subplebbit cleaned up");
+    }
+  });
+
+  it("Test 23: requireAuthorMatch=true blocks different author", async function () {
+    this.timeout(120000);
+    console.log("\n🧪 Test 23: Author-bound check (requireAuthorMatch)");
+
+    // Two different Plebbit authors
+    const authorA = await plebbitForPublishing.createSigner();
+    const authorB = await plebbitForPublishing.createSigner();
+
+    // Wallet derived from authorA private key
+    const walletA = await getEthWalletFromPlebbitPrivateKey(authorA.privateKey, authorA.address, authorA.publicKey);
+
+    // Mint NFT bound to authorA address
+    await mintpass.connect(minter).mintWithData(walletA.address, SMS_TOKEN_TYPE, authorA.address, 'US');
+    const hasForAuthorA = await mintpass.ownsTokenTypeForAuthor(walletA.address, SMS_TOKEN_TYPE, authorA.address);
+    expect(hasForAuthorA).to.be.true;
+
+    // Build a wallet object for authorB using the same ETH address (signed by walletA's key)
+    const privateKeyBytesA = Uint8Array.from(atob(authorA.privateKey), c => c.charCodeAt(0));
+    const privateKeyHexA = '0x' + Array.from(privateKeyBytesA).map(b => b.toString(16).padStart(2, '0')).join('');
+    const eoaA = new ethers.Wallet(privateKeyHexA);
+    const messageToSignB = JSON.stringify({
+      domainSeparator: "plebbit-author-wallet",
+      authorAddress: authorB.address,
+      timestamp: Math.floor(Date.now() / 1000)
+    });
+    const sigB = await eoaA.signMessage(messageToSignB);
+    const walletForB = {
+      address: walletA.address,
+      timestamp: Math.floor(Date.now() / 1000),
+      signature: {
+        signature: sigB,
+        publicKey: authorB.publicKey,
+        type: "eip191",
+        signedPropertyNames: ["domainSeparator", "authorAddress", "timestamp"]
+      }
+    };
+
+    // Create subplebbit and enforce author match
+    const sub = await plebbit.createSubplebbit({
+      title: 'MintPass Author Match',
+      description: 'Author-bound verification'
+    });
+    const settings = { ...sub.settings };
+    const c = createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337);
+    c.options.requireAuthorMatch = 'true';
+    settings.challenges = [c];
+    await sub.edit({ settings });
+    await sub.start();
+    await waitForCondition(sub, (s) => typeof s.updatedAt === "number");
+
+    try {
+      // Attempt publish as authorB using walletA (should fail)
+      const comment = await plebbitForPublishing.createComment({
+        signer: authorB,
+        subplebbitAddress: sub.address,
+        title: 'Different author uses bound NFT',
+        content: 'Should fail due to author mismatch',
+        author: { wallets: { base: walletForB } }
+      });
+
+      let received = false;
+      let successValue = null;
+      comment.on('challengeverification', (cv) => {
+        received = true;
+        successValue = cv.challengeSuccess;
+      });
+      comment.on('challenge', (ch) => {
+        comment.publishChallengeAnswers(['test']);
+      });
+      await comment.publish();
+      await waitForCondition({}, () => received, 30000);
+      expect(successValue).to.be.false;
+      console.log("✅ Test 23 PASSED: Author mismatch blocked as expected");
+    } finally {
+      await sub.stop();
+      await sub.delete();
     }
   });
 }); 
