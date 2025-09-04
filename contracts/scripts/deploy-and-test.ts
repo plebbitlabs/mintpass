@@ -139,11 +139,9 @@ async function testContract(contractAddress: string) {
   await txA.wait();
   const txB = await MintPassV2.mintWithData(recipients[1], tokenTypes[1], "author://local/test", 'US');
   await txB.wait();
-  const batchTx = { hash: txB.hash } as any;
-  await batchTx.wait();
-  console.log("✅ Batch mint completed, tx:", batchTx.hash);
+  console.log("✅ Batch mint completed, tx:", txB.hash);
   
-  const finalTotalSupply = await MintPassV1.totalSupply();
+  const finalTotalSupply = await MintPassV2.totalSupply();
   console.log("✅ Final Total Supply:", finalTotalSupply.toString());
   console.log("");
 

@@ -17,7 +17,12 @@ const envSchema = z.object({
 
   // On-chain Mint (Base Sepolia)
   MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
-  MINTPASSV2_ADDRESS_BASE_SEPOLIA: z.string().optional(),
+  MINTPASSV2_ADDRESS_BASE_SEPOLIA: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^0x[a-fA-F0-9]{40}$/.test(v), {
+      message: 'MINTPASSV2_ADDRESS_BASE_SEPOLIA must be a valid 0x-prefixed Ethereum address',
+    }),
   BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
 
   // Preview-only smoke test helper
