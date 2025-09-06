@@ -57,9 +57,9 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "requireAuthorMatch",
         label: "Require Author Address Match",
-        default: "false",
-        description: "When true, the NFT must be bound to the same Plebbit author address (strict anti-sybil)",
-        placeholder: "false"
+        default: "true",
+        description: "Strongly recommended: enforces NFT is bound to the same Plebbit author address. Disabling weakens anti-sybil and allows wallet swapping.",
+        placeholder: "true"
     },
     {
         option: "transferCooldownSeconds",
@@ -475,7 +475,7 @@ const getChallenge = async (
         error,
         rpcUrl
     } = subplebbitChallengeSettings?.options || {};
-    const requireAuthorMatchRaw = (<any>subplebbitChallengeSettings?.options)?.requireAuthorMatch ?? "false";
+    const requireAuthorMatchRaw = (<any>subplebbitChallengeSettings?.options)?.requireAuthorMatch ?? "true";
     const requireAuthorMatch = String(requireAuthorMatchRaw).toLowerCase() === 'true' || String(requireAuthorMatchRaw) === '1';
 
     if (!contractAddress) {

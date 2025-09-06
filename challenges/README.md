@@ -66,7 +66,7 @@ your-project/
 | `contractAddress` | string | Required | MintPass contract address |
 | `requiredTokenType` | string | `"0"` | Required token type (0=SMS, 1=Email, etc.) |
 | `transferCooldownSeconds` | string | `"604800"` | Cooldown period after NFT transfer (1 week) |
-| `requireAuthorMatch` | string | `"false"` | When `true`, NFT must be bound to the same Plebbit author address |
+| `requireAuthorMatch` | string | `"true"` | Strongly recommended. Enforces NFT is bound to the same Plebbit author address. Disabling allows wallet swapping and weakens anti-sybil. |
 | `error` | string | Default message | Custom error message for users without NFT |
 
 ### Token Types
