@@ -54,6 +54,13 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
         placeholder: "0",
         required: true
     },
+    {
+        option: "bindToFirstAuthor",
+        label: "Bind NFT to First Author (per sub)",
+        default: "true",
+        description: "When enabled, the first author that uses a token in this sub gets bound to that tokenId; subsequent different authors are rejected.",
+        placeholder: "true"
+    },
     
     {
         option: "transferCooldownSeconds",
@@ -195,6 +202,7 @@ const verifyAuthorMintPass = async (props: {
     error: string;
     plebbit: Plebbit;
     rpcUrl?: string;
+    bindToFirstAuthor: boolean;
 }): Promise<string | undefined> => {
     
     const authorWallet = props.publication.author.wallets?.[props.chainTicker];
@@ -263,7 +271,9 @@ const verifyAuthorMintPass = async (props: {
         authorAddress: props.publication.author.address,
         error: props.error,
         plebbit: props.plebbit,
-        rpcUrl: props.rpcUrl
+        rpcUrl: props.rpcUrl,
+        bindToFirstAuthor: props.bindToFirstAuthor,
+        subplebbitAddress: (<any>props.publication)?.subplebbitAddress
     });
 
     return mintPassValidationFailure;
@@ -282,6 +292,8 @@ const validateMintPassOwnership = async (props: {
     error: string;
     plebbit: Plebbit;
     rpcUrl?: string;
+    bindToFirstAuthor: boolean;
+    subplebbitAddress?: string;
 }): Promise<string | undefined> => {
 
 
@@ -341,9 +353,13 @@ const validateMintPassOwnership = async (props: {
             return errorMessage;
         }
 
-        // Check transfer cooldown for each token
+        // Check transfer cooldown and optional author binding for each token
         const transferCooldownCache = await props.plebbit._createStorageLRU({
             cacheName: "challenge_mintpass_transfer_cooldown",
+            maxItems: Number.MAX_SAFE_INTEGER
+        });
+        const bindingCache = await props.plebbit._createStorageLRU({
+            cacheName: "challenge_mintpass_token_binding",
             maxItems: Number.MAX_SAFE_INTEGER
         });
 
@@ -353,6 +369,10 @@ const validateMintPassOwnership = async (props: {
         for (const token of requiredTokens) {
             const tokenCacheKey = `${props.contractAddress}_${token.tokenId.toString()}`;
             const lastUsageRecord = <{authorAddress: string; timestamp: number} | undefined>await transferCooldownCache.getItem(tokenCacheKey);
+            // Per-sub binding key (bind to first author that uses this tokenId in this sub)
+            const subKeyPrefix = props.subplebbitAddress ? `${props.subplebbitAddress}_` : '';
+            const bindingKey = `${subKeyPrefix}${tokenCacheKey}_binding`;
+            const boundAuthor = <string | undefined>await bindingCache.getItem(bindingKey);
             
             // If token was never used, or was used by the same author, it's valid
             if (!lastUsageRecord || lastUsageRecord.authorAddress === props.authorAddress) {
@@ -363,6 +383,14 @@ const validateMintPassOwnership = async (props: {
                     authorAddress: props.authorAddress,
                     timestamp: now
                 });
+                // Bind to first author if enabled
+                if (props.bindToFirstAuthor && !boundAuthor) {
+                    await bindingCache.setItem(bindingKey, props.authorAddress);
+                }
+                // If binding exists and mismatches, reject
+                if (props.bindToFirstAuthor && boundAuthor && boundAuthor !== props.authorAddress) {
+                    return `This MintPass NFT is already bound to another author in this community.`;
+                }
                 break;
             }
             
@@ -376,6 +404,13 @@ const validateMintPassOwnership = async (props: {
                     authorAddress: props.authorAddress,
                     timestamp: now
                 });
+                // Bind to first author if enabled
+                if (props.bindToFirstAuthor && !boundAuthor) {
+                    await bindingCache.setItem(bindingKey, props.authorAddress);
+                }
+                if (props.bindToFirstAuthor && boundAuthor && boundAuthor !== props.authorAddress) {
+                    return `This MintPass NFT is already bound to another author in this community.`;
+                }
                 break;
             }
         }
@@ -423,7 +458,9 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
         authorAddress: props.publication.author.address,
         error: props.error,
         plebbit: props.plebbit,
-        rpcUrl: props.rpcUrl
+        rpcUrl: props.rpcUrl,
+        bindToFirstAuthor: props.bindToFirstAuthor,
+        subplebbitAddress: (<any>props.publication)?.subplebbitAddress
     });
 
     return mintPassValidationFailure;
@@ -445,7 +482,8 @@ const getChallenge = async (
         requiredTokenType = "0",
         transferCooldownSeconds = "604800", // 1 week default
         error,
-        rpcUrl
+        rpcUrl,
+        bindToFirstAuthor = "true"
     } = subplebbitChallengeSettings?.options || {};
     
 
@@ -474,7 +512,8 @@ const getChallenge = async (
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
         error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
-        rpcUrl
+        rpcUrl,
+        bindToFirstAuthor: String(bindToFirstAuthor).toLowerCase() === 'true' || String(bindToFirstAuthor) === '1'
     };
 
     // Try wallet verification first
