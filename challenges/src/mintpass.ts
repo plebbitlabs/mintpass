@@ -54,13 +54,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
         placeholder: "0",
         required: true
     },
-    {
-        option: "requireAuthorMatch",
-        label: "Require Author Address Match",
-        default: "true",
-        description: "Strongly recommended: enforces NFT is bound to the same Plebbit author address. Disabling weakens anti-sybil and allows wallet swapping.",
-        placeholder: "true"
-    },
+    
     {
         option: "transferCooldownSeconds",
         label: "Transfer Cooldown (seconds)",
@@ -101,17 +95,7 @@ const MINTPASS_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    {
-        "inputs": [
-            {"internalType": "address", "name": "owner", "type": "address"},
-            {"internalType": "uint16", "name": "tokenTypeValue", "type": "uint16"},
-            {"internalType": "string", "name": "authorAddress", "type": "string"}
-        ],
-        "name": "ownsTokenTypeForAuthor",
-        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-        "stateMutability": "view",
-        "type": "function"
-    }
+    
 ];
 
 /**
@@ -279,8 +263,7 @@ const verifyAuthorMintPass = async (props: {
         authorAddress: props.publication.author.address,
         error: props.error,
         plebbit: props.plebbit,
-        rpcUrl: props.rpcUrl,
-        requireAuthorMatch: (<any>props).requireAuthorMatch === true
+        rpcUrl: props.rpcUrl
     });
 
     return mintPassValidationFailure;
@@ -299,7 +282,6 @@ const validateMintPassOwnership = async (props: {
     error: string;
     plebbit: Plebbit;
     rpcUrl?: string;
-    requireAuthorMatch?: boolean;
 }): Promise<string | undefined> => {
 
 
@@ -314,23 +296,13 @@ const validateMintPassOwnership = async (props: {
         // Check if user owns the required token type (optionally bound to author)
         let owns: boolean = false;
         try {
-            if (props.requireAuthorMatch) {
-                const result = await viemClient.readContract({
-                    address: <"0x${string}">props.contractAddress,
-                    abi: MINTPASS_ABI,
-                    functionName: "ownsTokenTypeForAuthor",
-                    args: [props.authorWalletAddress, props.requiredTokenType, props.authorAddress]
-                });
-                owns = Boolean(result);
-            } else {
-                const result = await viemClient.readContract({
-                    address: <"0x${string}">props.contractAddress,
-                    abi: MINTPASS_ABI,
-                    functionName: "ownsTokenType",
-                    args: [props.authorWalletAddress, props.requiredTokenType]
-                });
-                owns = Boolean(result);
-            }
+            const result = await viemClient.readContract({
+                address: <"0x${string}">props.contractAddress,
+                abi: MINTPASS_ABI,
+                functionName: "ownsTokenType",
+                args: [props.authorWalletAddress, props.requiredTokenType]
+            });
+            owns = Boolean(result);
         } catch (networkError: any) {
             // Handle network connectivity issues gracefully (common in test environments)
             if (networkError?.message?.includes?.('fetch failed') || 
@@ -475,8 +447,7 @@ const getChallenge = async (
         error,
         rpcUrl
     } = subplebbitChallengeSettings?.options || {};
-    const requireAuthorMatchRaw = (<any>subplebbitChallengeSettings?.options)?.requireAuthorMatch ?? "true";
-    const requireAuthorMatch = String(requireAuthorMatchRaw).toLowerCase() === 'true' || String(requireAuthorMatchRaw) === '1';
+    
 
     if (!contractAddress) {
         throw Error("Missing option contractAddress");
@@ -503,8 +474,7 @@ const getChallenge = async (
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
         error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
-        rpcUrl,
-        requireAuthorMatch
+        rpcUrl
     };
 
     // Try wallet verification first
