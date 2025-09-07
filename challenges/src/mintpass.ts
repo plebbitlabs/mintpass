@@ -332,12 +332,7 @@ const validateMintPassOwnership = async (props: {
             return errorMessage;
         }
 
-        // If cooldown is disabled (0), skip cooldown check
-        if (props.transferCooldownSeconds === 0) {
-            return undefined; // Success
-        }
-
-        // Get all tokens owned by the user to check transfer cooldown
+        // Get all tokens owned by the user to perform binding and optional cooldown checks
         const tokensInfo = await viemClient.readContract({
             address: <"0x${string}">props.contractAddress,
             abi: MINTPASS_ABI,

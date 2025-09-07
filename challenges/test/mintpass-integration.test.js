@@ -2107,5 +2107,96 @@ describe("MintPass Challenge Integration Test", function () {
     }
   });
 
+  it("Test 23: bindToFirstAuthor blocks different author", async function () {
+    this.timeout(120000);
+    console.log("\n🧪 Test 23: bindToFirstAuthor blocks different author");
+
+    // Two different Plebbit authors
+    const authorA = await plebbitForPublishing.createSigner();
+    const authorB = await plebbitForPublishing.createSigner();
+
+    // Wallet derived from authorA private key
+    const walletA = await getEthWalletFromPlebbitPrivateKey(authorA.privateKey, authorA.address, authorA.publicKey);
+
+    // Mint NFT to walletA
+    await mintpass.connect(minter).mint(walletA.address, SMS_TOKEN_TYPE);
+
+    // Build a wallet object for authorB using the same ETH address (signed by walletA's key)
+    const privateKeyBytesA = Uint8Array.from(atob(authorA.privateKey), c => c.charCodeAt(0));
+    const privateKeyHexA = '0x' + Array.from(privateKeyBytesA).map(b => b.toString(16).padStart(2, '0')).join('');
+    const eoaA = new ethers.Wallet(privateKeyHexA);
+    const messageToSignB = JSON.stringify({
+      domainSeparator: "plebbit-author-wallet",
+      authorAddress: authorB.address,
+      timestamp: Math.floor(Date.now() / 1000)
+    });
+    const sigB = await eoaA.signMessage(messageToSignB);
+    const walletForB = {
+      address: walletA.address,
+      timestamp: Math.floor(Date.now() / 1000),
+      signature: {
+        signature: sigB,
+        publicKey: authorB.publicKey,
+        type: "eip191",
+        signedPropertyNames: ["domainSeparator", "authorAddress", "timestamp"]
+      }
+    };
+
+    // Create subplebbit and enforce binding (cooldown off to isolate binding behavior)
+    const sub = await plebbit.createSubplebbit({
+      title: 'MintPass Binding',
+      description: 'Bind tokenId to first author'
+    });
+    const settings = { ...sub.settings };
+    const c = createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337);
+    c.options.bindToFirstAuthor = 'true';
+    c.options.transferCooldownSeconds = '0';
+    settings.challenges = [c];
+    await sub.edit({ settings });
+    await sub.start();
+    await waitForCondition(sub, (s) => typeof s.updatedAt === "number");
+
+    try {
+      // First publish as authorA → should succeed and bind token to authorA in this sub
+      const comment1 = await plebbitForPublishing.createComment({
+        signer: authorA,
+        subplebbitAddress: sub.address,
+        title: 'Bind first author',
+        content: 'Should pass and bind',
+        author: { wallets: { base: walletA } }
+      });
+
+      let received1 = false;
+      let success1 = null;
+      comment1.on('challengeverification', (cv) => { received1 = true; success1 = cv.challengeSuccess; });
+      comment1.on('challenge', () => comment1.publishChallengeAnswers(['test']));
+      await comment1.publish();
+      await waitForCondition({}, () => received1, 30000);
+      expect(success1).to.be.true;
+
+      // Second publish as authorB using same wallet → should fail due to binding
+      const comment2 = await plebbitForPublishing.createComment({
+        signer: authorB,
+        subplebbitAddress: sub.address,
+        title: 'Second author reuse',
+        content: 'Should fail due to binding',
+        author: { wallets: { base: walletForB } }
+      });
+
+      let received2 = false;
+      let success2 = null;
+      let errors2 = null;
+      comment2.on('challengeverification', (cv) => { received2 = true; success2 = cv.challengeSuccess; errors2 = cv.challengeErrors; });
+      comment2.on('challenge', () => comment2.publishChallengeAnswers(['test']));
+      await comment2.publish();
+      await waitForCondition({}, () => received2, 30000);
+      expect(success2).to.be.false;
+      expect(String(errors2['0'] || '')).to.include('already bound to another author');
+      console.log("✅ Test 23 PASSED: bindToFirstAuthor blocked different author as expected");
+    } finally {
+      await sub.stop();
+      await sub.delete();
+    }
+  });
   
 }); 
