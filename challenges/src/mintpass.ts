@@ -11,6 +11,10 @@ import type {
 import type { Plebbit } from "@plebbit/plebbit-js/dist/node/plebbit/plebbit.js";
 import { normalize } from "viem/ens";
 import { isAddress } from "viem";
+import envPaths from "env-paths";
+import Keyv from "keyv";
+import KeyvSqlite from "@keyv/sqlite";
+import fs from "fs";
 
 // Simple utility function replacements
 function isStringDomain(address: string): boolean {
@@ -104,6 +108,43 @@ const MINTPASS_ABI = [
     },
     
 ];
+
+// Persistent storage (Keyv + SQLite) for bindings, cooldowns, and timestamps
+const paths = envPaths("mintpass");
+const dataDir = paths.data;
+
+let storesInitialized: Promise<void> | null = null;
+let walletTimestampsStore: Keyv<number> | null = null;
+let transferCooldownStore: Keyv<{ authorAddress: string; timestamp: number }> | null = null;
+let bindingsStore: Keyv<string> | null = null;
+
+async function initializeStores() {
+    if (!storesInitialized) {
+        storesInitialized = (async () => {
+            await fs.promises.mkdir(dataDir, { recursive: true });
+            const dbFile = dataDir + "/challenge-bindings.sqlite";
+            const sqliteUri = "sqlite://" + dbFile;
+            const store = new KeyvSqlite(sqliteUri);
+
+            walletTimestampsStore = new Keyv<number>({ store, namespace: "wallet-ts" });
+            transferCooldownStore = new Keyv<{ authorAddress: string; timestamp: number }>({ store, namespace: "cooldown" });
+            bindingsStore = new Keyv<string>({ store, namespace: "bindings" });
+
+            // Avoid crashing on storage errors; they will surface as validation failures
+            walletTimestampsStore.on("error", () => {});
+            transferCooldownStore.on("error", () => {});
+            bindingsStore.on("error", () => {});
+        })();
+    }
+    return storesInitialized;
+}
+
+function getStores() {
+    if (!walletTimestampsStore || !transferCooldownStore || !bindingsStore) {
+        throw new Error("Storage not initialized");
+    }
+    return { walletTimestampsStore, transferCooldownStore, bindingsStore };
+}
 
 /**
  * Get chain provider with safety checks and fallbacks
@@ -246,19 +287,16 @@ const verifyAuthorMintPass = async (props: {
         return "The signature of the wallet is invalid";
     }
 
-    // Cache timestamp to prevent replay attacks
-    const cache = await props.plebbit._createStorageLRU({
-        cacheName: "challenge_mintpass_wallet_last_timestamp",
-        maxItems: Number.MAX_SAFE_INTEGER
-    });
-    
+    // Cache timestamp to prevent replay attacks (persistent)
+    await initializeStores();
+    const { walletTimestampsStore } = getStores();
     const cacheKey = props.chainTicker + authorWallet.address;
-    const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
+    const lastTimestampOfAuthor = <number | undefined>await walletTimestampsStore.get(cacheKey);
     if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > authorWallet.timestamp) {
         return "The author is trying to use an old wallet signature";
     }
     if ((lastTimestampOfAuthor || 0) < authorWallet.timestamp) {
-        await cache.setItem(cacheKey, authorWallet.timestamp);
+        await walletTimestampsStore.set(cacheKey, authorWallet.timestamp);
     }
 
     // Check MintPass NFT ownership
@@ -348,39 +386,33 @@ const validateMintPassOwnership = async (props: {
             return errorMessage;
         }
 
-        // Check transfer cooldown and optional author binding for each token
-        const transferCooldownCache = await props.plebbit._createStorageLRU({
-            cacheName: "challenge_mintpass_transfer_cooldown",
-            maxItems: Number.MAX_SAFE_INTEGER
-        });
-        const bindingCache = await props.plebbit._createStorageLRU({
-            cacheName: "challenge_mintpass_token_binding",
-            maxItems: Number.MAX_SAFE_INTEGER
-        });
+        // Check transfer cooldown and optional author binding for each token (persistent)
+        await initializeStores();
+        const { transferCooldownStore, bindingsStore } = getStores();
 
         const now = Math.floor(Date.now() / 1000);
         let hasValidToken = false;
 
         for (const token of requiredTokens) {
             const tokenCacheKey = `${props.contractAddress}_${token.tokenId.toString()}`;
-            const lastUsageRecord = <{authorAddress: string; timestamp: number} | undefined>await transferCooldownCache.getItem(tokenCacheKey);
+            const lastUsageRecord = <{authorAddress: string; timestamp: number} | undefined>await transferCooldownStore.get(tokenCacheKey);
             // Per-sub binding key (bind to first author that uses this tokenId in this sub)
             const subKeyPrefix = props.subplebbitAddress ? `${props.subplebbitAddress}_` : '';
             const bindingKey = `${subKeyPrefix}${tokenCacheKey}_binding`;
-            const boundAuthor = <string | undefined>await bindingCache.getItem(bindingKey);
+            const boundAuthor = <string | undefined>await bindingsStore.get(bindingKey);
             
             // If token was never used, or was used by the same author, it's valid
             if (!lastUsageRecord || lastUsageRecord.authorAddress === props.authorAddress) {
                 hasValidToken = true;
                 
                 // Update the cache with current usage
-                await transferCooldownCache.setItem(tokenCacheKey, {
+                await transferCooldownStore.set(tokenCacheKey, {
                     authorAddress: props.authorAddress,
                     timestamp: now
                 });
                 // Bind to first author if enabled
                 if (props.bindToFirstAuthor && !boundAuthor) {
-                    await bindingCache.setItem(bindingKey, props.authorAddress);
+                    await bindingsStore.set(bindingKey, props.authorAddress);
                 }
                 // If binding exists and mismatches, reject
                 if (props.bindToFirstAuthor && boundAuthor && boundAuthor !== props.authorAddress) {
@@ -395,13 +427,13 @@ const validateMintPassOwnership = async (props: {
                 hasValidToken = true;
                 
                 // Update the cache with current usage
-                await transferCooldownCache.setItem(tokenCacheKey, {
+                await transferCooldownStore.set(tokenCacheKey, {
                     authorAddress: props.authorAddress,
                     timestamp: now
                 });
                 // Bind to first author if enabled
                 if (props.bindToFirstAuthor && !boundAuthor) {
-                    await bindingCache.setItem(bindingKey, props.authorAddress);
+                    await bindingsStore.set(bindingKey, props.authorAddress);
                 }
                 if (props.bindToFirstAuthor && boundAuthor && boundAuthor !== props.authorAddress) {
                     return `This MintPass NFT is already bound to another author in this community.`;
