@@ -15,6 +15,7 @@ import envPaths from "env-paths";
 import Keyv from "keyv";
 import KeyvSqlite from "@keyv/sqlite";
 import fs from "fs";
+import path from "path";
 
 // Simple utility function replacements
 function isStringDomain(address: string): boolean {
@@ -121,19 +122,24 @@ let bindingsStore: Keyv<string> | null = null;
 async function initializeStores() {
     if (!storesInitialized) {
         storesInitialized = (async () => {
-            await fs.promises.mkdir(dataDir, { recursive: true });
-            const dbFile = dataDir + "/challenge-bindings.sqlite";
-            const sqliteUri = "sqlite://" + dbFile;
-            const store = new KeyvSqlite(sqliteUri);
+            try {
+                await fs.promises.mkdir(dataDir, { recursive: true });
+                const dbFile = path.join(dataDir, "challenge-bindings.sqlite");
+                const sqliteUri = "sqlite://" + dbFile.replace(/\\/g, "/");
+                const store = new KeyvSqlite(sqliteUri);
 
-            walletTimestampsStore = new Keyv<number>({ store, namespace: "wallet-ts" });
-            transferCooldownStore = new Keyv<{ authorAddress: string; timestamp: number }>({ store, namespace: "cooldown" });
-            bindingsStore = new Keyv<string>({ store, namespace: "bindings" });
+                walletTimestampsStore = new Keyv<number>({ store, namespace: "wallet-ts" });
+                transferCooldownStore = new Keyv<{ authorAddress: string; timestamp: number }>({ store, namespace: "cooldown" });
+                bindingsStore = new Keyv<string>({ store, namespace: "bindings" });
 
-            // Avoid crashing on storage errors; they will surface as validation failures
-            walletTimestampsStore.on("error", () => {});
-            transferCooldownStore.on("error", () => {});
-            bindingsStore.on("error", () => {});
+                // Avoid crashing on storage errors; they will surface as validation failures
+                walletTimestampsStore.on("error", () => {});
+                transferCooldownStore.on("error", () => {});
+                bindingsStore.on("error", () => {});
+            } catch (e) {
+                console.error("MintPass challenge: failed to initialize persistent stores", e);
+                throw e;
+            }
         })();
     }
     return storesInitialized;
