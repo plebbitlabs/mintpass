@@ -3,25 +3,16 @@ import { useCallback } from 'react';
 import { ModeToggle } from './mode-toggle';
 
 type HeaderProps = {
-  /** Whether to show navigation protection warning during verification */
-  showNavigationWarning?: boolean;
   /** Additional content to show in the navigation area (like links) */
   children?: React.ReactNode;
 };
 
-export function Header({ showNavigationWarning = false, children }: HeaderProps) {
+export function Header({ children }: HeaderProps) {
   const router = useRouter();
 
   const handleTitleClick = useCallback(() => {
-    if (showNavigationWarning) {
-      const confirmed = window.confirm('You have an SMS verification in progress. Are you sure you want to leave?');
-      if (confirmed) {
-        router.push('/');
-      }
-    } else {
-      router.push('/');
-    }
-  }, [router, showNavigationWarning]);
+    router.push('/');
+  }, [router]);
 
   return (
     <header className="border-b">

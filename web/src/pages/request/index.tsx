@@ -128,7 +128,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header showNavigationWarning={isVerificationInProgress} />
+      <Header />
       <main className="flex-1">
         <div className="mx-auto max-w-md px-4 py-8">
           <Card>
