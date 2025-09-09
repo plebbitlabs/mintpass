@@ -25,6 +25,7 @@ fi
 
 PHONE=${PHONE:-+15555550123}
 ADDR=${ADDR:-0x1111111111111111111111111111111111111111}
+AUTHOR=${AUTHOR:-smoke-author}
 BASE_URL=${BASE_URL:-}
 COOKIE_JAR=${COOKIE_JAR:-/tmp/mintpass_smoke_cookies.$$}
 trap 'rm -f "$COOKIE_JAR" >/dev/null 2>&1 || true' EXIT
@@ -189,7 +190,7 @@ step "Check eligibility"
 post_json "$BASE_URL/api/check-eligibility" "{\"address\":\"$ADDR\",\"phoneE164\":\"$PHONE\"}"
 
 step "Mint (stubbed)"
-post_json "$BASE_URL/api/mint" "{\"address\":\"$ADDR\",\"phoneE164\":\"$PHONE\"}"
+post_json "$BASE_URL/api/mint" "{\"address\":\"$ADDR\",\"phoneE164\":\"$PHONE\",\"authorAddress\":\"$AUTHOR\"}"
 
 echo
 echo "Done."

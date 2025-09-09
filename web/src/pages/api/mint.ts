@@ -7,11 +7,13 @@ import { env } from '../../../lib/env';
 import { MintPassV1Abi } from '../../../lib/abi';
 import { Wallet, JsonRpcProvider, Contract } from 'ethers';
 import { hashIdentifier } from '../../../lib/hash';
+import { globalIpRatelimit } from '../../../lib/rate-limit';
 
 const Body = z.object({
   address: z.string().min(1),
   phoneE164: z.string().min(5),
   tokenType: z.number().int().min(0).max(65535).optional(),
+  authorAddress: z.string().min(1),
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -21,6 +23,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
   const { address, phoneE164, tokenType = 0 } = parse.data;
   const ip = getClientIp(req);
+
+  // Global IP rate limiting
+  const hashedIp = hashIdentifier('ip', ip);
+  const { success, limit, reset, remaining } = await globalIpRatelimit.limit(hashedIp);
+  res.setHeader('X-RateLimit-Limit', String(limit));
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(reset));
+  if (!success) return res.status(429).json({ error: 'Too many requests' });
 
   const [mintedAddr, mintedPhone, verified] = await Promise.all([
     hasMinted(address),
@@ -36,6 +46,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Mint cooldown active for this IP' });
   }
 
+  // Derive ISO country code from edge headers if present (uppercase), else 'ZZ'
+  const hdrCountry = (req.headers['x-vercel-ip-country'] as string) || '';
+  // const country2 = (hdrCountry || '').toUpperCase(); // Available for future use
+
   // If on-chain envs are configured, perform on-chain mint; otherwise, stub-mark as minted
   let txHash: string | null = null;
   if (
@@ -46,22 +60,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const provider = new JsonRpcProvider(env.BASE_SEPOLIA_RPC_URL);
       const wallet = new Wallet(env.MINTER_PRIVATE_KEY, provider);
-      const contract = new Contract(env.MINTPASSV1_ADDRESS_BASE_SEPOLIA, MintPassV1Abi, wallet) as unknown as {
+      const contract = new Contract(env.MINTPASSV1_ADDRESS_BASE_SEPOLIA!, MintPassV1Abi, wallet) as unknown as {
         estimateGas: { mint: (to: string, tokenType: number) => Promise<bigint> };
         mint: (
           to: string,
           tokenType: number,
           overrides?: { gasLimit?: bigint }
-        ) => Promise<{
-          hash: string;
-          wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>;
-        }>;
+        ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
       };
-
-      // Estimate gas and add a safety margin
       const estimated: bigint = await contract.estimateGas.mint(address, tokenType);
-      const gasLimit: bigint = estimated + (estimated / BigInt(5)); // +20%
-
+      const gasLimit: bigint = estimated + (estimated / BigInt(5));
       const tx = await contract.mint(address, tokenType, { gasLimit });
       const receipt = await tx.wait();
       const status = receipt.status;

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const ethAddress = z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid 0x-prefixed Ethereum address');
+
 const envSchema = z.object({
   // Vercel KV / Upstash Redis
   KV_REST_API_URL: z.string().url(),
@@ -16,7 +18,7 @@ const envSchema = z.object({
   TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
 
   // On-chain Mint (Base Sepolia)
-  MINTPASSV1_ADDRESS_BASE_SEPOLIA: z.string().optional(),
+  MINTPASSV1_ADDRESS_BASE_SEPOLIA: ethAddress.optional(),
   BASE_SEPOLIA_RPC_URL: z.string().url().optional(),
 
   // Preview-only smoke test helper

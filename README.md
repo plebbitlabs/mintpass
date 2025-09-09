@@ -41,8 +41,8 @@ mintpass/
 - [x] Anti-sybil controls (rate limits, cooldowns, optional VPN/VOIP checks)
 - [x] Vercel Preview/Production setup with environment variables and Upstash KV (Redis)
 - [x] End-to-end smoke tests (Preview/Prod), hardened with HMAC-pepper, curl failure/timeout handling, and robust OTP parsing
-- [ ] Twilio SMS provider integration (setup and verification)
-- [ ] Public-facing UI at `/request/<eth-address>` (to be built)
+- [x] Twilio SMS provider integration (Messaging Service with geo-sender routing; verified in Preview/Prod)
+- [x] Public-facing UI at `/request/<eth-address>` (shadcn/ui components, mobile-first design)
 
 Anti-sybil summary (backend):
 - Per-IP rate limiting and server-side cooldowns (SMS send and mint attempts)
