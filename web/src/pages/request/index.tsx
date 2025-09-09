@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { PhoneInput } from '../../components/ui/phone-input';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { Header } from '../../components/header';
@@ -230,11 +231,25 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
               {step === 'code' && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
-                    <Input value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} placeholder="123456" />
+                    <div className="flex justify-center">
+                      <InputOTP maxLength={6} value={code} onChange={setCode}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                   </div>
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>
               )}
 
