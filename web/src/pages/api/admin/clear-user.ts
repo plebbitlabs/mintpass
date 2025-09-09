@@ -90,10 +90,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     actualDeletedCount = typeof deleteResult === 'number' ? deleteResult : 0;
   }
 
+  // Debug info for development
+  const debugInfo = process.env.NODE_ENV === 'development' ? {
+    keysAttempted: keysToDelete,
+    addressKeys: address ? 2 : 0,
+    phoneKeys: phoneE164 ? 8 : 0, 
+    ipCooldownKeys: clearIpCooldowns ? 4 : 0,
+  } : undefined;
+
   return res.status(200).json({ 
     ok: true, 
     deletedKeys: actualDeletedCount,
     attemptedKeys: keysToDelete.length,
-    message: `Cleared ${actualDeletedCount} database entries (attempted ${keysToDelete.length})`
+    message: `Successfully cleared ${actualDeletedCount} existing entries (checked ${keysToDelete.length} possible keys)`,
+    debug: debugInfo
   });
 }

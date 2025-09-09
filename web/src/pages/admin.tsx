@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Header } from '../components/header';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { PhoneInput } from '../components/ui/phone-input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
@@ -39,7 +40,7 @@ export default function AdminPage() {
       setMessage('');
       setLoading(true);
       
-      const result = await postJson<{ ok: boolean; message: string; deletedKeys: number; attemptedKeys: number }>('/api/admin/clear-user', {
+      const result = await postJson<{ ok: boolean; message: string; deletedKeys: number; attemptedKeys: number; debug?: any }>('/api/admin/clear-user', {
         adminPassword: password,
         address: address.trim() || undefined,
         phoneE164: phone.trim() || undefined,
@@ -47,6 +48,10 @@ export default function AdminPage() {
       });
       
       setMessage(result.message);
+      // Log debug info in development for transparency
+      if (result.debug) {
+        console.log('Admin clear debug info:', result.debug);
+      }
       setAddress('');
       setPhone('');
     } catch (e: unknown) {
@@ -91,11 +96,12 @@ export default function AdminPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="clear-phone">Clear Phone (optional)</Label>
-                <Input 
+                <PhoneInput 
                   id="clear-phone"
                   value={phone} 
-                  onChange={(e) => setPhone(e.target.value)} 
-                  placeholder="+15555550123"
+                  onChange={(value) => setPhone(value || '')} 
+                  placeholder="Enter phone number"
+                  defaultCountry="US"
                 />
               </div>
 
