@@ -58,9 +58,23 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       setError('');
       setLoading(true);
       await postJson<unknown>('/api/sms/verify', { phoneE164: phone, code });
-      const elig = await postJson<{ eligible: boolean }>('/api/check-eligibility', { address, phoneE164: phone });
+      const elig = await postJson<{ 
+        eligible: boolean; 
+        mintedAddr: boolean; 
+        mintedPhone: boolean; 
+        verified: boolean; 
+      }>('/api/check-eligibility', { address, phoneE164: phone });
+      
       if (!elig.eligible) {
-        setError('Not eligible to mint');
+        if (!elig.verified) {
+          setError('Phone number not verified');
+        } else if (elig.mintedAddr) {
+          setError('Address has already minted an NFT');
+        } else if (elig.mintedPhone) {
+          setError('Phone number has already been used to mint');
+        } else {
+          setError('Not eligible to mint');
+        }
         return;
       }
       const mint = await postJson<{ ok: boolean; txHash?: string }>(
