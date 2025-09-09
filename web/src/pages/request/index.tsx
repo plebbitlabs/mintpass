@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { PhoneInput } from '../../components/ui/phone-input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { Header } from '../../components/header';
@@ -90,7 +91,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   const canCheckEligibility = useMemo(() => 
     address.trim().length > 0 && 
-    phone.trim().length >= 5 && 
+    phone && phone.length >= 5 && // Phone is already E.164 formatted from PhoneInput
     !eligibilityChecked &&
     !checkingEligibility, 
     [address, phone, eligibilityChecked, checkingEligibility]
@@ -215,14 +216,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone number (E.164)</Label>
-                    <Input 
+                    <Label htmlFor="phone">Phone number</Label>
+                    <PhoneInput 
                       id="phone" 
-                      value={phone} 
-                      onChange={(e) => {
-                        setPhone(e.target.value);
+                      value={phone}
+                      onChange={(value) => {
+                        setPhone(value || '');
                       }} 
-                      placeholder="+15555550123" 
+                      placeholder="Enter phone number"
+                      defaultCountry="US"
                     />
                   </div>
                   {eligibilityChecked && isEligible && (
