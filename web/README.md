@@ -146,9 +146,9 @@ Optional for smoke testing (Preview only):
 
 ### Next Steps
 - Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).
-- Build minimal UI (`request/[address].tsx`) and wire to these APIs.
+- Enhance UI with additional features (error handling, loading states, success animations).
 
-This project is a backend scaffold meant to be deployed on Vercel. UI will be added later.
+This project includes both backend APIs and frontend UI components built with shadcn/ui and mobile-first responsive design.
 
 ### Operational recommendations
 - Put Cloudflare in front of Vercel for additional DDoS protection and WAF/challenge. Set `CF-Connecting-IP` pass-through so backend uses real client IP.

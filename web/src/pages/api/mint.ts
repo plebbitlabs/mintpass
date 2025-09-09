@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const parse = Body.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
-  const { address, phoneE164, tokenType = 0, authorAddress } = parse.data;
+  const { address, phoneE164, tokenType = 0 } = parse.data;
   const ip = getClientIp(req);
 
   // Global IP rate limiting
@@ -49,7 +49,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Derive ISO country code from edge headers if present (uppercase), else 'ZZ'
   const hdrCountry = (req.headers['x-vercel-ip-country'] as string) || '';
   const country2 = (hdrCountry || '').toUpperCase();
-  const countryBytes = country2 && country2.length === 2 ? country2 : 'ZZ';
 
   // If on-chain envs are configured, perform on-chain mint; otherwise, stub-mark as minted
   let txHash: string | null = null;
