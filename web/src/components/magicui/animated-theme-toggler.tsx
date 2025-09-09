@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, SunDim } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -13,14 +13,23 @@ type props = {
 export const AnimatedThemeToggler = ({ className }: props) => {
   const { setTheme, resolvedTheme } = useTheme();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Wait for hydration to complete before showing theme-specific content
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const changeTheme = async () => {
     if (!buttonRef.current) return;
 
     const newTheme = resolvedTheme === "dark" ? "light" : "dark";
 
-    // Check if browser supports view transitions
-    if (!document.startViewTransition) {
+    // Check if user prefers reduced motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // Check if browser supports view transitions with proper feature detection
+    if (prefersReducedMotion || typeof document.startViewTransition !== 'function') {
       setTheme(newTheme);
       return;
     }
@@ -33,18 +42,21 @@ export const AnimatedThemeToggler = ({ className }: props) => {
 
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();
-    const y = top + height / 2;
-    const x = left + width / 2;
+    
+    // Calculate center coordinates
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
 
-    const right = window.innerWidth - left;
-    const bottom = window.innerHeight - top;
-    const maxRad = Math.hypot(Math.max(left, right), Math.max(top, bottom));
+    // Calculate maximum distances from center to viewport edges
+    const dx = Math.max(centerX, window.innerWidth - centerX);
+    const dy = Math.max(centerY, window.innerHeight - centerY);
+    const maxRad = Math.hypot(dx, dy);
 
     document.documentElement.animate(
       {
         clipPath: [
-          `circle(0px at ${x}px ${y}px)`,
-          `circle(${maxRad}px at ${x}px ${y}px)`,
+          `circle(0px at ${centerX}px ${centerY}px)`,
+          `circle(${maxRad}px at ${centerX}px ${centerY}px)`,
         ],
       },
       {
@@ -55,11 +67,12 @@ export const AnimatedThemeToggler = ({ className }: props) => {
     );
   };
   
-  // Show loading state until theme is mounted
-  if (!resolvedTheme) {
+  // Show consistent loading state until hydration is complete
+  if (!mounted) {
     return (
-      <button className={cn("p-2", className)}>
+      <button className={cn("p-2 rounded-md border hover:bg-accent transition-colors", className)}>
         <SunDim className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Toggle theme</span>
       </button>
     );
   }
