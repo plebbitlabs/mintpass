@@ -70,7 +70,10 @@ export const AnimatedThemeToggler = ({ className }: props) => {
   // Show consistent loading state until hydration is complete
   if (!mounted) {
     return (
-      <button className={cn("p-2 rounded-md border hover:bg-accent transition-colors", className)}>
+      <button 
+        type="button"
+        className={cn("p-2 rounded-md border hover:bg-accent transition-colors", className)}
+      >
         <SunDim className="h-[1.2rem] w-[1.2rem]" />
         <span className="sr-only">Toggle theme</span>
       </button>
@@ -80,6 +83,7 @@ export const AnimatedThemeToggler = ({ className }: props) => {
   return (
     <button 
       ref={buttonRef} 
+      type="button"
       onClick={changeTheme} 
       className={cn("p-2 rounded-md border hover:bg-accent transition-colors", className)}
     >
