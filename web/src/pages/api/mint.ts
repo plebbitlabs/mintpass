@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Derive ISO country code from edge headers if present (uppercase), else 'ZZ'
   const hdrCountry = (req.headers['x-vercel-ip-country'] as string) || '';
-  const country2 = (hdrCountry || '').toUpperCase();
+  // const country2 = (hdrCountry || '').toUpperCase(); // Available for future use
 
   // If on-chain envs are configured, perform on-chain mint; otherwise, stub-mark as minted
   let txHash: string | null = null;

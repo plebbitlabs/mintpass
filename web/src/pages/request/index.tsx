@@ -29,6 +29,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
+  const [isEligible, setIsEligible] = useState<boolean>(false);
+  const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
@@ -71,8 +74,51 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [router.events, isVerificationInProgress]);
 
 
-  const canSend = useMemo(() => address.trim().length > 0 && phone.trim().length >= 5, [address, phone]);
+  // Reset eligibility when address or phone changes
+  useEffect(() => {
+    setEligibilityChecked(false);
+    setIsEligible(false);
+    if (error && step === 'enter') setError('');
+  }, [address, phone]);
+
+  const canCheckEligibility = useMemo(() => 
+    address.trim().length > 0 && 
+    phone.trim().length >= 5 && 
+    !eligibilityChecked &&
+    !checkingEligibility, 
+    [address, phone, eligibilityChecked, checkingEligibility]
+  );
+
+  const canSend = useMemo(() => 
+    eligibilityChecked && isEligible && !loading,
+    [eligibilityChecked, isEligible, loading]
+  );
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
+
+  async function handleCheckEligibility() {
+    try {
+      setCheckingEligibility(true);
+      setError('');
+      const result = await postJson<{ 
+        eligible: boolean; 
+        reason?: string; 
+      }>('/api/pre-check-eligibility', { address: address.trim(), phoneE164: phone.trim() });
+      
+      setEligibilityChecked(true);
+      setIsEligible(result.eligible);
+      
+      if (!result.eligible && result.reason) {
+        setError(result.reason);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unable to verify eligibility. Please try again.';
+      setError(msg);
+      setEligibilityChecked(false);
+      setIsEligible(false);
+    } finally {
+      setCheckingEligibility(false);
+    }
+  }
 
   async function handleSendCode() {
     try {
@@ -104,9 +150,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         if (!elig.verified) {
           setError('Phone number not verified');
         } else if (elig.mintedAddr) {
-          setError('Address has already minted an NFT');
+          setError('Address has already minted the authentication NFT');
         } else if (elig.mintedPhone) {
-          setError('Phone number has already been used to mint');
+          setError('Phone number has already been used to mint the authentication NFT');
         } else {
           setError('Not eligible to mint');
         }
@@ -140,12 +186,29 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="address">Ethereum address</Label>
-                    <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x..." />
+                    <Input 
+                      id="address" 
+                      value={address} 
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                      }} 
+                      placeholder="0x..." 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone number (E.164)</Label>
-                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+15555550123" />
+                    <Input 
+                      id="phone" 
+                      value={phone} 
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                      }} 
+                      placeholder="+15555550123" 
+                    />
                   </div>
+                  {eligibilityChecked && isEligible && (
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You're eligible.</p>
+                  )}
                   {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>
               )}
@@ -173,8 +236,13 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
             </CardContent>
             <CardFooter className="flex gap-2">
               {step === 'enter' && (
-                <Button onClick={handleSendCode} disabled={!canSend || loading}>
-                  {loading ? 'Sending…' : 'Send code'}
+                <Button 
+                  onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibility} 
+                  disabled={(!canCheckEligibility && !canSend) || checkingEligibility || loading}
+                >
+                  {loading ? 'Sending…' : 
+                   checkingEligibility ? 'Checking…' : 
+                   eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
                 </Button>
               )}
               {step === 'code' && (
