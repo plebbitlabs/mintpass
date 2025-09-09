@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
-import { ModeToggle } from '../../components/mode-toggle';
+import { Header } from '../../components/header';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -36,6 +36,40 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     const initial = prefilledAddress || qAddr;
     if (initial) setAddress(initial);
   }, [router.query.address, prefilledAddress]);
+
+  // Navigation protection during SMS verification
+  const isVerificationInProgress = step === 'code';
+
+  // Protect against tab closing during verification
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isVerificationInProgress) {
+        e.preventDefault();
+        e.returnValue = 'You have an SMS verification in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isVerificationInProgress]);
+
+  // Protect against navigation during verification
+  useEffect(() => {
+    const handleRouteChangeStart = (url: string) => {
+      if (isVerificationInProgress && !url.startsWith('/request')) {
+        const confirmed = window.confirm('You have an SMS verification in progress. Are you sure you want to leave?');
+        if (!confirmed) {
+          router.events.emit('routeChangeError');
+          throw 'Route change aborted by user';
+        }
+      }
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    return () => router.events.off('routeChangeStart', handleRouteChangeStart);
+  }, [router.events, isVerificationInProgress]);
+
 
   const canSend = useMemo(() => address.trim().length > 0 && phone.trim().length >= 5, [address, phone]);
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
@@ -94,12 +128,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">MintPass</h1>
-          <ModeToggle />
-        </div>
-      </header>
+      <Header showNavigationWarning={isVerificationInProgress} />
       <main className="flex-1">
         <div className="mx-auto max-w-md px-4 py-8">
           <Card>
