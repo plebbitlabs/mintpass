@@ -80,14 +80,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   useEffect(() => {
     setEligibilityChecked(false);
     setIsEligible(false);
+    setError(''); // Clear any previous eligibility errors
   }, [address, phone]);
-
-  // Clear error when typing in enter step
-  useEffect(() => {
-    if (error && step === 'enter') {
-      setError('');
-    }
-  }, [address, phone, error, step]);
 
   const canCheckEligibility = useMemo(() => 
     address.trim().length > 0 && 
@@ -112,13 +106,17 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         reason?: string; 
       }>('/api/pre-check-eligibility', { address: address.trim(), phoneE164: phone.trim() });
       
+      console.log('Eligibility check result:', result); // Debug logging
+      
       setEligibilityChecked(true);
       setIsEligible(result.eligible);
       
       if (!result.eligible && result.reason) {
+        console.log('Setting error:', result.reason); // Debug logging
         setError(result.reason);
       }
     } catch (e: unknown) {
+      console.error('Eligibility check failed:', e); // Debug logging
       const msg = e instanceof Error ? e.message : 'Unable to verify eligibility. Please try again.';
       setError(msg);
       setEligibilityChecked(false);
