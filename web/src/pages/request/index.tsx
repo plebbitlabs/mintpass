@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
+import { ModeToggle } from '../../components/mode-toggle';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -93,9 +94,10 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-gray-200">
+      <header className="border-b">
         <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-semibold">MintPass</h1>
+          <ModeToggle />
         </div>
       </header>
       <main className="flex-1">
@@ -115,7 +117,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Label htmlFor="phone">Phone number (E.164)</Label>
                     <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+15555550123" />
                   </div>
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>
               )}
 
@@ -125,7 +127,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Label>We sent an SMS code to {phone}</Label>
                     <Input value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} placeholder="123456" />
                   </div>
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>
               )}
 
@@ -133,9 +135,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                 <div className="space-y-2">
                   <p className="font-medium">Authentication NFT received.</p>
                   {txHash ? (
-                    <p className="text-sm text-gray-600">Tx: {txHash}</p>
+                    <p className="text-sm text-muted-foreground">Tx: {txHash}</p>
                   ) : (
-                    <p className="text-sm text-gray-600">On-chain mint not configured; recorded as minted.</p>
+                    <p className="text-sm text-muted-foreground">On-chain mint not configured; recorded as minted.</p>
                   )}
                 </div>
               )}
