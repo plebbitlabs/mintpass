@@ -116,7 +116,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 py-3">
                 <input
                   id="clear-cooldowns"
                   type="checkbox"
