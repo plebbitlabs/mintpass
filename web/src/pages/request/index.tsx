@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { Header } from '../../components/header';
+import { ConfettiCelebration } from '../../components/confetti-celebration';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -181,6 +182,18 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      {step === 'done' && <ConfettiCelebration />}
+      {step === 'done' && (
+        <div className="mx-auto max-w-md px-4 py-6 text-center">
+          <h1 className="text-2xl font-bold mb-2 text-[#077b91]">
+            You received your MintPass NFT!
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
+            You can close this page and head back to the Plebbit application of your choice.
+          </p>
+        </div>
+      )}
       <main className="flex-1">
         <div className="mx-auto max-w-md px-4 py-8">
           <Card>
