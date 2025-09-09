@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 import Image from 'next/image';
-import { ModeToggle } from './mode-toggle';
+import { AnimatedThemeToggler } from './magicui/animated-theme-toggler';
 
 type HeaderProps = {
   /** Additional content to show in the navigation area (like links) */
@@ -33,7 +33,7 @@ export function Header({ children }: HeaderProps) {
         </button>
         <div className="flex items-center gap-4">
           {children}
-          <ModeToggle />
+          <AnimatedThemeToggler />
         </div>
       </div>
     </header>
