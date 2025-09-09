@@ -40,7 +40,18 @@ export default function AdminPage() {
       setMessage('');
       setLoading(true);
       
-      const result = await postJson<{ ok: boolean; message: string; deletedKeys: number; attemptedKeys: number; debug?: any }>('/api/admin/clear-user', {
+      const result = await postJson<{ 
+        ok: boolean; 
+        message: string; 
+        deletedKeys: number; 
+        attemptedKeys: number; 
+        debug?: { 
+          keysAttempted: string[]; 
+          addressKeys: number; 
+          phoneKeys: number; 
+          ipCooldownKeys: number; 
+        }; 
+      }>('/api/admin/clear-user', {
         adminPassword: password,
         address: address.trim() || undefined,
         phoneE164: phone.trim() || undefined,

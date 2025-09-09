@@ -8,6 +8,7 @@ export function ConfettiCelebration() {
     const celebrateWithSideCannons = () => {
       const end = Date.now() + 3 * 1000; // 3 seconds
       const colors = ["#9ddcdd", "#077b91"]; // MintPass project colors
+      let animationId: number;
 
       const frame = () => {
         if (Date.now() > end) return;
@@ -29,14 +30,24 @@ export function ConfettiCelebration() {
           colors: colors,
         });
 
-        requestAnimationFrame(frame);
+        animationId = requestAnimationFrame(frame);
       };
 
       frame();
+
+      // Return cleanup function
+      return () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+      };
     };
 
-    // Start celebration immediately when component mounts
-    celebrateWithSideCannons();
+    // Start celebration and get cleanup function
+    const cleanup = celebrateWithSideCannons();
+    
+    // Return cleanup to useEffect
+    return cleanup;
   }, []);
 
   return null; // This component just triggers effects

@@ -123,7 +123,7 @@ const CountrySelect = ({
             value={searchValue}
             onValueChange={(value) => {
               setSearchValue(value);
-              setTimeout(() => {
+              requestAnimationFrame(() => {
                 if (scrollAreaRef.current) {
                   const viewportElement = scrollAreaRef.current.querySelector(
                     "[data-radix-scroll-area-viewport]",
@@ -132,7 +132,7 @@ const CountrySelect = ({
                     viewportElement.scrollTop = 0;
                   }
                 }
-              }, 0);
+              });
             }}
             placeholder="Search country..."
           />
