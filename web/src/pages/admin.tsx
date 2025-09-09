@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [clearIpCooldowns, setClearIpCooldowns] = useState(true); // Default to true since IP cooldowns often block testing
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -46,6 +47,7 @@ export default function AdminPage() {
         adminPassword: password,
         address: address.trim() || undefined,
         phoneE164: phone.trim() || undefined,
+        clearIpCooldowns: clearIpCooldowns,
       });
       
       setMessage(result.message);
@@ -99,6 +101,19 @@ export default function AdminPage() {
                   onChange={(e) => setPhone(e.target.value)} 
                   placeholder="+15555550123"
                 />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  id="clear-cooldowns"
+                  type="checkbox"
+                  checked={clearIpCooldowns}
+                  onChange={(e) => setClearIpCooldowns(e.target.checked)}
+                  className="h-4 w-4 rounded border-input text-primary"
+                />
+                <Label htmlFor="clear-cooldowns" className="text-sm font-normal">
+                  Clear IP cooldowns (recommended for testing)
+                </Label>
               </div>
 
               {message && <p className="text-sm text-green-600 dark:text-green-400 font-medium">{message}</p>}
