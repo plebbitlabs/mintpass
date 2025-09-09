@@ -55,9 +55,52 @@
   body {
     @apply bg-background text-foreground;
   }
+  :root {
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+  }
+  .dark {
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+  }
+  .theme {
+    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+  }
 }
 
+/* View transition styles - only disable default transitions, not all animations */
 ::view-transition-old(root), ::view-transition-new(root) {
-    animation: none;
     mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+    animation: none;
+}
+
+::view-transition-new(root) {
+    animation: none;
+}
+
+@keyframes rainbow {
+  0% {
+    background-position: 0%;
+  }
+  100% {
+    background-position: 200%;
+  }
+}
+
+/* Rainbow animation utilities - outside of Tailwind layers to avoid processing conflicts */
+.animate-rainbow {
+  animation: rainbow 2s linear infinite;
+}
+
+.animate-rainbow::before {
+  animation: rainbow 2s linear infinite;
 }
