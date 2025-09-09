@@ -6,7 +6,7 @@ import { useEffect } from "react";
 export function ConfettiCelebration() {
   useEffect(() => {
     const celebrateWithSideCannons = () => {
-      const end = Date.now() + 3 * 1000; // 3 seconds
+      const end = Date.now() + 1 * 1000; // 1 second
       const colors = ["#9ddcdd", "#077b91"]; // MintPass project colors
       let animationId: number;
 
