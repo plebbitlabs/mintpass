@@ -9,7 +9,13 @@ const Body = z.object({
   address: z.string().min(1).optional(),
   phoneE164: z.string().min(5).optional(),
   clearIpCooldowns: z.boolean().optional(),
-});
+}).refine(
+  (data) => data.address || data.phoneE164,
+  {
+    message: "Either address or phoneE164 is required",
+    path: ["address", "phoneE164"],
+  }
+);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -29,14 +35,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   if (!passwordsMatch) {
-    return res.status(401).json({ 
-      error: 'Invalid password',
-      debug: process.env.NODE_ENV === 'development' ? {
-        provided: adminPassword,
-        expected: envPassword,
-        match: passwordsMatch
-      } : undefined
-    });
+    // Log debug info server-side only (never send passwords in HTTP response)
+    if (process.env.NODE_ENV === 'development' && envPassword) {
+      console.error('[admin] Password mismatch:', {
+        providedLength: adminPassword.length,
+        expectedLength: envPassword.length,
+        providedStart: adminPassword.substring(0, 2),
+        expectedStart: envPassword.substring(0, 2),
+      });
+    }
+    return res.status(401).json({ error: 'Invalid password' });
   }
 
   const keysToDelete: string[] = [];
@@ -75,14 +83,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
   }
 
-  // Delete all keys
+  // Delete all keys and get actual deletion count
+  let actualDeletedCount = 0;
   if (keysToDelete.length > 0) {
-    await kv.del(...keysToDelete);
+    const deleteResult = await kv.del(...keysToDelete);
+    actualDeletedCount = typeof deleteResult === 'number' ? deleteResult : 0;
   }
 
   return res.status(200).json({ 
     ok: true, 
-    deletedKeys: keysToDelete.length,
-    message: `Cleared ${keysToDelete.length} database entries`
+    deletedKeys: actualDeletedCount,
+    attemptedKeys: keysToDelete.length,
+    message: `Cleared ${actualDeletedCount} database entries (attempted ${keysToDelete.length})`
   });
 }

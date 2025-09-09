@@ -33,17 +33,13 @@ export default function AdminPage() {
       setError('Admin password required');
       return;
     }
-    if (!address.trim() && !phone.trim()) {
-      setError('Enter at least an address or phone number');
-      return;
-    }
 
     try {
       setError('');
       setMessage('');
       setLoading(true);
       
-      const result = await postJson<{ ok: boolean; message: string }>('/api/admin/clear-user', {
+      const result = await postJson<{ ok: boolean; message: string; deletedKeys: number; attemptedKeys: number }>('/api/admin/clear-user', {
         adminPassword: password,
         address: address.trim() || undefined,
         phoneE164: phone.trim() || undefined,
