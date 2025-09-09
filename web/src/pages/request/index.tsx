@@ -78,8 +78,14 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   useEffect(() => {
     setEligibilityChecked(false);
     setIsEligible(false);
-    if (error && step === 'enter') setError('');
   }, [address, phone]);
+
+  // Clear error when typing in enter step
+  useEffect(() => {
+    if (error && step === 'enter') {
+      setError('');
+    }
+  }, [address, phone, error, step]);
 
   const canCheckEligibility = useMemo(() => 
     address.trim().length > 0 && 
@@ -207,7 +213,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     />
                   </div>
                   {eligibilityChecked && isEligible && (
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You're eligible.</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You&apos;re eligible.</p>
                   )}
                   {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>

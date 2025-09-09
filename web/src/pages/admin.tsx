@@ -53,6 +53,7 @@ export default function AdminPage() {
       setPhone('');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Failed to clear user';
+      console.error('Admin clear user error:', e);
       setError(msg);
     } finally {
       setLoading(false);
