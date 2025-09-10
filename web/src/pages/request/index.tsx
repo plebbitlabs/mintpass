@@ -35,6 +35,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
   const [isEligible, setIsEligible] = useState<boolean>(false);
   const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+  const [agreePrivacy, setAgreePrivacy] = useState<boolean>(false);
+  const [showAgreementError, setShowAgreementError] = useState<boolean>(false);
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
@@ -84,11 +87,18 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     setError(''); // Clear any previous eligibility errors
   }, [address, phone]);
 
+  // Clear agreement error when both checkboxes are checked
+  useEffect(() => {
+    if (agreeTerms && agreePrivacy && showAgreementError) {
+      setShowAgreementError(false);
+    }
+  }, [agreeTerms, agreePrivacy, showAgreementError]);
+
   const canCheckEligibility = useMemo(() => 
     address.trim().length > 0 && 
     phone && phone.length >= 5 && // Phone is already E.164 formatted from PhoneInput
     !eligibilityChecked &&
-    !checkingEligibility, 
+    !checkingEligibility,
     [address, phone, eligibilityChecked, checkingEligibility]
   );
 
@@ -97,6 +107,33 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     [eligibilityChecked, isEligible, loading]
   );
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
+
+  function handleCheckEligibilityClick() {
+    // Clear any previous agreement error
+    setShowAgreementError(false);
+    
+    // Validate address
+    if (address.trim().length === 0) {
+      setError('Please enter an Ethereum address');
+      return;
+    }
+    
+    // Validate phone
+    if (!phone || phone.length < 5) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+    
+    // Check if user has agreed to both terms and privacy
+    if (!agreeTerms || !agreePrivacy) {
+      setShowAgreementError(true);
+      setError('');
+      return;
+    }
+    
+    // All validations passed, proceed with eligibility check
+    handleCheckEligibility();
+  }
 
   async function handleCheckEligibility() {
     try {
@@ -222,8 +259,41 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       defaultCountry="US"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <input
+                        id="agree-terms"
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-input text-primary"
+                      />
+                      <Label htmlFor="agree-terms" className="text-sm font-normal">
+                        I agree to the{' '}
+                        <a href="/terms-and-conditions" className="underline" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input
+                        id="agree-privacy"
+                        type="checkbox"
+                        checked={agreePrivacy}
+                        onChange={(e) => setAgreePrivacy(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-input text-primary"
+                      />
+                      <Label htmlFor="agree-privacy" className="text-sm font-normal">
+                        I agree to the{' '}
+                        <a href="/privacy-policy" className="underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                    </div>
+                  </div>
                   {eligibilityChecked && isEligible && (
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You&apos;re eligible.</p>
+                  )}
+                  {showAgreementError && (
+                    <p className="text-sm text-destructive">Please agree to both Terms and Conditions and Privacy Policy before proceeding.</p>
                   )}
                   {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>
@@ -267,8 +337,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
             <CardFooter className="flex gap-2">
               {step === 'enter' && (
                 <Button 
-                  onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibility} 
-                  disabled={(!canCheckEligibility && !canSend) || checkingEligibility || loading}
+                  onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
+                  disabled={checkingEligibility || loading}
                 >
                   {loading ? 'Sending…' : 
                    checkingEligibility ? 'Checking…' : 

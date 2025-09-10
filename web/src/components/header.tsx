@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 import Image from 'next/image';
 import { AnimatedThemeToggler } from './magicui/animated-theme-toggler';
+import Link from 'next/link';
 
 type HeaderProps = {
   /** Additional content to show in the navigation area (like links) */
@@ -32,6 +33,12 @@ export function Header({ children }: HeaderProps) {
           MintPass
         </button>
         <div className="flex items-center gap-4">
+          <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:underline">
+            Privacy
+          </Link>
+          <Link href="/terms-and-conditions" className="text-sm text-muted-foreground hover:underline">
+            Terms
+          </Link>
           {children}
           <AnimatedThemeToggler />
         </div>
