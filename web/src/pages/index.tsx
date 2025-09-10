@@ -5,14 +5,6 @@ import { Header } from '../components/header';
 import { RainbowButton } from '../components/magicui/rainbow-button';
 
 export default function Home() {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Only render after hydration to prevent mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header>
@@ -24,11 +16,9 @@ export default function Home() {
         <div className="mx-auto max-w-md px-4 py-10 text-center">
           <h2 className="text-xl font-semibold mb-2">NFT Authentication</h2>
           <p className="text-muted-foreground mb-6">Verify your phone and receive your authentication NFT.</p>
-          <Link href="/request">
-            <RainbowButton variant={mounted && resolvedTheme === "dark" ? "outline" : "default"}>
-              Start Verification
-            </RainbowButton>
-          </Link>
+          <RainbowButton variant="outline">
+            <Link href="/request">Start Verification</Link>
+          </RainbowButton>
         </div>
       </main>
     </div>
