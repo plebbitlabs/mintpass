@@ -135,6 +135,7 @@ const CountrySelect = ({
               });
             }}
             placeholder="Search country..."
+            autoFocus={false}
           />
           <CommandList>
             <ScrollArea ref={scrollAreaRef} className="h-72">
