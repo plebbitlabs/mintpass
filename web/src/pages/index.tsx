@@ -7,11 +7,7 @@ import { RainbowButton } from '../components/magicui/rainbow-button';
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header>
-        <nav className="text-sm text-muted-foreground">
-          <Link href="/request" className="hover:underline">Request</Link>
-        </nav>
-      </Header>
+      <Header />
       <main className="flex-1">
         <div className="mx-auto max-w-md px-4 py-10 text-center">
           <h2 className="text-xl font-semibold mb-2">NFT Authentication</h2>
