@@ -31,9 +31,10 @@ function HexagonBackground({
     rows: 0,
     columns: 0,
   });
-  const [activeCell, setActiveCell] = React.useState<{ row: number; col: number } | null>(null);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const rafRef = React.useRef<number | null>(null);
+  const trailDurationMs = 700;
+  const activeTimersRef = React.useRef<Map<string, number>>(new Map());
+  const [activeKeys, setActiveKeys] = React.useState<Set<string>>(new Set());
 
   const updateGridDimensions = React.useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -54,35 +55,52 @@ function HexagonBackground({
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    const run = () => {
-      const row = Math.floor(y / rowSpacing);
-      if (row < 0 || row >= gridDimensions.rows) {
-        setActiveCell(null);
-        return;
-      }
-      const shift = (((row + 1) % 2 === 0 ? evenRowMarginLeft : oddRowMarginLeft) - 10);
-      const col = Math.floor((x - shift) / hexagonWidth);
-      if (col < 0 || col >= gridDimensions.columns) {
-        setActiveCell(null);
-        return;
-      }
-      setActiveCell((prev) => (prev && prev.row === row && prev.col === col ? prev : { row, col }));
-    };
+    const row = Math.floor(y / rowSpacing);
+    if (row < 0 || row >= gridDimensions.rows) return;
+    const shift = (((row + 1) % 2 === 0 ? evenRowMarginLeft : oddRowMarginLeft) - 10);
+    const col = Math.floor((x - shift) / hexagonWidth);
+    if (col < 0 || col >= gridDimensions.columns) return;
+    const key = `${row}-${col}`;
 
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(run);
+    // If this hex is not currently in the trail, add it and schedule removal
+    if (!activeTimersRef.current.has(key)) {
+      setActiveKeys(prev => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+      const timeoutId = window.setTimeout(() => {
+        activeTimersRef.current.delete(key);
+        setActiveKeys(prev => {
+          if (!prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      }, trailDurationMs);
+      activeTimersRef.current.set(key, timeoutId);
+    }
   }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft]);
 
   React.useEffect(() => {
     const move = (e: MouseEvent) => updateActiveFromPoint(e.clientX, e.clientY);
-    const leave = () => setActiveCell(null);
+    const leave = () => {
+      for (const [, id] of activeTimersRef.current) window.clearTimeout(id);
+      activeTimersRef.current.clear();
+      setActiveKeys(new Set());
+    };
     window.addEventListener('mousemove', move, { passive: true });
     window.addEventListener('mouseleave', leave, { passive: true });
     return () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseleave', leave);
+      for (const [, id] of activeTimersRef.current) window.clearTimeout(id);
+      activeTimersRef.current.clear();
     };
   }, [updateActiveFromPoint]);
+
+  // Trail is managed with per-hex timeouts; no idle loop needed
 
   return (
     <div
@@ -135,7 +153,7 @@ function HexagonBackground({
                     'hover:before:bg-neutral-200 dark:hover:before:bg-neutral-800 hover:before:opacity-100 hover:before:duration-0 dark:hover:after:bg-neutral-900 hover:after:bg-neutral-100 hover:after:opacity-100 hover:after:duration-0',
                     hexagonProps?.className,
                   )}
-                  data-active={activeCell && activeCell.row === rowIndex && activeCell.col === colIndex ? 'true' : undefined}
+                  data-active={activeKeys.has(`${rowIndex}-${colIndex}`) ? 'true' : undefined}
                 />
               ),
             )}
