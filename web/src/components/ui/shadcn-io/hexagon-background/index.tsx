@@ -1,0 +1,152 @@
+'use client';
+
+import * as React from 'react';
+
+import { cn } from '@/lib/utils';
+
+type HexagonBackgroundProps = React.ComponentProps<'div'> & {
+  children?: React.ReactNode;
+  hexagonProps?: React.ComponentProps<'div'>;
+  hexagonSize?: number; // value greater than 50
+  hexagonMargin?: number;
+};
+
+function HexagonBackground({
+  className,
+  children,
+  hexagonProps,
+  hexagonSize = 75,
+  hexagonMargin = 3,
+  ...props
+}: HexagonBackgroundProps) {
+  const hexagonWidth = hexagonSize;
+  const hexagonHeight = hexagonSize * 1.1;
+  const rowSpacing = hexagonSize * 0.8;
+  const baseMarginTop = -36 - 0.275 * (hexagonSize - 100);
+  const computedMarginTop = baseMarginTop + hexagonMargin;
+  const oddRowMarginLeft = -(hexagonSize / 2);
+  const evenRowMarginLeft = hexagonMargin / 2;
+
+  const [gridDimensions, setGridDimensions] = React.useState({
+    rows: 0,
+    columns: 0,
+  });
+  const [activeCell, setActiveCell] = React.useState<{ row: number; col: number } | null>(null);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const rafRef = React.useRef<number | null>(null);
+
+  const updateGridDimensions = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const rows = Math.ceil(window.innerHeight / rowSpacing);
+    const columns = Math.ceil(window.innerWidth / hexagonWidth) + 1;
+    setGridDimensions({ rows, columns });
+  }, [rowSpacing, hexagonWidth]);
+
+  React.useEffect(() => {
+    updateGridDimensions();
+    window.addEventListener('resize', updateGridDimensions);
+    return () => window.removeEventListener('resize', updateGridDimensions);
+  }, [updateGridDimensions]);
+
+  const updateActiveFromPoint = React.useCallback((clientX: number, clientY: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const run = () => {
+      const row = Math.floor(y / rowSpacing);
+      if (row < 0 || row >= gridDimensions.rows) {
+        setActiveCell(null);
+        return;
+      }
+      const shift = (((row + 1) % 2 === 0 ? evenRowMarginLeft : oddRowMarginLeft) - 10);
+      const col = Math.floor((x - shift) / hexagonWidth);
+      if (col < 0 || col >= gridDimensions.columns) {
+        setActiveCell(null);
+        return;
+      }
+      setActiveCell((prev) => (prev && prev.row === row && prev.col === col ? prev : { row, col }));
+    };
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(run);
+  }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft]);
+
+  React.useEffect(() => {
+    const move = (e: MouseEvent) => updateActiveFromPoint(e.clientX, e.clientY);
+    const leave = () => setActiveCell(null);
+    window.addEventListener('mousemove', move, { passive: true });
+    window.addEventListener('mouseleave', leave, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseleave', leave);
+    };
+  }, [updateActiveFromPoint]);
+
+  return (
+    <div
+      ref={containerRef}
+      data-slot="hexagon-background"
+      className={cn(
+        'relative size-full overflow-hidden dark:bg-neutral-900 bg-neutral-100',
+        className,
+      )}
+      {...props}
+    >
+      <style>{`
+        :root { --hexagon-margin: ${hexagonMargin}px; }
+        [data-slot="hexagon-background"] [data-hex][data-active="true"]::before { background: rgb(229 229 229 / 1); }
+        .dark [data-slot="hexagon-background"] [data-hex][data-active="true"]::before { background: rgb(38 38 38 / 1); }
+        [data-slot="hexagon-background"] [data-hex][data-active="true"]::after { background: rgb(245 245 245 / 1); }
+        .dark [data-slot="hexagon-background"] [data-hex][data-active="true"]::after { background: rgb(23 23 23 / 1); }
+      `}</style>
+      <div className="absolute top-0 -left-0 size-full overflow-hidden z-0 pointer-events-none">
+        {Array.from({ length: gridDimensions.rows }).map((_, rowIndex) => (
+          <div
+            key={`row-${rowIndex}`}
+            style={{
+              marginTop: computedMarginTop,
+              marginLeft:
+                ((rowIndex + 1) % 2 === 0
+                  ? evenRowMarginLeft
+                  : oddRowMarginLeft) - 10,
+            }}
+            className="inline-flex"
+          >
+            {Array.from({ length: gridDimensions.columns }).map(
+              (_, colIndex) => (
+                <div
+                  key={`hexagon-${rowIndex}-${colIndex}`}
+                  data-hex
+                  {...hexagonProps}
+                  style={{
+                    width: hexagonWidth,
+                    height: hexagonHeight,
+                    marginLeft: hexagonMargin,
+                    ...hexagonProps?.style,
+                  }}
+                  className={cn(
+                    'relative',
+                    '[clip-path:polygon(50%_0%,_100%_25%,_100%_75%,_50%_100%,_0%_75%,_0%_25%)]',
+                    "before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-full dark:before:bg-neutral-950 before:bg-white before:opacity-100 before:transition-all before:duration-1000",
+                    "after:content-[''] after:absolute after:inset-[var(--hexagon-margin)] dark:after:bg-neutral-950 after:bg-white",
+                    'after:[clip-path:polygon(50%_0%,_100%_25%,_100%_75%,_50%_100%,_0%_75%,_0%_25%)]',
+                    'hover:before:bg-neutral-200 dark:hover:before:bg-neutral-800 hover:before:opacity-100 hover:before:duration-0 dark:hover:after:bg-neutral-900 hover:after:bg-neutral-100 hover:after:opacity-100 hover:after:duration-0',
+                    hexagonProps?.className,
+                  )}
+                  data-active={activeCell && activeCell.row === rowIndex && activeCell.col === colIndex ? 'true' : undefined}
+                />
+              ),
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="relative z-10 pointer-events-auto">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export { HexagonBackground, type HexagonBackgroundProps };

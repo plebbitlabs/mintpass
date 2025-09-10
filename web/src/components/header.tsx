@@ -17,7 +17,7 @@ export function Header({ children }: HeaderProps) {
   }, [router]);
 
   return (
-    <header className="border-b">
+    <header className="border-b relative z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 pointer-events-auto">
       <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
         <button 
           onClick={handleTitleClick}

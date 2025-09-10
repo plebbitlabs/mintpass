@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { Header } from '../components/header';
+import { PageCard } from '../components/page-card';
 
 export default function TermsAndConditions() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8 space-y-6">
-          <h1 className="text-2xl font-bold">Terms and Conditions</h1>
+        <PageCard title="Terms and Conditions" contentClassName="space-y-6">
           <p className="text-sm text-muted-foreground">
             Please read these terms carefully before using MintPass.
           </p>
@@ -56,7 +56,7 @@ export default function TermsAndConditions() {
               Privacy Policy
             </Link>
           </div>
-        </div>
+        </PageCard>
       </main>
     </div>
   );

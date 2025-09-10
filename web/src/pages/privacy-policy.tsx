@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { Header } from '../components/header';
+import { PageCard } from '../components/page-card';
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8 space-y-6">
-          <h1 className="text-2xl font-bold">Privacy Policy</h1>
+        <PageCard title="Privacy Policy" contentClassName="space-y-6">
           <p className="text-sm text-muted-foreground">
             This document describes how the MintPass website and backend handle data. It is provided for transparency and is not legal advice.
           </p>
@@ -85,7 +85,7 @@ export default function PrivacyPolicy() {
               Terms and Conditions
             </Link>
           </div>
-        </div>
+        </PageCard>
       </main>
     </div>
   );

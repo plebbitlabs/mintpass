@@ -228,7 +228,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         </div>
       )}
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8">
+        <div className="mx-auto max-w-md px-4 py-8 pointer-events-auto">
           <Card>
             <CardHeader>
               <CardTitle>Request your authentication NFT</CardTitle>
