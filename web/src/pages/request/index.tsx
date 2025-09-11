@@ -19,7 +19,12 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   const json = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) {
     const errMsg = (json as { error?: string })?.error || 'Request failed';
-    throw new Error(errMsg);
+    const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+    // Attach cooldown data to error if present
+    if (typeof (json as any)?.cooldownSeconds === 'number') {
+      error.cooldownSeconds = (json as any).cooldownSeconds;
+    }
+    throw error;
   }
   return json as T;
 }
@@ -39,6 +44,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
   const [agreePrivacy, setAgreePrivacy] = useState<boolean>(false);
   const [showAgreementError, setShowAgreementError] = useState<boolean>(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
@@ -86,6 +92,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     setEligibilityChecked(false);
     setIsEligible(false);
     setError(''); // Clear any previous eligibility errors
+    setCooldownSeconds(0); // Clear cooldown when inputs change
   }, [address, phone]);
 
   // Clear agreement error when both checkboxes are checked
@@ -94,6 +101,23 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       setShowAgreementError(false);
     }
   }, [agreeTerms, agreePrivacy, showAgreementError]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setInterval(() => {
+        setCooldownSeconds(prev => {
+          if (prev <= 1) {
+            setError(''); // Clear error when countdown reaches 0
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [cooldownSeconds]);
 
   const canCheckEligibility = useMemo(() => 
     address.trim().length > 0 && 
@@ -104,8 +128,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   );
 
   const canSend = useMemo(() => 
-    eligibilityChecked && isEligible && !loading,
-    [eligibilityChecked, isEligible, loading]
+    eligibilityChecked && isEligible && !loading && cooldownSeconds === 0,
+    [eligibilityChecked, isEligible, loading, cooldownSeconds]
   );
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
 
@@ -168,8 +192,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       await postJson<unknown>('/api/sms/send', { phoneE164: phone, address });
       setStep('code');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to send code';
-      setError(msg);
+      if (e instanceof Error) {
+        const errorWithCooldown = e as Error & { cooldownSeconds?: number };
+        if (errorWithCooldown.cooldownSeconds && typeof errorWithCooldown.cooldownSeconds === 'number') {
+          setCooldownSeconds(errorWithCooldown.cooldownSeconds);
+        }
+        setError(e.message);
+      } else {
+        setError('Failed to send code');
+      }
     } finally {
       setLoading(false);
     }
@@ -316,7 +347,13 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   {showAgreementError && (
                     <p className="text-sm text-destructive">Please agree to both Terms and Conditions and Privacy Policy before proceeding.</p>
                   )}
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {error && (
+                    <p className="text-sm text-destructive">
+                      {cooldownSeconds > 0 && error.includes('Please wait') 
+                        ? `Please wait ${cooldownSeconds}s before requesting another code`
+                        : error}
+                    </p>
+                  )}
                 </div>
               )}
 
