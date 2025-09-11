@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { kv } from '@vercel/kv';
 import { hashIdentifier } from '../../../../lib/hash';
 import { getClientIp } from '../../../../lib/request-ip';
+import { requireAdmin } from '../../../../lib/admin-auth';
 
 const Body = z.object({
-  adminPassword: z.string().min(1),
   address: z.string().min(1).optional(),
   phoneE164: z.string().min(5).optional(),
   clearIpCooldowns: z.boolean().optional(),
@@ -20,32 +20,12 @@ const Body = z.object({
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  if (!requireAdmin(req, res)) return;
+
   const parse = Body.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
-  
-  const { adminPassword, address, phoneE164, clearIpCooldowns } = parse.data;
-  
-  // Simple password protection - in production, use proper auth
-  const envPassword = process.env.ADMIN_PASSWORD;
-  const hasEnvPassword = Boolean(envPassword);
-  const passwordsMatch = adminPassword === envPassword;
-  
-  if (!hasEnvPassword) {
-    return res.status(500).json({ error: 'ADMIN_PASSWORD not configured in environment' });
-  }
-  
-  if (!passwordsMatch) {
-    // Log debug info server-side only (never send passwords in HTTP response)
-    if (process.env.NODE_ENV === 'development' && envPassword) {
-      console.error('[admin] Password mismatch:', {
-        providedLength: adminPassword.length,
-        expectedLength: envPassword.length,
-        providedStart: adminPassword.substring(0, 2),
-        expectedStart: envPassword.substring(0, 2),
-      });
-    }
-    return res.status(401).json({ error: 'Invalid password' });
-  }
+
+  const { address, phoneE164, clearIpCooldowns } = parse.data;
 
   const keysToDelete: string[] = [];
 
