@@ -19,17 +19,9 @@ function HexagonBackground({
   hexagonMargin = 3,
   ...props
 }: HexagonBackgroundProps) {
-  // Validate/coerce size early
+  // Validate/coerce size early (do not early-return before hooks)
   const size = Number(hexagonSize);
-  if (!Number.isFinite(size) || size <= 50) {
-    if (process.env.NODE_ENV !== 'production') {
-      // In dev, surface a clear error to help contributors
-      // eslint-disable-next-line no-console
-      console.error(`HexagonBackground: invalid hexagonSize=${hexagonSize}. Expected a number > 50.`);
-    }
-    // Fail safe by returning null to avoid layout/animation issues
-    return null;
-  }
+  const isValidSize = Number.isFinite(size) && size > 50;
 
   const hexagonWidth = size;
   const hexagonHeight = size * 1.1;
@@ -50,7 +42,7 @@ function HexagonBackground({
   const debounceTimerRef = React.useRef<number | null>(null);
 
   const updateGridDimensions = React.useCallback(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isValidSize) return;
     // Use the full document height instead of just viewport height
     const documentHeight = Math.max(
       document.body.scrollHeight,
@@ -60,9 +52,10 @@ function HexagonBackground({
     const rows = Math.ceil(documentHeight / rowSpacing);
     const columns = Math.ceil(window.innerWidth / hexagonWidth) + 1;
     setGridDimensions({ rows, columns });
-  }, [rowSpacing, hexagonWidth]);
+  }, [rowSpacing, hexagonWidth, isValidSize]);
 
   React.useEffect(() => {
+    if (!isValidSize) return;
     updateGridDimensions();
     window.addEventListener('resize', updateGridDimensions);
 
@@ -86,7 +79,7 @@ function HexagonBackground({
         debounceTimerRef.current = null;
       }
     };
-  }, [updateGridDimensions]);
+  }, [updateGridDimensions, isValidSize]);
 
   const updateActiveFromPoint = React.useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return;
@@ -123,6 +116,7 @@ function HexagonBackground({
   }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft]);
 
   React.useEffect(() => {
+    if (!isValidSize) return;
     const move = (e: MouseEvent) => updateActiveFromPoint(e.clientX, e.clientY);
     const timersMap = activeTimersRef.current;
     const leave = () => {
@@ -138,9 +132,11 @@ function HexagonBackground({
       for (const [, id] of timersMap) window.clearTimeout(id);
       timersMap.clear();
     };
-  }, [updateActiveFromPoint]);
+  }, [updateActiveFromPoint, isValidSize]);
 
   // Trail is managed with per-hex timeouts; no idle loop needed
+
+  if (!isValidSize) return null;
 
   return (
     <div

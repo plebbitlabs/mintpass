@@ -40,9 +40,9 @@ export const AnimatedThemeToggler = ({ className }: props) => {
           setTheme(newTheme);
         });
       }).ready;
-    } catch (err) {
+    } catch {
       // Fallback if View Transitions fails/rejects
-      console.warn('startViewTransition failed; falling back to direct theme set', err);
+      console.warn('startViewTransition failed; falling back to direct theme set');
       flushSync(() => {
         setTheme(newTheme);
       });
@@ -78,7 +78,7 @@ export const AnimatedThemeToggler = ({ className }: props) => {
         pseudoElement: "::view-transition-new(root)",
       },
       );
-    } catch (e) {
+    } catch {
       // no-op: animation is best-effort
     }
   };
