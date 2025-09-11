@@ -86,6 +86,7 @@ const CountrySelect = ({
   onChange,
 }: CountrySelectProps) => {
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const [searchValue, setSearchValue] = React.useState("");
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -95,7 +96,15 @@ const CountrySelect = ({
       modal
       onOpenChange={(open) => {
         setIsOpen(open);
-        if (open) setSearchValue("");
+        if (open) {
+          setSearchValue("");
+          // Blur the input to prevent auto focus
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.blur();
+            }
+          }, 0);
+        }
       }}
     >
       <PopoverTrigger asChild>
@@ -120,6 +129,7 @@ const CountrySelect = ({
       <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput
+            ref={inputRef}
             value={searchValue}
             onValueChange={(value) => {
               setSearchValue(value);
