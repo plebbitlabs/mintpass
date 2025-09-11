@@ -29,6 +29,12 @@ export async function verifyAdminTokenEdge(token: string | undefined, secret: st
   if (parts.length !== 2) return false;
   const [payloadB64, sig] = parts;
   try {
+    // Validate formats up-front
+    const isBase64Url = /^[A-Za-z0-9_-]+$/.test(payloadB64);
+    // sha256 HMAC hex digest should be 64 lowercase hex chars
+    const isHexSig = /^[0-9a-f]{64}$/.test(sig);
+    if (!isBase64Url || !isHexSig) return false;
+
     const expected = await hmacSha256Hex(payloadB64, secret);
     if (expected.length !== sig.length) return false;
     // timing-safe equal polyfill
@@ -38,7 +44,7 @@ export async function verifyAdminTokenEdge(token: string | undefined, secret: st
     }
     if (mismatch !== 0) return false;
 
-    // Verify exp with robust validation
+    // Verify payload with robust validation
     try {
       // Normalize base64url and add required padding for robust decoding
       const normalized = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
@@ -49,11 +55,25 @@ export async function verifyAdminTokenEdge(token: string | undefined, secret: st
       
       // Validate payload structure
       if (!payload || typeof payload !== 'object') return false;
-      if (!Number.isFinite(payload.v) || !Number.isFinite(payload.exp)) return false;
-      if (payload.v !== 1) return false;
-      
+      const { v, iat, exp } = payload as { v: unknown; iat: unknown; exp: unknown };
+      if (!Number.isFinite(v as number) || (v as number) !== 1) return false;
+      if (!Number.isFinite(iat as number) || !Number.isFinite(exp as number)) return false;
+
       const now = Math.floor(Date.now() / 1000);
-      return now < payload.exp;
+      const iatNum = Math.floor(iat as number);
+      const expNum = Math.floor(exp as number);
+
+      // iat must be in the past (<= now) but not older than 1 day
+      const maxIatSkewSeconds = 24 * 60 * 60; // 1 day
+      if (iatNum > now) return false;
+      if (iatNum < now - maxIatSkewSeconds) return false;
+
+      // exp must be in the future and not farther than 30 days from now
+      const maxTtlSeconds = 30 * 24 * 60 * 60; // 30 days
+      if (expNum <= now) return false;
+      if (expNum > now + maxTtlSeconds) return false;
+
+      return true;
     } catch {
       return false;
     }
