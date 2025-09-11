@@ -29,6 +29,26 @@ export async function isSmsSendInCooldown(ip: string, phoneE164: string) {
   return Boolean(legacyP || legacyI);
 }
 
+export async function getSmsSendCooldownRemaining(ip: string, phoneE164: string): Promise<number> {
+  // Check TTL for both phone and IP cooldown keys
+  const [phoneTtl, ipTtl] = await Promise.all([
+    kv.ttl(smsPhoneCooldownKey(phoneE164)),
+    kv.ttl(smsIpCooldownKey(ip)),
+  ]);
+  
+  // Also check legacy plaintext keys
+  const [legacyPhoneTtl, legacyIpTtl] = await Promise.all([
+    kv.ttl(`cd:sms:phone:${phoneE164}`),
+    kv.ttl(`cd:sms:ip:${ip}`),
+  ]);
+  
+  // Return the maximum TTL (whichever cooldown has more time remaining)
+  // TTL returns -1 if key doesn't exist, -2 if key exists but has no expiry
+  const validTtls = [phoneTtl, ipTtl, legacyPhoneTtl, legacyIpTtl].filter(ttl => ttl > 0);
+  
+  return validTtls.length > 0 ? Math.max(...validTtls) : 0;
+}
+
 export async function setSmsSendCooldown(ip: string, phoneE164: string) {
   const ttl = Number.isFinite(policy.SMS_SEND_COOLDOWN_SECONDS) && policy.SMS_SEND_COOLDOWN_SECONDS > 0
     ? policy.SMS_SEND_COOLDOWN_SECONDS

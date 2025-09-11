@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// Guard against accidental client bundling of this module
+if (typeof window !== 'undefined') {
+  throw new Error('env.ts must not be imported on the client');
+}
+
 const ethAddress = z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid 0x-prefixed Ethereum address');
 
 const envSchema = z.object({
@@ -25,6 +30,14 @@ const envSchema = z.object({
   SMOKE_TEST_TOKEN: z.string().optional(),
   // Keyed hashing pepper for identifiers (HMAC key)
   HASH_PEPPER: z.string().optional(),
+
+  // Admin credentials (server-only)
+  ADMIN_PASSWORD: z
+    .string()
+    .min(12, 'Admin password must be at least 12 characters')
+    .optional(),
+  ADMIN_SESSION_SECRET: z.string().min(32, 'Admin session secret must be at least 32 characters').optional(),
+  ADMIN_SESSION_MAX_LIFETIME_SECONDS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -48,7 +61,28 @@ export const env = {
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
   SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
   HASH_PEPPER: process.env.HASH_PEPPER,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+  ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
+  ADMIN_SESSION_MAX_LIFETIME_SECONDS: process.env.ADMIN_SESSION_MAX_LIFETIME_SECONDS,
 };
+
+// Server-only accessors for secrets - use validated schema values
+export function getAdminPassword(): string | undefined {
+  return env.ADMIN_PASSWORD;
+}
+
+export function getAdminSessionSecret(): string | undefined {
+  return env.ADMIN_SESSION_SECRET;
+}
+
+export function getAdminSessionMaxLifetimeSeconds(): number {
+  const raw = env.ADMIN_SESSION_MAX_LIFETIME_SECONDS;
+  const n = raw ? Number(raw) : NaN;
+  // Default to 8 hours if unset or invalid
+  if (!Number.isFinite(n) || n <= 0) return 8 * 60 * 60;
+  // Cap to 24 hours
+  return Math.min(n, 24 * 60 * 60);
+}
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {
   const value = env[key];

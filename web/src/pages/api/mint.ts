@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted } from '../../../lib/kv';
 import { getClientIp } from '../../../lib/request-ip';
 import { isMintIpInCooldown, setMintIpCooldown } from '../../../lib/cooldowns';
-import { env } from '../../../lib/env';
+import { env, requireEnv } from '../../../lib/env';
 import { MintPassV1Abi } from '../../../lib/abi';
 import { Wallet, JsonRpcProvider, Contract } from 'ethers';
 import { hashIdentifier } from '../../../lib/hash';
@@ -46,8 +46,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Mint cooldown active for this IP' });
   }
 
-  // Derive ISO country code from edge headers if present (uppercase), else 'ZZ'
-  const hdrCountry = (req.headers['x-vercel-ip-country'] as string) || '';
+  // Derive ISO country code from edge headers if present (available for future geo-blocking)
+  // const hdrCountry = (req.headers['x-vercel-ip-country'] as string) || '';
   // const country2 = (hdrCountry || '').toUpperCase(); // Available for future use
 
   // If on-chain envs are configured, perform on-chain mint; otherwise, stub-mark as minted
@@ -58,9 +58,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     env.MINTPASSV1_ADDRESS_BASE_SEPOLIA
   ) {
     try {
-      const provider = new JsonRpcProvider(env.BASE_SEPOLIA_RPC_URL);
-      const wallet = new Wallet(env.MINTER_PRIVATE_KEY, provider);
-      const contract = new Contract(env.MINTPASSV1_ADDRESS_BASE_SEPOLIA!, MintPassV1Abi, wallet) as unknown as {
+      const provider = new JsonRpcProvider(requireEnv('BASE_SEPOLIA_RPC_URL'));
+      const wallet = new Wallet(requireEnv('MINTER_PRIVATE_KEY'), provider);
+      const contract = new Contract(requireEnv('MINTPASSV1_ADDRESS_BASE_SEPOLIA'), MintPassV1Abi, wallet) as unknown as {
         estimateGas: { mint: (to: string, tokenType: number) => Promise<bigint> };
         mint: (
           to: string,

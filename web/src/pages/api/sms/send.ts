@@ -5,7 +5,7 @@ import { saveSmsCode } from '../../../../lib/kv';
 import { assessIpReputation } from '../../../../lib/ip-reputation';
 import { analyzePhone } from '../../../../lib/phone-intel';
 import { getClientIp } from '../../../../lib/request-ip';
-import { isSmsSendInCooldown, setSmsSendCooldown } from '../../../../lib/cooldowns';
+import { isSmsSendInCooldown, setSmsSendCooldown, getSmsSendCooldownRemaining } from '../../../../lib/cooldowns';
 import { sendOtpSms } from '../../../../lib/sms';
 import { env } from '../../../../lib/env';
 import { hashIdentifier } from '../../../../lib/hash';
@@ -43,7 +43,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Cooldown checks per IP and phone
   if (await isSmsSendInCooldown(ip, phoneE164)) {
-    return res.status(429).json({ error: 'Please wait before requesting another code' });
+    let remainingSeconds = 0;
+    try {
+      remainingSeconds = await getSmsSendCooldownRemaining(ip, phoneE164);
+    } catch {
+      remainingSeconds = 0;
+    }
+    const remainingTime = remainingSeconds > 0 ? `${remainingSeconds}s` : '';
+    const errorMessage = remainingTime 
+      ? `Please wait ${remainingTime} before requesting another code`
+      : 'Please wait before requesting another code';
+    if (remainingSeconds > 0) res.setHeader('Retry-After', String(remainingSeconds));
+    return res.status(429).json({ error: errorMessage, cooldownSeconds: remainingSeconds });
   }
 
   // Reject disposable/VOIP/high-risk numbers if phone intelligence is configured

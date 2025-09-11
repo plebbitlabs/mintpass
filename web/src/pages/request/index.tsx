@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { PhoneInput } from '../../components/ui/phone-input';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { Header } from '../../components/header';
+import { PageCard } from '../../components/page-card';
+import { ConfettiCelebration } from '../../components/confetti-celebration';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -14,8 +18,15 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   const json = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) {
-    const errMsg = (json as { error?: string })?.error || 'Request failed';
-    throw new Error(errMsg);
+    const data = json as { error?: string; cooldownSeconds?: unknown };
+    const errMsg = data?.error || 'Request failed';
+    const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+    // Attach cooldown data to error if present
+    const cooldownSecondsValue = data?.cooldownSeconds;
+    if (typeof cooldownSecondsValue === 'number') {
+      error.cooldownSeconds = cooldownSecondsValue;
+    }
+    throw error;
   }
   return json as T;
 }
@@ -32,6 +43,10 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
   const [isEligible, setIsEligible] = useState<boolean>(false);
   const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
+  const [agreePrivacy, setAgreePrivacy] = useState<boolean>(false);
+  const [showAgreementError, setShowAgreementError] = useState<boolean>(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
@@ -78,22 +93,63 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   useEffect(() => {
     setEligibilityChecked(false);
     setIsEligible(false);
-    if (error && step === 'enter') setError('');
+    setError(''); // Clear any previous eligibility errors
+    setCooldownSeconds(0); // Clear cooldown when inputs change
   }, [address, phone]);
 
-  const canCheckEligibility = useMemo(() => 
-    address.trim().length > 0 && 
-    phone.trim().length >= 5 && 
-    !eligibilityChecked &&
-    !checkingEligibility, 
-    [address, phone, eligibilityChecked, checkingEligibility]
-  );
+  // Clear agreement error when both checkboxes are checked
+  useEffect(() => {
+    if (agreeTerms && agreePrivacy && showAgreementError) {
+      setShowAgreementError(false);
+    }
+  }, [agreeTerms, agreePrivacy, showAgreementError]);
 
-  const canSend = useMemo(() => 
-    eligibilityChecked && isEligible && !loading,
-    [eligibilityChecked, isEligible, loading]
-  );
+  // Countdown timer effect
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setInterval(() => {
+        setCooldownSeconds(prev => {
+          if (prev <= 1) {
+            setError(''); // Clear error when countdown reaches 0
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [cooldownSeconds]);
+
+  // Removed unused eligibility helpers to satisfy linter
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
+
+  function handleCheckEligibilityClick() {
+    // Clear any previous agreement error
+    setShowAgreementError(false);
+    
+    // Validate address
+    if (address.trim().length === 0) {
+      setError('Please enter an Ethereum address');
+      return;
+    }
+    
+    // Validate phone
+    if (!phone || phone.length < 5) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+    
+    // Check if user has agreed to both terms and privacy
+    if (!agreeTerms || !agreePrivacy) {
+      setShowAgreementError(true);
+      setError('');
+      return;
+    }
+    
+    // All validations passed, proceed with eligibility check
+    handleCheckEligibility();
+  }
 
   async function handleCheckEligibility() {
     try {
@@ -127,8 +183,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       await postJson<unknown>('/api/sms/send', { phoneE164: phone, address });
       setStep('code');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to send code';
-      setError(msg);
+      if (e instanceof Error) {
+        const errorWithCooldown = e as Error & { cooldownSeconds?: number };
+        if (errorWithCooldown.cooldownSeconds && typeof errorWithCooldown.cooldownSeconds === 'number') {
+          setCooldownSeconds(errorWithCooldown.cooldownSeconds);
+        }
+        setError(e.message);
+      } else {
+        setError('Failed to send code');
+      }
     } finally {
       setLoading(false);
     }
@@ -175,13 +238,45 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Request your authentication NFT</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <PageCard
+          title="Request your authentication NFT"
+          titleAs="h1"
+          footerClassName="flex gap-2"
+          footer={
+            <>
+              {step === 'enter' && (
+                <>
+                  <Button 
+                    className="w-full"
+                    onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
+                    disabled={checkingEligibility || loading}
+                  >
+                    {loading ? 'Sending…' : 
+                     checkingEligibility ? 'Checking…' : 
+                     eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                    onClick={() => router.push('/')}
+                  >
+                    Go back
+                  </Button>
+                </>
+              )}
+              {step === 'code' && (
+                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
+                  {loading ? 'Verifying…' : 'Verify & mint'}
+                </Button>
+              )}
+              {step === 'done' && (
+                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
+              )}
+            </>
+          }
+        >
               {step === 'enter' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -196,36 +291,98 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone number (E.164)</Label>
-                    <Input 
+                    <Label htmlFor="phone">Phone number</Label>
+                    <PhoneInput 
                       id="phone" 
-                      value={phone} 
-                      onChange={(e) => {
-                        setPhone(e.target.value);
+                      value={phone}
+                      onChange={(value) => {
+                        setPhone(value || '');
                       }} 
-                      placeholder="+15555550123" 
+                      placeholder="Enter phone number"
+                      defaultCountry="US"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <input
+                        id="agree-terms"
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-input text-primary"
+                      />
+                      <div className="text-sm font-normal">
+                        <Label htmlFor="agree-terms" className="font-normal inline mr-1">I agree to the</Label>
+                        <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
+                        <span className="text-red-500 ml-1">*</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input
+                        id="agree-privacy"
+                        type="checkbox"
+                        checked={agreePrivacy}
+                        onChange={(e) => setAgreePrivacy(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-input text-primary"
+                      />
+                      <div className="text-sm font-normal">
+                        <Label htmlFor="agree-privacy" className="font-normal inline mr-1">I agree to the</Label>
+                        <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
+                        <span className="text-red-500 ml-1">*</span>
+                      </div>
+                    </div>
+                  </div>
                   {eligibilityChecked && isEligible && (
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You're eligible.</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You&apos;re eligible.</p>
                   )}
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {showAgreementError && (
+                    <p className="text-sm text-destructive">Please agree to both Terms and Conditions and Privacy Policy before proceeding.</p>
+                  )}
+                  {error && (
+                    <p className="text-sm text-destructive">
+                      {cooldownSeconds > 0 && error.includes('Please wait') 
+                        ? `Please wait ${cooldownSeconds}s before requesting another code`
+                        : error}
+                    </p>
+                  )}
                 </div>
               )}
 
               {step === 'code' && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
-                    <Input value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} placeholder="123456" />
+                    <div className="flex justify-center">
+                      <InputOTP maxLength={6} value={code} onChange={setCode}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                   </div>
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>
               )}
 
               {step === 'done' && (
-                <div className="space-y-2">
-                  <p className="font-medium">Authentication NFT received.</p>
+                <div className="space-y-4 text-center">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-[#077b91]">
+                      You received your MintPass NFT!
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
+                      You can close this page and head back to the Plebbit application of your choice.
+                    </p>
+                  </div>
                   {txHash ? (
                     <p className="text-sm text-muted-foreground">Tx: {txHash}</p>
                   ) : (
@@ -233,29 +390,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   )}
                 </div>
               )}
-            </CardContent>
-            <CardFooter className="flex gap-2">
-              {step === 'enter' && (
-                <Button 
-                  onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibility} 
-                  disabled={(!canCheckEligibility && !canSend) || checkingEligibility || loading}
-                >
-                  {loading ? 'Sending…' : 
-                   checkingEligibility ? 'Checking…' : 
-                   eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
-                </Button>
-              )}
-              {step === 'code' && (
-                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
-                  {loading ? 'Verifying…' : 'Verify & mint'}
-                </Button>
-              )}
-              {step === 'done' && (
-                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
+        </PageCard>
       </main>
     </div>
   );

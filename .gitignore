@@ -63,3 +63,5 @@ deployments/local/
 .coverage_contracts/
 
 .plebbit/
+
+.playwright-mcp

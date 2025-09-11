@@ -1,0 +1,63 @@
+import * as React from 'react'
+
+import { cn } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardFooter } from './ui/card'
+
+type PageCardProps = {
+  title: string
+  children: React.ReactNode
+  contentClassName?: string
+  titleClassName?: string
+  containerClassName?: string
+  titleAs?: React.ElementType
+  footer?: React.ReactNode
+  footerClassName?: string
+}
+
+export function PageCard({
+  title,
+  children,
+  contentClassName = '',
+  titleClassName = '',
+  containerClassName,
+  titleAs = 'h2',
+  footer,
+  footerClassName = '',
+}: PageCardProps) {
+  const TitleTag = titleAs
+  
+  // Get appropriate font size class based on heading level
+  const getDefaultTitleClasses = (tagName: React.ElementType) => {
+    if (typeof tagName === 'string') {
+      switch (tagName) {
+        case 'h1': return 'text-xl md:text-2xl font-semibold leading-none tracking-tight'
+        case 'h2': return 'text-lg md:text-xl font-semibold leading-none tracking-tight'
+        case 'h3': return 'text-base md:text-lg font-semibold leading-none tracking-tight'
+        default: return 'font-semibold leading-none tracking-tight'
+      }
+    }
+    return 'font-semibold leading-none tracking-tight'
+  }
+  
+  return (
+    <div className={cn('mx-auto max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl px-4 md:px-6 lg:px-8 py-8 md:py-10 lg:py-12 pointer-events-auto', containerClassName)}>
+      <Card>
+        <CardHeader>
+          <TitleTag className={cn(getDefaultTitleClasses(titleAs), titleClassName)}>
+            {title}
+          </TitleTag>
+        </CardHeader>
+        <CardContent className={cn(contentClassName)}>
+          {children}
+        </CardContent>
+        {footer && (
+          <CardFooter className={cn(footerClassName)}>
+            {footer}
+          </CardFooter>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+

@@ -55,4 +55,32 @@
   body {
     @apply bg-background text-foreground;
   }
+  :root {
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+  }
+  .dark {
+    /* Use lower lightness and adjusted chroma for contrast in dark mode */
+    --color-1: oklch(62% 0.18 28);
+    --color-2: oklch(58% 0.22 305);
+    --color-3: oklch(60% 0.14 255);
+    --color-4: oklch(68% 0.11 230);
+    --color-5: oklch(74% 0.19 135);
+  }
+}
+
+/* View transition styles - only disable default transitions, not all animations */
+::view-transition-old(root), ::view-transition-new(root) {
+    mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+    animation: none;
+}
+
+::view-transition-new(root) {
+    animation: none;
 }
