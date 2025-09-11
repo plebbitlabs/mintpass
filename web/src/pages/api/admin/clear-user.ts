@@ -80,6 +80,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const deleteResult = await kv.del(...keysToDelete);
       actualDeletedCount = typeof deleteResult === 'number' ? deleteResult : 0;
     } catch (err) {
+      // Audit failure (avoid PII; hash already applied in keys)
+      try {
+        const ts = new Date().toISOString();
+        const actor = req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
+        console.error('[AUDIT] admin_clear_user_failed', { ts, actor, attemptedKeys: keysToDelete.length, error: 'kv_del_failed' });
+      } catch {}
       console.error('Failed to delete keys in clear-user', { address, phoneE164, keysToDelete, err });
       return res.status(500).json({ error: 'Failed to delete some keys' });
     }
@@ -92,6 +98,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     phoneKeys: phoneE164 ? 8 : 0, 
     ipCooldownKeys: clearIpCooldowns ? 4 : 0,
   } : undefined;
+
+  // Audit success
+  try {
+    const ts = new Date().toISOString();
+    const actor = req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
+    console.info('[AUDIT] admin_clear_user_success', { ts, actor, attemptedKeys: keysToDelete.length, deletedKeys: actualDeletedCount });
+  } catch {}
 
   return res.status(200).json({ 
     ok: true, 

@@ -8,7 +8,7 @@ import { timingSafeEqual, createHash } from 'crypto';
 
 const Body = z.object({ password: z.string().min(1) });
 
-const loginRatelimit = createRatelimit('rl:admin:login', 10, 60); // 10 per minute per IP
+const loginRatelimit = createRatelimit('rl:admin:login', 5, 60); // 5 per minute per IP
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -29,7 +29,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const providedHash = createHash('sha256').update(parse.data.password).digest();
   const expectedHash = createHash('sha256').update(envPassword).digest();
   const ok = timingSafeEqual(providedHash, expectedHash);
-  if (!ok) return res.status(401).json({ error: 'Invalid password' });
+  if (!ok) {
+    // Audit failed login attempt (do not log secrets)
+    try {
+      const ts = new Date().toISOString();
+      const ipForLog = ip;
+      console.warn('[AUDIT] admin_login_failed', { ts, ip: ipForLog, reason: 'Invalid password' });
+    } catch {}
+    return res.status(401).json({ error: 'Invalid password' });
+  }
 
   const token = createAdminToken();
   setAdminSessionCookie(res, token, AdminAuth.DEFAULT_SESSION_TTL_SECONDS);

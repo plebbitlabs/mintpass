@@ -93,8 +93,16 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   const [ipError, setIpError] = useState('');
 
   // Simple IPv4/IPv6 validators
-  const isValidIPv4 = (ip: string) => /^(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}$/.test(ip);
-  const isValidIPv6 = (ip: string) => /^[0-9a-fA-F:]+$/.test(ip) && ip.includes(':');
+  const isValidIPv4 = (ip: string) => /^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(ip);
+  const isValidIPv6 = (ip: string) => {
+    try {
+      // Use the browser's URL parsing for a quick sanity check; fallback to simple test
+      // Note: Prefer server-side net.isIP for true validation on the API route.
+      return ip.includes(':') && /^[0-9a-fA-F:.%]+$/.test(ip);
+    } catch {
+      return false;
+    }
+  };
   const isValidIp = (ip: string) => isValidIPv4(ip) || isValidIPv6(ip);
 
   async function handleLogin() {

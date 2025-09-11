@@ -8,7 +8,7 @@ export function ConfettiCelebration() {
     const celebrateWithSideCannons = () => {
       const end = Date.now() + 1 * 1000; // 1 second
       const colors = ["#9ddcdd", "#077b91"]; // MintPass project colors
-      let animationId: number;
+      let animationId: number | null = null;
 
       const frame = () => {
         if (Date.now() > end) return;
@@ -37,9 +37,7 @@ export function ConfettiCelebration() {
 
       // Return cleanup function
       return () => {
-        if (animationId) {
-          cancelAnimationFrame(animationId);
-        }
+        if (animationId !== null) cancelAnimationFrame(animationId);
       };
     };
 

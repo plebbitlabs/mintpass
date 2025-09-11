@@ -195,9 +195,11 @@ const CountrySelectOption = ({
       <FlagComponent country={country} countryName={countryName} />
       <span className="flex-1 text-sm">{countryName}</span>
       {(() => {
-        const code = RPNInput.getCountryCallingCode(country);
-        return typeof code === 'string' && code.length > 0 ? (
-          <span className="text-sm text-foreground/50">{`+${code}`}</span>
+        const code = RPNInput.getCountryCallingCode(country) as unknown;
+        if (code == null) return null;
+        const codeStr = String(code);
+        return codeStr.length > 0 ? (
+          <span className="text-sm text-foreground/50">{`+${codeStr}`}</span>
         ) : null;
       })()}
       <CheckIcon
