@@ -9,7 +9,7 @@ type PageCardProps = {
   contentClassName?: string
   titleClassName?: string
   containerClassName?: string
-  titleAs?: keyof JSX.IntrinsicElements
+  titleAs?: React.ElementType
 }
 
 export function PageCard({
@@ -21,11 +21,25 @@ export function PageCard({
   titleAs = 'h2',
 }: PageCardProps) {
   const TitleTag = titleAs
+  
+  // Get appropriate font size class based on heading level
+  const getDefaultTitleClasses = (tagName: React.ElementType) => {
+    if (typeof tagName === 'string') {
+      switch (tagName) {
+        case 'h1': return 'text-xl font-semibold leading-none tracking-tight'
+        case 'h2': return 'text-lg font-semibold leading-none tracking-tight'
+        case 'h3': return 'text-base font-semibold leading-none tracking-tight'
+        default: return 'font-semibold leading-none tracking-tight'
+      }
+    }
+    return 'font-semibold leading-none tracking-tight'
+  }
+  
   return (
     <div className={cn('mx-auto max-w-md px-4 py-8 pointer-events-auto', containerClassName)}>
       <Card>
         <CardHeader>
-          <TitleTag className={cn('font-semibold leading-none tracking-tight', titleClassName)}>
+          <TitleTag className={cn(getDefaultTitleClasses(titleAs), titleClassName)}>
             {title}
           </TitleTag>
         </CardHeader>
