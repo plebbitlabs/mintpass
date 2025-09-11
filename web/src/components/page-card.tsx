@@ -30,9 +30,9 @@ export function PageCard({
   const getDefaultTitleClasses = (tagName: React.ElementType) => {
     if (typeof tagName === 'string') {
       switch (tagName) {
-        case 'h1': return 'text-xl font-semibold leading-none tracking-tight'
-        case 'h2': return 'text-lg font-semibold leading-none tracking-tight'
-        case 'h3': return 'text-base font-semibold leading-none tracking-tight'
+        case 'h1': return 'text-xl md:text-2xl font-semibold leading-none tracking-tight'
+        case 'h2': return 'text-lg md:text-xl font-semibold leading-none tracking-tight'
+        case 'h3': return 'text-base md:text-lg font-semibold leading-none tracking-tight'
         default: return 'font-semibold leading-none tracking-tight'
       }
     }
@@ -40,7 +40,7 @@ export function PageCard({
   }
   
   return (
-    <div className={cn('mx-auto max-w-md px-4 py-8 pointer-events-auto', containerClassName)}>
+    <div className={cn('mx-auto max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl px-4 md:px-6 lg:px-8 py-8 md:py-10 lg:py-12 pointer-events-auto', containerClassName)}>
       <Card>
         <CardHeader>
           <TitleTag className={cn(getDefaultTitleClasses(titleAs), titleClassName)}>
