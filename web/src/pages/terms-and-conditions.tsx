@@ -7,7 +7,7 @@ export default function TermsAndConditions() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <PageCard title="Terms and Conditions" contentClassName="space-y-6">
+        <PageCard title="Terms and Conditions" titleAs="h1" contentClassName="space-y-6">
           <p className="text-sm text-muted-foreground">
             Please read these terms carefully before using MintPass.
           </p>

@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <PageCard title="Privacy Policy" contentClassName="space-y-6">
+        <PageCard title="Privacy Policy" titleAs="h1" contentClassName="space-y-6">
           <p className="text-sm text-muted-foreground">
             This document describes how the MintPass website and backend handle data. It is provided for transparency and is not legal advice.
           </p>

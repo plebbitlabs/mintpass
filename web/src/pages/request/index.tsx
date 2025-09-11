@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -270,7 +271,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       />
                       <Label htmlFor="agree-terms" className="text-sm font-normal">
                         I agree to the{' '}
-                        <a href="/terms-and-conditions" className="underline" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>
+                        <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
                         <span className="text-red-500 ml-1">*</span>
                       </Label>
                     </div>
@@ -284,7 +285,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       />
                       <Label htmlFor="agree-privacy" className="text-sm font-normal">
                         I agree to the{' '}
-                        <a href="/privacy-policy" className="underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                        <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
                         <span className="text-red-500 ml-1">*</span>
                       </Label>
                     </div>
