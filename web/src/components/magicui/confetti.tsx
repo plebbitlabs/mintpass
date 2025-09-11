@@ -135,9 +135,9 @@ const ConfettiButtonComponent = ({
     try {
       // Call original onClick handler if provided
       if (typeof onClick === 'function') {
-        const result = onClick(event);
+        const result = onClick(event) as unknown;
         // Await if it returns a promise
-        if (result && typeof result.then === 'function') {
+        if (result != null && typeof (result as { then?: unknown })?.then === 'function') {
           await result;
         }
       }
