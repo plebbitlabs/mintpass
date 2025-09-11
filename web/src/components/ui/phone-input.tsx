@@ -99,11 +99,11 @@ const CountrySelect = ({
         if (open) {
           setSearchValue("");
           // Blur the input to prevent auto focus
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             if (inputRef.current) {
               inputRef.current.blur();
             }
-          }, 0);
+          });
         }
       }}
     >
@@ -194,7 +194,12 @@ const CountrySelectOption = ({
     <CommandItem className="gap-2" onSelect={handleSelect}>
       <FlagComponent country={country} countryName={countryName} />
       <span className="flex-1 text-sm">{countryName}</span>
-      <span className="text-sm text-foreground/50">{`+${RPNInput.getCountryCallingCode(country)}`}</span>
+      {(() => {
+        const code = RPNInput.getCountryCallingCode(country);
+        return typeof code === 'string' && code.length > 0 ? (
+          <span className="text-sm text-foreground/50">{`+${code}`}</span>
+        ) : null;
+      })()}
       <CheckIcon
         className={`ml-auto size-4 ${country === selectedCountry ? "opacity-100" : "opacity-0"}`}
       />
@@ -203,11 +208,13 @@ const CountrySelectOption = ({
 };
 
 const FlagComponent = ({ country, countryName }: RPNInput.FlagProps) => {
-  const Flag = flags[country];
+  type PhoneFlagComponent = React.ComponentType<{ title?: string }>;
+  const map = flags as Record<string, PhoneFlagComponent>;
+  const Flag = country ? map[country] : undefined;
 
   return (
     <span className="flex h-4 w-6 overflow-hidden rounded-sm bg-foreground/20 [&_svg:not([class*='size-'])]:size-full">
-      {Flag && <Flag title={countryName} />}
+      {Flag ? <Flag title={countryName} /> : null}
     </span>
   );
 };

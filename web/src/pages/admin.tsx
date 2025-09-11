@@ -90,6 +90,12 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [targetIp, setTargetIp] = useState('');
+  const [ipError, setIpError] = useState('');
+
+  // Simple IPv4/IPv6 validators
+  const isValidIPv4 = (ip: string) => /^(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}$/.test(ip);
+  const isValidIPv6 = (ip: string) => /^[0-9a-fA-F:]+$/.test(ip) && ip.includes(':');
+  const isValidIp = (ip: string) => isValidIPv4(ip) || isValidIPv6(ip);
 
   async function handleLogin() {
     if (!password.trim()) {
@@ -129,11 +135,19 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
     try {
       setError('');
       setMessage('');
-      setLoading(true);
-      if (clearIpCooldowns && !targetIp.trim()) {
-        setError('Target IP is required when clearing IP cooldowns');
-        return;
+      setIpError('');
+      if (clearIpCooldowns) {
+        const trimmed = targetIp.trim();
+        if (!trimmed) {
+          setError('Target IP is required when clearing IP cooldowns');
+          return;
+        }
+        if (!isValidIp(trimmed)) {
+          setIpError('Enter a valid IPv4 or IPv6 address');
+          return;
+        }
       }
+      setLoading(true);
       
       const result = await postJson<{ 
         ok: boolean; 
@@ -234,9 +248,18 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
                 <Input
                   id="clear-target-ip"
                   value={targetIp}
-                  onChange={(e) => setTargetIp(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setTargetIp(v);
+                    if (v.trim().length === 0) {
+                      setIpError(clearIpCooldowns ? 'Target IP is required when clearing IP cooldowns' : '');
+                    } else {
+                      setIpError(isValidIp(v.trim()) ? '' : 'Enter a valid IPv4 or IPv6 address');
+                    }
+                  }}
                   placeholder="127.0.0.1 or ::1"
                 />
+                {ipError && <p className="text-xs text-destructive">{ipError}</p>}
               </div>
             )}
 

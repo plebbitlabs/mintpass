@@ -32,7 +32,10 @@ const envSchema = z.object({
   HASH_PEPPER: z.string().optional(),
 
   // Admin credentials (server-only)
-  ADMIN_PASSWORD: z.string().min(1).optional(),
+  ADMIN_PASSWORD: z
+    .string()
+    .min(12, 'Admin password must be at least 12 characters')
+    .optional(),
   ADMIN_SESSION_SECRET: z.string().min(32, 'Admin session secret must be at least 32 characters').optional(),
 });
 

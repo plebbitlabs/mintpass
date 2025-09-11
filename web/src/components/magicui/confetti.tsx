@@ -48,14 +48,21 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
   const canvasRef = useCallback(
     (node: HTMLCanvasElement) => {
       if (node !== null) {
-        if (instanceRef.current) return;
+        if (instanceRef.current) {
+          try {
+            instanceRef.current.reset();
+          } catch {}
+          instanceRef.current = null;
+        }
         instanceRef.current = confetti.create(node, {
           resize: true, // Default value
           ...globalOptions, // Allow globalOptions to override defaults
         });
       } else {
         if (instanceRef.current) {
-          instanceRef.current.reset();
+          try {
+            instanceRef.current.reset();
+          } catch {}
           instanceRef.current = null;
         }
       }
