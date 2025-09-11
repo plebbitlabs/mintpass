@@ -19,12 +19,24 @@ function HexagonBackground({
   hexagonMargin = 3,
   ...props
 }: HexagonBackgroundProps) {
-  const hexagonWidth = hexagonSize;
-  const hexagonHeight = hexagonSize * 1.1;
-  const rowSpacing = hexagonSize * 0.8;
-  const baseMarginTop = -36 - 0.275 * (hexagonSize - 100);
+  // Validate/coerce size early
+  const size = Number(hexagonSize);
+  if (!Number.isFinite(size) || size <= 50) {
+    if (process.env.NODE_ENV !== 'production') {
+      // In dev, surface a clear error to help contributors
+      // eslint-disable-next-line no-console
+      console.error(`HexagonBackground: invalid hexagonSize=${hexagonSize}. Expected a number > 50.`);
+    }
+    // Fail safe by returning null to avoid layout/animation issues
+    return null;
+  }
+
+  const hexagonWidth = size;
+  const hexagonHeight = size * 1.1;
+  const rowSpacing = size * 0.8;
+  const baseMarginTop = -36 - 0.275 * (size - 100);
   const computedMarginTop = baseMarginTop + hexagonMargin;
-  const oddRowMarginLeft = -(hexagonSize / 2);
+  const oddRowMarginLeft = -(size / 2);
   const evenRowMarginLeft = hexagonMargin / 2;
 
   const [gridDimensions, setGridDimensions] = React.useState({

@@ -48,8 +48,11 @@ export const AnimatedThemeToggler = ({ className }: props) => {
       });
     }
 
-    const { top, left, width, height } =
-      buttonRef.current.getBoundingClientRect();
+    // Guard against unmounts or ref becoming null after async boundary
+    const buttonEl = buttonRef.current;
+    if (!buttonEl || !buttonEl.isConnected || !document.documentElement) return;
+
+    const { top, left, width, height } = buttonEl.getBoundingClientRect();
     
     // Calculate center coordinates
     const centerX = left + width / 2;
@@ -60,7 +63,9 @@ export const AnimatedThemeToggler = ({ className }: props) => {
     const dy = Math.max(centerY, window.innerHeight - centerY);
     const maxRad = Math.hypot(dx, dy);
 
-    document.documentElement.animate(
+    // As a final guard, wrap animate in try/catch to avoid runtime errors
+    try {
+      document.documentElement.animate(
       {
         clipPath: [
           `circle(0px at ${centerX}px ${centerY}px)`,
@@ -72,7 +77,10 @@ export const AnimatedThemeToggler = ({ className }: props) => {
         easing: "ease-in-out",
         pseudoElement: "::view-transition-new(root)",
       },
-    );
+      );
+    } catch (e) {
+      // no-op: animation is best-effort
+    }
   };
   
   // Show consistent loading state until hydration is complete

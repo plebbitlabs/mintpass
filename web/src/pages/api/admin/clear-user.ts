@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import net from 'node:net';
 import { z } from 'zod';
 import { kv } from '@vercel/kv';
 import { hashIdentifier } from '../../../../lib/hash';
@@ -8,6 +9,7 @@ const Body = z.object({
   address: z.string().min(1).optional(),
   phoneE164: z.string().min(5).optional(),
   clearIpCooldowns: z.boolean().optional(),
+  targetIp: z.string().trim().optional(),
 }).refine(
   (data) => data.address || data.phoneE164,
   {
@@ -24,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const parse = Body.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
 
-  const { address, phoneE164, clearIpCooldowns } = parse.data;
+  const { address, phoneE164, clearIpCooldowns, targetIp } = parse.data;
 
   const keysToDelete: string[] = [];
 
@@ -53,12 +55,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (clearIpCooldowns) {
     // Require explicit targetIp rather than using requester IP to avoid abuse
-    const targetIpRaw = (req.body?.targetIp as string | undefined)?.trim();
+    const targetIpRaw = typeof targetIp === 'string' ? targetIp.trim() : undefined;
     if (targetIpRaw) {
-      // Basic IPv4/IPv6 validation
-      const ipv4 = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)(\.(25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/;
-      const ipv6 = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^(([0-9a-fA-F]{1,4}:){1,7}:)$|^(:{1,7}[0-9a-fA-F]{1,4})$/;
-      const isValidIp = ipv4.test(targetIpRaw) || ipv6.test(targetIpRaw);
+      const isValidIp = net.isIP(targetIpRaw) > 0;
       if (!isValidIp) {
         return res.status(400).json({ error: 'Invalid targetIp' });
       }

@@ -22,9 +22,8 @@ interface Document {
 }
 
 interface KeyframeAnimationOptions extends KeyframeEffectOptions {
-  /** 
-   * Specifies the pseudo-element to animate
-   * Used for view transition animations
-   */
-  pseudoElement?: string;
+  /** Unique id for the animation (spec addition) */
+  id?: string;
+  /** Associated timeline for the animation (spec addition) */
+  timeline?: AnimationTimeline | null;
 }

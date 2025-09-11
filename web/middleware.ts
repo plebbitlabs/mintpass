@@ -35,7 +35,18 @@ export async function middleware(req: NextRequest) {
     const token = req.cookies.get('admin_session')?.value;
     const secret = process.env.ADMIN_SESSION_SECRET; // Use direct access since requireEnv is not edge-compatible
     try {
-      if (!token || !secret) {
+      // Fail fast on server misconfiguration (missing secret)
+      if (!secret) {
+        console.error('[middleware] ADMIN_SESSION_SECRET is not set. Blocking admin route access.');
+        return isAdminApi
+          ? new NextResponse(JSON.stringify({ error: 'Server error' }), {
+              status: 500,
+              headers: { 'content-type': 'application/json' },
+            })
+          : redirectToHome(req);
+      }
+
+      if (!token) {
         return isAdminApi ? sendUnauthorizedApi() : redirectToHome(req);
       }
       // Edge-safe verification

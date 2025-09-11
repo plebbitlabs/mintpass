@@ -33,36 +33,13 @@ const InputOTPSlot = React.forwardRef<
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
-  
-  // Add bounds checking to prevent runtime errors
-  const slots = inputOTPContext?.slots;
-  if (!Array.isArray(slots) || index < 0 || index >= slots.length) {
-    // Return safe default values without misleading destructure from empty object
-    const char = '';
-    const hasFakeCaret = false;
-    const isActive = false;
-    
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-          isActive && "z-10 ring-1 ring-ring",
-          className
-        )}
-        {...props}
-      >
-        {char}
-        {hasFakeCaret && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
-          </div>
-        )}
-      </div>
-    )
-  }
-  
-  const { char, hasFakeCaret, isActive } = slots[index]
+
+  // Compute safe defaults and then render once
+  const slots = inputOTPContext?.slots
+  const hasValidIndex = Array.isArray(slots) && index >= 0 && index < slots.length
+  const char = hasValidIndex ? slots[index].char : ''
+  const hasFakeCaret = hasValidIndex ? slots[index].hasFakeCaret : false
+  const isActive = hasValidIndex ? slots[index].isActive : false
 
   return (
     <div
