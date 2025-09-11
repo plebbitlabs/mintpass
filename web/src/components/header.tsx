@@ -29,6 +29,9 @@ export function Header({ children }: HeaderProps) {
             width={24}
             height={29}
             className="object-contain"
+            priority
+            quality={100}
+            sizes="24px"
           />
           MintPass
         </button>
