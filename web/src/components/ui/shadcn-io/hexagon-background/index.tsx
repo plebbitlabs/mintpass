@@ -38,7 +38,13 @@ function HexagonBackground({
 
   const updateGridDimensions = React.useCallback(() => {
     if (typeof window === 'undefined') return;
-    const rows = Math.ceil(window.innerHeight / rowSpacing);
+    // Use the full document height instead of just viewport height
+    const documentHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      window.innerHeight
+    );
+    const rows = Math.ceil(documentHeight / rowSpacing);
     const columns = Math.ceil(window.innerWidth / hexagonWidth) + 1;
     setGridDimensions({ rows, columns });
   }, [rowSpacing, hexagonWidth]);
@@ -46,7 +52,24 @@ function HexagonBackground({
   React.useEffect(() => {
     updateGridDimensions();
     window.addEventListener('resize', updateGridDimensions);
-    return () => window.removeEventListener('resize', updateGridDimensions);
+    
+    // Listen for content changes that might affect document height
+    const observer = new MutationObserver(() => {
+      // Debounce the update to avoid excessive recalculations
+      setTimeout(updateGridDimensions, 100);
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+    
+    return () => {
+      window.removeEventListener('resize', updateGridDimensions);
+      observer.disconnect();
+    };
   }, [updateGridDimensions]);
 
   const updateActiveFromPoint = React.useCallback((clientX: number, clientY: number) => {
