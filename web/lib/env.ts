@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// Guard against accidental client bundling of this module
+if (typeof window !== 'undefined') {
+  throw new Error('env.ts must not be imported on the client');
+}
+
 const ethAddress = z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid 0x-prefixed Ethereum address');
 
 const envSchema = z.object({
@@ -25,9 +30,6 @@ const envSchema = z.object({
   SMOKE_TEST_TOKEN: z.string().optional(),
   // Keyed hashing pepper for identifiers (HMAC key)
   HASH_PEPPER: z.string().optional(),
-  // Admin console authentication
-  ADMIN_PASSWORD: z.string().optional(),
-  ADMIN_SESSION_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -51,9 +53,16 @@ export const env = {
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
   SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
   HASH_PEPPER: process.env.HASH_PEPPER,
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-  ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
 };
+
+// Server-only accessors for secrets
+export function getAdminPassword(): string | undefined {
+  return process.env.ADMIN_PASSWORD;
+}
+
+export function getAdminSessionSecret(): string | undefined {
+  return process.env.ADMIN_SESSION_SECRET;
+}
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {
   const value = env[key];

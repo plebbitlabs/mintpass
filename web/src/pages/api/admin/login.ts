@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { AdminAuth, setAdminSessionCookie, createAdminToken } from '../../../../lib/admin-auth';
-import { env } from '../../../../lib/env';
+import { getAdminPassword } from '../../../../lib/env';
 import { getClientIp } from '../../../../lib/request-ip';
 import { createRatelimit, ratelimitKeyForIp } from '../../../../lib/rate-limit';
+import { timingSafeEqual, createHash } from 'crypto';
 
 const Body = z.object({ password: z.string().min(1) });
 
@@ -21,10 +22,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const parse = Body.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
 
-  const envPassword = env.ADMIN_PASSWORD;
+  const envPassword = getAdminPassword();
   if (!envPassword) return res.status(500).json({ error: 'ADMIN_PASSWORD not configured' });
 
-  const ok = parse.data.password === envPassword;
+  // timing-safe compare of hashed values to normalize length
+  const providedHash = createHash('sha256').update(parse.data.password).digest();
+  const expectedHash = createHash('sha256').update(envPassword).digest();
+  const ok = timingSafeEqual(providedHash, expectedHash);
   if (!ok) return res.status(401).json({ error: 'Invalid password' });
 
   const token = createAdminToken();

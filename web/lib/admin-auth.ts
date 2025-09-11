@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { env, requireEnv } from './env';
 
 const ADMIN_COOKIE_NAME = 'admin_session';
 const DEFAULT_SESSION_TTL_SECONDS = 12 * 60 * 60; // 12 hours
@@ -24,7 +23,8 @@ function sign(data: string, secret: string): string {
 }
 
 export function createAdminToken(expiresInSeconds = DEFAULT_SESSION_TTL_SECONDS): string {
-  const secret = requireEnv('ADMIN_SESSION_SECRET');
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) throw new Error('ADMIN_SESSION_SECRET not configured');
   const now = Math.floor(Date.now() / 1000);
   const payload: AdminTokenPayload = { v: 1, iat: now, exp: now + expiresInSeconds };
   const payloadB64 = base64urlEncode(JSON.stringify(payload));
@@ -34,15 +34,17 @@ export function createAdminToken(expiresInSeconds = DEFAULT_SESSION_TTL_SECONDS)
 
 export function verifyAdminToken(token: string | undefined): boolean {
   if (!token) return false;
-  const secret = env.ADMIN_SESSION_SECRET;
+  const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) return false;
   const parts = token.split('.');
   if (parts.length !== 2) return false;
   const [payloadB64, sig] = parts;
+  // Pre-validate signature format to fixed-length hex (64 chars for sha256)
+  if (!/^[0-9a-fA-F]{64}$/.test(sig)) return false;
   const expected = sign(payloadB64, secret);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
+  const a = Buffer.from(sig, 'hex');
+  const b = Buffer.from(expected, 'hex');
+  // Use timingSafeEqual on same-length buffers
   if (!timingSafeEqual(a, b)) return false;
   try {
     const json = Buffer.from(payloadB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');

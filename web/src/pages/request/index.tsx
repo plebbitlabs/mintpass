@@ -217,17 +217,6 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     <div className="min-h-screen flex flex-col">
       <Header />
       {step === 'done' && <ConfettiCelebration />}
-      {step === 'done' && (
-        <div className="mx-auto max-w-md px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold mb-2 text-[#077b91]">
-            You received your MintPass NFT!
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
-            You can close this page and head back to the Plebbit application of your choice.
-          </p>
-        </div>
-      )}
       <main className="flex-1">
         <div className="mx-auto max-w-md px-4 py-8 pointer-events-auto">
           <Card>
@@ -325,8 +314,16 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               )}
 
               {step === 'done' && (
-                <div className="space-y-2">
-                  <p className="font-medium">Authentication NFT received.</p>
+                <div className="space-y-4 text-center">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-[#077b91]">
+                      You received your MintPass NFT!
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
+                      You can close this page and head back to the Plebbit application of your choice.
+                    </p>
+                  </div>
                   {txHash ? (
                     <p className="text-sm text-muted-foreground">Tx: {txHash}</p>
                   ) : (
@@ -337,14 +334,24 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
             </CardContent>
             <CardFooter className="flex gap-2">
               {step === 'enter' && (
-                <Button 
-                  onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
-                  disabled={checkingEligibility || loading}
-                >
-                  {loading ? 'Sending…' : 
-                   checkingEligibility ? 'Checking…' : 
-                   eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
-                </Button>
+                <>
+                  <Button 
+                    className="w-full"
+                    onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
+                    disabled={checkingEligibility || loading}
+                  >
+                    {loading ? 'Sending…' : 
+                     checkingEligibility ? 'Checking…' : 
+                     eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                    onClick={() => router.push('/')}
+                  >
+                    Go back
+                  </Button>
+                </>
               )}
               {step === 'code' && (
                 <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
