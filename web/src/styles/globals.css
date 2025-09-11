@@ -69,9 +69,6 @@
     --color-4: oklch(80.2% 0.134 225);
     --color-5: oklch(90.7% 0.231 133);
   }
-  .theme {
-    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
-  }
 }
 
 /* View transition styles - only disable default transitions, not all animations */
@@ -85,33 +82,4 @@
 
 ::view-transition-new(root) {
     animation: none;
-}
-
-@keyframes rainbow {
-  0% {
-    background-position: 0%;
-  }
-  100% {
-    background-position: 200%;
-  }
-}
-
-/* Rainbow animation utilities - outside of Tailwind layers to avoid processing conflicts */
-.animate-rainbow {
-  animation: rainbow 2s linear infinite;
-}
-
-.animate-rainbow::before {
-  animation: rainbow 2s linear infinite;
-}
-
-@theme inline {
-  @keyframes rainbow {
-  0% {
-    background-position: 0%;
-    }
-  100% {
-    background-position: 200%;
-    }
-  }
 }

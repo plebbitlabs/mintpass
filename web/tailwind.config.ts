@@ -9,6 +9,19 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      animation: {
+        rainbow: 'rainbow 2s linear infinite',
+      },
+      keyframes: {
+        rainbow: {
+          '0%': {
+            'background-position': '0%',
+          },
+          '100%': {
+            'background-position': '200%',
+          },
+        },
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
