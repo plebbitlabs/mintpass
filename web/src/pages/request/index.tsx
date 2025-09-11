@@ -6,8 +6,8 @@ import { Input } from '../../components/ui/input';
 import { PhoneInput } from '../../components/ui/phone-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { Header } from '../../components/header';
+import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -218,12 +218,43 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       <Header />
       {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8 pointer-events-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Request your authentication NFT</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <PageCard
+          title="Request your authentication NFT"
+          titleAs="h1"
+          footerClassName="flex gap-2"
+          footer={
+            <>
+              {step === 'enter' && (
+                <>
+                  <Button 
+                    className="w-full"
+                    onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
+                    disabled={checkingEligibility || loading}
+                  >
+                    {loading ? 'Sending…' : 
+                     checkingEligibility ? 'Checking…' : 
+                     eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                    onClick={() => router.push('/')}
+                  >
+                    Go back
+                  </Button>
+                </>
+              )}
+              {step === 'code' && (
+                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
+                  {loading ? 'Verifying…' : 'Verify & mint'}
+                </Button>
+              )}
+              {step === 'done' && (
+                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
+              )}
+            </>
+          }
+        >
               {step === 'enter' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -331,39 +362,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   )}
                 </div>
               )}
-            </CardContent>
-            <CardFooter className="flex gap-2">
-              {step === 'enter' && (
-                <>
-                  <Button 
-                    className="w-full"
-                    onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
-                    disabled={checkingEligibility || loading}
-                  >
-                    {loading ? 'Sending…' : 
-                     checkingEligibility ? 'Checking…' : 
-                     eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    className="w-full"
-                    onClick={() => router.push('/')}
-                  >
-                    Go back
-                  </Button>
-                </>
-              )}
-              {step === 'code' && (
-                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
-                  {loading ? 'Verifying…' : 'Verify & mint'}
-                </Button>
-              )}
-              {step === 'done' && (
-                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
+        </PageCard>
       </main>
     </div>
   );

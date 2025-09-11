@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
-import { Card, CardContent, CardHeader } from './ui/card'
+import { Card, CardContent, CardHeader, CardFooter } from './ui/card'
 
 type PageCardProps = {
   title: string
@@ -10,6 +10,8 @@ type PageCardProps = {
   titleClassName?: string
   containerClassName?: string
   titleAs?: React.ElementType
+  footer?: React.ReactNode
+  footerClassName?: string
 }
 
 export function PageCard({
@@ -19,6 +21,8 @@ export function PageCard({
   titleClassName = '',
   containerClassName,
   titleAs = 'h2',
+  footer,
+  footerClassName = '',
 }: PageCardProps) {
   const TitleTag = titleAs
   
@@ -46,6 +50,11 @@ export function PageCard({
         <CardContent className={cn(contentClassName)}>
           {children}
         </CardContent>
+        {footer && (
+          <CardFooter className={cn(footerClassName)}>
+            {footer}
+          </CardFooter>
+        )}
       </Card>
     </div>
   )
