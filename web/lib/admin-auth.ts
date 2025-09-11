@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAdminSessionSecret } from './env';
+import { getAdminSessionSecret, getAdminSessionMaxLifetimeSeconds } from './env';
 
 const ADMIN_COOKIE_NAME = 'admin_session';
-const DEFAULT_SESSION_TTL_SECONDS = 12 * 60 * 60; // 12 hours
+const DEFAULT_SESSION_TTL_SECONDS = getAdminSessionMaxLifetimeSeconds();
 
 type AdminTokenPayload = {
   v: 1;
@@ -42,13 +42,19 @@ export function verifyAdminToken(token: string | undefined): boolean {
   const [payloadB64, sig] = parts;
   // Pre-validate signature format to fixed-length hex (64 chars for sha256)
   if (!/^[0-9a-fA-F]{64}$/.test(sig)) return false;
+  // Validate payload base64url characters to avoid decode work on malformed input
+  if (!/^[A-Za-z0-9_-]+$/.test(payloadB64)) return false;
   const expected = sign(payloadB64, secret);
   const a = Buffer.from(sig, 'hex');
   const b = Buffer.from(expected, 'hex');
   // Use timingSafeEqual on same-length buffers
   if (!timingSafeEqual(a, b)) return false;
   try {
-    const json = Buffer.from(payloadB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    // Decode base64url with padding
+    const base64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = (4 - (base64.length % 4)) % 4;
+    const padded = base64 + '='.repeat(pad);
+    const json = Buffer.from(padded, 'base64').toString('utf8');
     const payload = JSON.parse(json) as AdminTokenPayload;
     if (payload.v !== 1) return false;
     const now = Math.floor(Date.now() / 1000);

@@ -126,10 +126,11 @@ ConfettiComponent.displayName = "Confetti";
 // Export as Confetti
 export const Confetti = ConfettiComponent;
 
-interface ConfettiButtonProps extends ButtonProps {
+interface ConfettiButtonProps extends Omit<ButtonProps, 'onClick'> {
   options?: ConfettiOptions &
     ConfettiGlobalOptions & { canvas?: HTMLCanvasElement };
   children?: React.ReactNode;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
 }
 
 const ConfettiButtonComponent = ({
@@ -141,13 +142,7 @@ const ConfettiButtonComponent = ({
   const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     try {
       // Call original onClick handler if provided
-      if (typeof onClick === 'function') {
-        const result = onClick(event) as unknown;
-        // Await if it returns a promise
-        if (result != null && typeof (result as { then?: unknown })?.then === 'function') {
-          await result;
-        }
-      }
+      if (typeof onClick === 'function') await onClick(event);
       
       const rect = event.currentTarget.getBoundingClientRect();
       const x = rect.left + rect.width / 2;

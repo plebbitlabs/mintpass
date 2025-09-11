@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { kv } from '@vercel/kv';
 import { hashIdentifier } from '../../../../lib/hash';
 import { requireAdmin } from '../../../../lib/admin-auth';
+import { createRatelimit } from '../../../../lib/rate-limit';
 
 const Body = z.object({
   address: z.string().min(1).optional(),
@@ -27,6 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
 
   const { address, phoneE164, clearIpCooldowns, targetIp } = parse.data;
+  const adminIp = (req.headers['cf-connecting-ip'] as string) || (req.headers['x-real-ip'] as string) || req.socket.remoteAddress || 'unknown';
+  // Lightweight rate limit for clear operations
+  const clearLimit = createRatelimit('rl:admin:clear', 10, 60); // 10 per minute per project
+  const { success: allowClear } = await clearLimit.limit('all');
+  if (!allowClear) return res.status(429).json({ error: 'Too many clear requests' });
 
   const keysToDelete: string[] = [];
 
@@ -61,6 +67,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!isValidIp) {
         return res.status(400).json({ error: 'Invalid targetIp' });
       }
+      // Audit intent prior to deletion
+      try {
+        const ts = new Date().toISOString();
+        console.info('[AUDIT] admin_clear_ip_cooldowns_intent', { ts, actor: adminIp, targetIp: targetIpRaw });
+      } catch {}
       const hashedIp = hashIdentifier('ip', targetIpRaw);
       keysToDelete.push(
         `cd:mint:ip:${hashedIp}`,
@@ -94,9 +105,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Debug info for development
   const debugInfo = process.env.NODE_ENV === 'development' ? {
     keysAttempted: keysToDelete,
-    addressKeys: address ? 2 : 0,
-    phoneKeys: phoneE164 ? 8 : 0, 
-    ipCooldownKeys: clearIpCooldowns ? 4 : 0,
+    addressKeys: address ? 4 : 0,
+    phoneKeys: phoneE164 ? 16 : 0, 
+    ipCooldownKeys: clearIpCooldowns ? 8 : 0,
   } : undefined;
 
   // Audit success

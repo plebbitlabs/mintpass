@@ -1,14 +1,15 @@
 "use client";
 
 import confetti from "canvas-confetti";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function ConfettiCelebration() {
+  const animationIdRef = useRef<number | null>(null);
+
   useEffect(() => {
     const celebrateWithSideCannons = () => {
       const end = Date.now() + 1 * 1000; // 1 second
       const colors = ["#9ddcdd", "#077b91"]; // MintPass project colors
-      let animationId: number | null = null;
 
       const frame = () => {
         if (Date.now() > end) return;
@@ -30,14 +31,20 @@ export function ConfettiCelebration() {
           colors: colors,
         });
 
-        animationId = requestAnimationFrame(frame);
+        if (animationIdRef.current !== null) {
+          cancelAnimationFrame(animationIdRef.current);
+        }
+        animationIdRef.current = requestAnimationFrame(frame);
       };
 
       frame();
 
       // Return cleanup function
       return () => {
-        if (animationId !== null) cancelAnimationFrame(animationId);
+        if (animationIdRef.current !== null) {
+          cancelAnimationFrame(animationIdRef.current);
+          animationIdRef.current = null;
+        }
       };
     };
 

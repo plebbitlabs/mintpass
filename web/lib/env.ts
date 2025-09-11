@@ -37,6 +37,7 @@ const envSchema = z.object({
     .min(12, 'Admin password must be at least 12 characters')
     .optional(),
   ADMIN_SESSION_SECRET: z.string().min(32, 'Admin session secret must be at least 32 characters').optional(),
+  ADMIN_SESSION_MAX_LIFETIME_SECONDS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -62,6 +63,7 @@ export const env = {
   HASH_PEPPER: process.env.HASH_PEPPER,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
+  ADMIN_SESSION_MAX_LIFETIME_SECONDS: process.env.ADMIN_SESSION_MAX_LIFETIME_SECONDS,
 };
 
 // Server-only accessors for secrets - use validated schema values
@@ -71,6 +73,15 @@ export function getAdminPassword(): string | undefined {
 
 export function getAdminSessionSecret(): string | undefined {
   return env.ADMIN_SESSION_SECRET;
+}
+
+export function getAdminSessionMaxLifetimeSeconds(): number {
+  const raw = env.ADMIN_SESSION_MAX_LIFETIME_SECONDS;
+  const n = raw ? Number(raw) : NaN;
+  // Default to 8 hours if unset or invalid
+  if (!Number.isFinite(n) || n <= 0) return 8 * 60 * 60;
+  // Cap to 24 hours
+  return Math.min(n, 24 * 60 * 60);
 }
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {

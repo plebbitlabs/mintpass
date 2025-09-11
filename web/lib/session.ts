@@ -7,6 +7,12 @@ export function generateSessionId(): string {
 
 // Session-aware key generation for better data management
 export function sessionKey(sessionId: string, type: string, identifier: string): string {
+  const values = { sessionId, type, identifier } as const;
+  for (const [k, v] of Object.entries(values)) {
+    if (typeof v !== 'string') throw new TypeError(`sessionKey: ${k} must be a string`);
+    if (v.trim().length === 0) throw new TypeError(`sessionKey: ${k} must be non-empty`);
+    if (!/^[^\s:]+$/.test(v)) throw new TypeError(`sessionKey: ${k} contains invalid characters`);
+  }
   return `session:${sessionId}:${type}:${identifier}`;
 }
 

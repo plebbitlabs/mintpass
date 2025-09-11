@@ -16,6 +16,10 @@ async function postJson<T>(
   const { timeout = 5000, maxRetries = 3 } = options;
   let lastError: Error | null = null;
   
+  function isHttpError(e: unknown): e is { status?: number; nonRetryable?: boolean } {
+    return typeof e === 'object' && e !== null && ('status' in e || 'nonRetryable' in e);
+  }
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -35,7 +39,10 @@ async function postJson<T>(
       // Don't retry on 4xx errors
       if (res.status >= 400 && res.status < 500) {
         const errMsg = (json as { error?: string })?.error || 'Request failed';
-        throw new Error(errMsg);
+        const e = new Error(errMsg) as Error & { status?: number; nonRetryable?: boolean };
+        e.status = res.status;
+        e.nonRetryable = true;
+        throw e;
       }
       
       if (!res.ok) {
@@ -50,7 +57,7 @@ async function postJson<T>(
       }
       
       return json as T;
-    } catch (error) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
       lastError = error instanceof Error ? error : new Error('Request failed');
       
@@ -65,7 +72,9 @@ async function postJson<T>(
       }
       
       // Retry only on network/fetch errors
-      if (attempt < maxRetries) {
+      const status = isHttpError(error) ? error.status : undefined;
+      const nonRetryable = isHttpError(error) ? Boolean(error.nonRetryable) : false;
+      if (!nonRetryable && (status === undefined || status < 400 || status >= 500) && attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
