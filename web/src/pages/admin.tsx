@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PhoneInput } from '../components/ui/phone-input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageCard } from '../components/page-card';
 
 async function postJson<T>(
   path: string, 
@@ -166,85 +166,73 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto max-w-md px-4 py-8">
-          {!authorized ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Login</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Admin Password</Label>
-                  <Input 
-                    id="password"
-                    type="password"
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    placeholder="Admin password"
-                    autoComplete="current-password"
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button onClick={handleLogin} disabled={loading} className="w-full">
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Console</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clear-address">Clear Address (optional)</Label>
-                  <Input 
-                    id="clear-address"
-                    value={address} 
-                    onChange={(e) => setAddress(e.target.value)} 
-                    placeholder="0x123..."
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="clear-phone">Clear Phone (optional)</Label>
-                  <PhoneInput 
-                    id="clear-phone"
-                    value={phone} 
-                    onChange={(value) => setPhone(value || '')} 
-                    placeholder="Enter phone number"
-                    defaultCountry="US"
-                  />
-                </div>
+        {!authorized ? (
+          <PageCard title="Admin Login" contentClassName="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Admin Password</Label>
+              <Input 
+                id="password"
+                type="password"
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="Admin password"
+                autoComplete="current-password"
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button onClick={handleLogin} disabled={loading} className="w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </PageCard>
+        ) : (
+          <PageCard title="Admin Console" contentClassName="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="clear-address">Clear Address (optional)</Label>
+              <Input 
+                id="clear-address"
+                value={address} 
+                onChange={(e) => setAddress(e.target.value)} 
+                placeholder="0x123..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="clear-phone">Clear Phone (optional)</Label>
+              <PhoneInput 
+                id="clear-phone"
+                value={phone} 
+                onChange={(value) => setPhone(value || '')} 
+                placeholder="Enter phone number"
+                defaultCountry="US"
+              />
+            </div>
 
-                <div className="flex items-center space-x-2 py-3">
-                  <input
-                    id="clear-cooldowns"
-                    type="checkbox"
-                    checked={clearIpCooldowns}
-                    onChange={(e) => setClearIpCooldowns(e.target.checked)}
-                    className="h-4 w-4 rounded border-input text-primary"
-                  />
-                  <Label htmlFor="clear-cooldowns" className="text-sm font-normal">
-                    Clear IP cooldowns (recommended for testing)
-                  </Label>
-                </div>
+            <div className="flex items-center space-x-2 py-3">
+              <input
+                id="clear-cooldowns"
+                type="checkbox"
+                checked={clearIpCooldowns}
+                onChange={(e) => setClearIpCooldowns(e.target.checked)}
+                className="h-4 w-4 rounded border-input text-primary"
+              />
+              <Label htmlFor="clear-cooldowns" className="text-sm font-normal">
+                Clear IP cooldowns (recommended for testing)
+              </Label>
+            </div>
 
-                {message && <p className="text-sm text-green-600 dark:text-green-400 font-medium">{message}</p>}
-                {error && <p className="text-sm text-destructive">{error}</p>}
+            {message && <p className="text-sm text-green-600 dark:text-green-400 font-medium">{message}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={handleClearUser} disabled={loading} className="w-full">
-                    {loading ? 'Clearing...' : 'Clear User Data'}
-                  </Button>
-                  <Button variant="secondary" onClick={handleLogout} disabled={loading} className="w-full">
-                    Logout
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={handleClearUser} disabled={loading} className="w-full">
+                {loading ? 'Clearing...' : 'Clear User Data'}
+              </Button>
+              <Button variant="secondary" onClick={handleLogout} disabled={loading} className="w-full">
+                Logout
+              </Button>
+            </div>
+          </PageCard>
+        )}
       </main>
     </div>
   );
