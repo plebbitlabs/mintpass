@@ -18,11 +18,13 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   const json = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) {
-    const errMsg = (json as { error?: string })?.error || 'Request failed';
+    const data = json as { error?: string; cooldownSeconds?: unknown };
+    const errMsg = data?.error || 'Request failed';
     const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
     // Attach cooldown data to error if present
-    if (typeof (json as any)?.cooldownSeconds === 'number') {
-      error.cooldownSeconds = (json as any).cooldownSeconds;
+    const cooldownSecondsValue = data?.cooldownSeconds;
+    if (typeof cooldownSecondsValue === 'number') {
+      error.cooldownSeconds = cooldownSecondsValue;
     }
     throw error;
   }
@@ -119,18 +121,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     }
   }, [cooldownSeconds]);
 
-  const canCheckEligibility = useMemo(() => 
-    address.trim().length > 0 && 
-    phone && phone.length >= 5 && // Phone is already E.164 formatted from PhoneInput
-    !eligibilityChecked &&
-    !checkingEligibility,
-    [address, phone, eligibilityChecked, checkingEligibility]
-  );
-
-  const canSend = useMemo(() => 
-    eligibilityChecked && isEligible && !loading && cooldownSeconds === 0,
-    [eligibilityChecked, isEligible, loading, cooldownSeconds]
-  );
+  // Removed unused eligibility helpers to satisfy linter
   const canVerify = useMemo(() => code.trim().length === 6, [code]);
 
   function handleCheckEligibilityClick() {

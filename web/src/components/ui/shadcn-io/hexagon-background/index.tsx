@@ -112,9 +112,10 @@ function HexagonBackground({
 
   React.useEffect(() => {
     const move = (e: MouseEvent) => updateActiveFromPoint(e.clientX, e.clientY);
+    const timersMap = activeTimersRef.current;
     const leave = () => {
-      for (const [, id] of activeTimersRef.current) window.clearTimeout(id);
-      activeTimersRef.current.clear();
+      for (const [, id] of timersMap) window.clearTimeout(id);
+      timersMap.clear();
       setActiveKeys(new Set());
     };
     window.addEventListener('mousemove', move, { passive: true });
@@ -122,8 +123,8 @@ function HexagonBackground({
     return () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseleave', leave);
-      for (const [, id] of activeTimersRef.current) window.clearTimeout(id);
-      activeTimersRef.current.clear();
+      for (const [, id] of timersMap) window.clearTimeout(id);
+      timersMap.clear();
     };
   }, [updateActiveFromPoint]);
 

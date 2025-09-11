@@ -52,7 +52,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold">"No‑logs" Clarification</h2>
+            <h2 className="text-lg font-semibold">&ldquo;No‑logs&rdquo; Clarification</h2>
             <p className="text-sm">
               MintPass uses a minimal‑data model rather than a strict “no‑logs” policy. We avoid server request logging for analytics and do not profile users. However, we must keep short‑lived operational keys (e.g., OTPs, verification markers, rate‑limits/cooldowns) and a persistent mint association record to protect against abuse. This means MintPass is not “strict no‑logs,” but it is “no analytics, minimal operational data.”
             </p>
