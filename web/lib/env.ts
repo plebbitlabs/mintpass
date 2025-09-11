@@ -30,6 +30,10 @@ const envSchema = z.object({
   SMOKE_TEST_TOKEN: z.string().optional(),
   // Keyed hashing pepper for identifiers (HMAC key)
   HASH_PEPPER: z.string().optional(),
+
+  // Admin credentials (server-only)
+  ADMIN_PASSWORD: z.string().min(1).optional(),
+  ADMIN_SESSION_SECRET: z.string().min(32, 'Admin session secret must be at least 32 characters').optional(),
 });
 
 const parsed = envSchema.safeParse(process.env as Record<string, string>);
@@ -53,15 +57,17 @@ export const env = {
   BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL,
   SMOKE_TEST_TOKEN: process.env.SMOKE_TEST_TOKEN,
   HASH_PEPPER: process.env.HASH_PEPPER,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+  ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
 };
 
-// Server-only accessors for secrets
+// Server-only accessors for secrets - use validated schema values
 export function getAdminPassword(): string | undefined {
-  return process.env.ADMIN_PASSWORD;
+  return env.ADMIN_PASSWORD;
 }
 
 export function getAdminSessionSecret(): string | undefined {
-  return process.env.ADMIN_SESSION_SECRET;
+  return env.ADMIN_SESSION_SECRET;
 }
 
 export function requireEnv<K extends keyof typeof env>(key: K): NonNullable<(typeof env)[K]> {

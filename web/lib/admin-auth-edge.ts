@@ -38,12 +38,21 @@ export async function verifyAdminTokenEdge(token: string | undefined, secret: st
     }
     if (mismatch !== 0) return false;
 
-    // Verify exp
-    const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(json) as { v: number; exp: number };
-    if (payload.v !== 1) return false;
-    const now = Math.floor(Date.now() / 1000);
-    return now < payload.exp;
+    // Verify exp with robust validation
+    try {
+      const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(json);
+      
+      // Validate payload structure
+      if (!payload || typeof payload !== 'object') return false;
+      if (!Number.isFinite(payload.v) || !Number.isFinite(payload.exp)) return false;
+      if (payload.v !== 1) return false;
+      
+      const now = Math.floor(Date.now() / 1000);
+      return now < payload.exp;
+    } catch {
+      return false;
+    }
   } catch {
     return false;
   }

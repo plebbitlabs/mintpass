@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionSecret } from './env';
 
 const ADMIN_COOKIE_NAME = 'admin_session';
 const DEFAULT_SESSION_TTL_SECONDS = 12 * 60 * 60; // 12 hours
@@ -23,7 +24,7 @@ function sign(data: string, secret: string): string {
 }
 
 export function createAdminToken(expiresInSeconds = DEFAULT_SESSION_TTL_SECONDS): string {
-  const secret = process.env.ADMIN_SESSION_SECRET;
+  const secret = getAdminSessionSecret();
   if (!secret) throw new Error('ADMIN_SESSION_SECRET not configured');
   const now = Math.floor(Date.now() / 1000);
   const payload: AdminTokenPayload = { v: 1, iat: now, exp: now + expiresInSeconds };
@@ -34,7 +35,7 @@ export function createAdminToken(expiresInSeconds = DEFAULT_SESSION_TTL_SECONDS)
 
 export function verifyAdminToken(token: string | undefined): boolean {
   if (!token) return false;
-  const secret = process.env.ADMIN_SESSION_SECRET;
+  const secret = getAdminSessionSecret();
   if (!secret) return false;
   const parts = token.split('.');
   if (parts.length !== 2) return false;
@@ -57,16 +58,22 @@ export function verifyAdminToken(token: string | undefined): boolean {
   }
 }
 
+function appendSetCookie(res: NextApiResponse, newCookie: string) {
+  const existing = res.getHeader('Set-Cookie');
+  const existingCookies = existing ? (Array.isArray(existing) ? existing : [existing]) : [];
+  res.setHeader('Set-Cookie', [...existingCookies, newCookie]);
+}
+
 export function setAdminSessionCookie(res: NextApiResponse, token: string, maxAgeSeconds = DEFAULT_SESSION_TTL_SECONDS) {
   const isProd = process.env.NODE_ENV === 'production';
   const cookie = `${ADMIN_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds};${isProd ? ' Secure;' : ''}`;
-  res.setHeader('Set-Cookie', cookie);
+  appendSetCookie(res, cookie);
 }
 
 export function clearAdminSessionCookie(res: NextApiResponse) {
   const isProd = process.env.NODE_ENV === 'production';
   const cookie = `${ADMIN_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0;${isProd ? ' Secure;' : ''}`;
-  res.setHeader('Set-Cookie', cookie);
+  appendSetCookie(res, cookie);
 }
 
 export function isAdminRequest(req: NextApiRequest): boolean {

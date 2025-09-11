@@ -35,6 +35,7 @@ function HexagonBackground({
   const trailDurationMs = 700;
   const activeTimersRef = React.useRef<Map<string, number>>(new Map());
   const [activeKeys, setActiveKeys] = React.useState<Set<string>>(new Set());
+  const debounceTimerRef = React.useRef<number | null>(null);
 
   const updateGridDimensions = React.useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -55,8 +56,11 @@ function HexagonBackground({
     
     // Listen for content changes that might affect document height
     const observer = new MutationObserver(() => {
-      // Debounce the update to avoid excessive recalculations
-      setTimeout(updateGridDimensions, 100);
+      // Proper debouncing with timer cleanup
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = window.setTimeout(updateGridDimensions, 100);
     });
     
     observer.observe(document.body, {
@@ -69,6 +73,11 @@ function HexagonBackground({
     return () => {
       window.removeEventListener('resize', updateGridDimensions);
       observer.disconnect();
+      // Clean up debounce timer
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
     };
   }, [updateGridDimensions]);
 
@@ -142,7 +151,7 @@ function HexagonBackground({
         [data-slot="hexagon-background"] [data-hex][data-active="true"]::after { background: rgb(245 245 245 / 1); }
         .dark [data-slot="hexagon-background"] [data-hex][data-active="true"]::after { background: rgb(23 23 23 / 1); }
       `}</style>
-      <div className="absolute top-0 -left-0 size-full overflow-hidden z-0 pointer-events-none">
+      <div className="absolute top-0 left-0 size-full overflow-hidden z-0 pointer-events-none">
         {Array.from({ length: gridDimensions.rows }).map((_, rowIndex) => (
           <div
             key={`row-${rowIndex}`}

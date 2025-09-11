@@ -8,18 +8,74 @@ import { PhoneInput } from '../components/ui/phone-input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => ({}))) as unknown;
-  if (!res.ok) {
-    const errMsg = (json as { error?: string })?.error || 'Request failed';
-    throw new Error(errMsg);
+async function postJson<T>(
+  path: string, 
+  body: unknown, 
+  options: { timeout?: number; maxRetries?: number } = {}
+): Promise<T> {
+  const { timeout = 5000, maxRetries = 3 } = options;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      const json = (await res.json().catch(() => ({}))) as unknown;
+      
+      // Don't retry on 4xx errors
+      if (res.status >= 400 && res.status < 500) {
+        const errMsg = (json as { error?: string })?.error || 'Request failed';
+        throw new Error(errMsg);
+      }
+      
+      if (!res.ok) {
+        // Retry on 5xx errors
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        const errMsg = (json as { error?: string })?.error || 'Request failed';
+        throw new Error(errMsg);
+      }
+      
+      return json as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error instanceof Error ? error : new Error('Request failed');
+      
+      // Don't retry on abort/timeout for non-network errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        throw new Error('Request timed out');
+      }
+      
+      // Retry only on network/fetch errors
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      throw lastError;
+    }
   }
-  return json as T;
+  
+  throw lastError || new Error('All retry attempts failed');
 }
 
 type Props = { authorized: boolean };

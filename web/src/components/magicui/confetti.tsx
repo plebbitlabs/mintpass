@@ -50,8 +50,8 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
       if (node !== null) {
         if (instanceRef.current) return;
         instanceRef.current = confetti.create(node, {
-          ...globalOptions,
-          resize: true,
+          resize: true, // Default value
+          ...globalOptions, // Allow globalOptions to override defaults
         });
       } else {
         if (instanceRef.current) {
@@ -95,6 +95,16 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
     }
   }, [manualstart, fire]);
 
+  // Cleanup confetti instance on unmount
+  useEffect(() => {
+    return () => {
+      if (instanceRef.current) {
+        instanceRef.current.reset();
+        instanceRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <ConfettiContext.Provider value={api}>
       <canvas ref={canvasRef} {...rest} />
@@ -118,10 +128,20 @@ interface ConfettiButtonProps extends ButtonProps {
 const ConfettiButtonComponent = ({
   options,
   children,
+  onClick,
   ...props
 }: ConfettiButtonProps) => {
   const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     try {
+      // Call original onClick handler if provided
+      if (typeof onClick === 'function') {
+        const result = onClick(event);
+        // Await if it returns a promise
+        if (result && typeof result.then === 'function') {
+          await result;
+        }
+      }
+      
       const rect = event.currentTarget.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;

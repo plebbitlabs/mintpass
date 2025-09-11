@@ -10,8 +10,23 @@ export function sessionKey(sessionId: string, type: string, identifier: string):
   return `session:${sessionId}:${type}:${identifier}`;
 }
 
-// Extract session ID from a session key
+// Extract session ID from a session key with DoS protection
 export function extractSessionId(sessionKey: string): string | null {
-  const match = sessionKey.match(/^session:([^:]+):/);
-  return match ? match[1] : null;
+  // Validate input
+  if (typeof sessionKey !== 'string') return null;
+  if (sessionKey.length > 1024) return null; // Prevent extremely long inputs
+  
+  // Use simple string operations instead of regex
+  if (!sessionKey.startsWith('session:')) return null;
+  
+  const parts = sessionKey.split(':');
+  if (parts.length < 3) return null; // Should have at least "session", sessionId, and type
+  
+  const sessionId = parts[1];
+  
+  // Validate session ID format (alphanumeric, reasonable length)
+  if (!sessionId || sessionId.length === 0 || sessionId.length > 64) return null;
+  if (!/^[a-zA-Z0-9]+$/.test(sessionId)) return null;
+  
+  return sessionId;
 }
