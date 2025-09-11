@@ -34,11 +34,19 @@ export const AnimatedThemeToggler = ({ className }: props) => {
       return;
     }
 
-    await document.startViewTransition(() => {
+    try {
+      await document.startViewTransition(() => {
+        flushSync(() => {
+          setTheme(newTheme);
+        });
+      }).ready;
+    } catch (err) {
+      // Fallback if View Transitions fails/rejects
+      console.warn('startViewTransition failed; falling back to direct theme set', err);
       flushSync(() => {
         setTheme(newTheme);
       });
-    }).ready;
+    }
 
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();

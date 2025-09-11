@@ -40,7 +40,11 @@ export async function verifyAdminTokenEdge(token: string | undefined, secret: st
 
     // Verify exp with robust validation
     try {
-      const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+      // Normalize base64url and add required padding for robust decoding
+      const normalized = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+      const paddingLen = (4 - (normalized.length % 4)) % 4;
+      const padded = normalized + '='.repeat(paddingLen);
+      const json = atob(padded);
       const payload = JSON.parse(json);
       
       // Validate payload structure

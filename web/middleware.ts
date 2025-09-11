@@ -43,7 +43,9 @@ export async function middleware(req: NextRequest) {
       if (!ok) {
         return isAdminApi ? sendUnauthorizedApi() : redirectToHome(req);
       }
-    } catch {
+    } catch (err) {
+      const path = req.nextUrl.pathname;
+      console.warn(`[middleware] Admin auth failure on ${path} (isAdminApi=${isAdminApi})`, err);
       return isAdminApi ? sendUnauthorizedApi() : redirectToHome(req);
     }
   }

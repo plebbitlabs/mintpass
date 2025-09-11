@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { kv } from '@vercel/kv';
 import { hashIdentifier } from '../../../../lib/hash';
-import { getClientIp } from '../../../../lib/request-ip';
 import { requireAdmin } from '../../../../lib/admin-auth';
 
 const Body = z.object({
@@ -53,21 +52,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (clearIpCooldowns) {
-    const ip = getClientIp(req);
-    const hashedIp = hashIdentifier('ip', ip);
-    keysToDelete.push(
-      `cd:mint:ip:${hashedIp}`,
-      `cd:mint:ip:${ip}`, // Legacy plaintext fallback
-      `cd:sms:ip:${hashedIp}`,
-      `cd:sms:ip:${ip}` // Legacy plaintext fallback
-    );
+    // Require explicit targetIp rather than using requester IP to avoid abuse
+    const targetIpRaw = (req.body?.targetIp as string | undefined)?.trim();
+    if (targetIpRaw) {
+      // Basic IPv4/IPv6 validation
+      const ipv4 = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)(\.(25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/;
+      const ipv6 = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^(([0-9a-fA-F]{1,4}:){1,7}:)$|^(:{1,7}[0-9a-fA-F]{1,4})$/;
+      const isValidIp = ipv4.test(targetIpRaw) || ipv6.test(targetIpRaw);
+      if (!isValidIp) {
+        return res.status(400).json({ error: 'Invalid targetIp' });
+      }
+      const hashedIp = hashIdentifier('ip', targetIpRaw);
+      keysToDelete.push(
+        `cd:mint:ip:${hashedIp}`,
+        `cd:mint:ip:${targetIpRaw}`, // Legacy plaintext fallback
+        `cd:sms:ip:${hashedIp}`,
+        `cd:sms:ip:${targetIpRaw}` // Legacy plaintext fallback
+      );
+    } else {
+      return res.status(400).json({ error: 'targetIp is required when clearIpCooldowns is true' });
+    }
   }
 
   // Delete all keys and get actual deletion count
   let actualDeletedCount = 0;
   if (keysToDelete.length > 0) {
-    const deleteResult = await kv.del(...keysToDelete);
-    actualDeletedCount = typeof deleteResult === 'number' ? deleteResult : 0;
+    try {
+      const deleteResult = await kv.del(...keysToDelete);
+      actualDeletedCount = typeof deleteResult === 'number' ? deleteResult : 0;
+    } catch (err) {
+      console.error('Failed to delete keys in clear-user', { address, phoneE164, keysToDelete, err });
+      return res.status(500).json({ error: 'Failed to delete some keys' });
+    }
   }
 
   // Debug info for development

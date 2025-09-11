@@ -53,27 +53,22 @@ function HexagonBackground({
   React.useEffect(() => {
     updateGridDimensions();
     window.addEventListener('resize', updateGridDimensions);
-    
-    // Listen for content changes that might affect document height
-    const observer = new MutationObserver(() => {
-      // Proper debouncing with timer cleanup
-      if (debounceTimerRef.current !== null) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      debounceTimerRef.current = window.setTimeout(updateGridDimensions, 100);
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style', 'class']
-    });
-    
+
+    // Prefer a scoped ResizeObserver on the component container
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        if (debounceTimerRef.current !== null) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = window.setTimeout(updateGridDimensions, 100);
+      });
+      ro.observe(containerRef.current);
+    }
+
     return () => {
       window.removeEventListener('resize', updateGridDimensions);
-      observer.disconnect();
-      // Clean up debounce timer
+      if (ro) ro.disconnect();
       if (debounceTimerRef.current !== null) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;

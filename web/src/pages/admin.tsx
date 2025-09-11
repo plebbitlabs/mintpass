@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GetServerSideProps } from 'next';
+import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { verifyAdminToken } from '../../lib/admin-auth';
 import { Header } from '../components/header';
 import { Button } from '../components/ui/button';
@@ -89,6 +89,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [targetIp, setTargetIp] = useState('');
 
   async function handleLogin() {
     if (!password.trim()) {
@@ -117,7 +118,8 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       setAuthorized(false);
       setMessage('Logged out');
     } catch (e) {
-      // ignore
+      console.error('Logout failed:', e);
+      setError('Logout failed');
     } finally {
       setLoading(false);
     }
@@ -128,6 +130,10 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       setError('');
       setMessage('');
       setLoading(true);
+      if (clearIpCooldowns && !targetIp.trim()) {
+        setError('Target IP is required when clearing IP cooldowns');
+        return;
+      }
       
       const result = await postJson<{ 
         ok: boolean; 
@@ -144,6 +150,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
         address: address.trim() || undefined,
         phoneE164: phone.trim() || undefined,
         clearIpCooldowns: clearIpCooldowns,
+        targetIp: clearIpCooldowns ? targetIp.trim() : undefined,
       });
       
       setMessage(result.message);
@@ -153,6 +160,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       }
       setAddress('');
       setPhone('');
+      setTargetIp('');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Failed to clear user';
       console.error('Admin clear user error:', e);
@@ -220,6 +228,18 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
               </Label>
             </div>
 
+            {clearIpCooldowns && (
+              <div className="space-y-2">
+                <Label htmlFor="clear-target-ip">Target IP (required when clearing IP cooldowns)</Label>
+                <Input
+                  id="clear-target-ip"
+                  value={targetIp}
+                  onChange={(e) => setTargetIp(e.target.value)}
+                  placeholder="127.0.0.1 or ::1"
+                />
+              </div>
+            )}
+
             {message && <p className="text-sm text-green-600 dark:text-green-400 font-medium">{message}</p>}
             {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -238,10 +258,11 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
+export const getServerSideProps: GetServerSideProps<Props> = async (context: GetServerSidePropsContext) => {
+  const req = context.req;
   // Next.js may not parse cookies on Node 19/Edge; ensure we handle both
-  const cookieHeader = (req as any).headers?.cookie as string | undefined;
-  let token: string | undefined = (req as any).cookies?.['admin_session'];
+  const cookieHeader = req.headers?.cookie as string | undefined;
+  let token: string | undefined = req.cookies?.['admin_session'];
   if (!token && typeof cookieHeader === 'string') {
     const parts = cookieHeader.split(';');
     for (const p of parts) {

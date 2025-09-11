@@ -37,8 +37,10 @@ const InputOTPSlot = React.forwardRef<
   // Add bounds checking to prevent runtime errors
   const slots = inputOTPContext?.slots;
   if (!Array.isArray(slots) || index < 0 || index >= slots.length) {
-    // Return safe default values
-    const { char = '', hasFakeCaret = false, isActive = false } = {};
+    // Return safe default values without misleading destructure from empty object
+    const char = '';
+    const hasFakeCaret = false;
+    const isActive = false;
     
     return (
       <div

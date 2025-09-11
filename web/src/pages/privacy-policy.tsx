@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
               <li>Minimal operational data only: verification codes, verification markers, rate-limit and cooldown keys, and mint association records.</li>
               <li>Phone numbers and IPs are stored as HMAC-SHA256 digests when a hash pepper is configured.</li>
               <li>SMS codes are short‑lived; verification markers expire shortly after use.</li>
-              <li>Mint association (wallet ↔ phone) persists to enforce anti‑sybil guarantees.</li>
+              <li>Mint association (wallet ↔ phone) persists to enforce anti-Sybil guarantees.</li>
             </ul>
           </section>
 
@@ -47,7 +47,7 @@ export default function PrivacyPolicy() {
               <li>SMS codes: ~5 minutes TTL.</li>
               <li>SMS verified markers: short TTL (minutes) after successful verification.</li>
               <li>Rate‑limit and cooldown keys (IP/phone): short TTL as configured in the environment.</li>
-              <li>Mint association (wallet and phone): retained to prevent duplicate mints and preserve anti‑sybil guarantees.</li>
+              <li>Mint association (wallet and phone): retained to prevent duplicate mints and preserve anti-Sybil guarantees.</li>
             </ul>
           </section>
 
