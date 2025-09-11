@@ -13,21 +13,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/mintpass.png',
+        // Cache all static image assets under `public/`. Use a long max-age without `immutable`
+        // since filenames are not fingerprinted with hashes.
+        source: '/:all*\\.(jpg|jpeg|png|svg|ico|webp)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      // Cache all static images
-      {
-        source: '/(.*\\.(?:jpg|jpeg|png|svg|ico|webp))',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'public, max-age=31536000',
           },
         ],
       },
