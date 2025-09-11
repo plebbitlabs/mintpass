@@ -269,11 +269,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         onChange={(e) => setAgreeTerms(e.target.checked)}
                         className="mt-1 h-4 w-4 rounded border-input text-primary"
                       />
-                      <Label htmlFor="agree-terms" className="text-sm font-normal">
-                        I agree to the{' '}
+                      <div className="text-sm font-normal">
+                        <Label htmlFor="agree-terms" className="font-normal inline mr-1">I agree to the</Label>
                         <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
                         <span className="text-red-500 ml-1">*</span>
-                      </Label>
+                      </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <input
@@ -283,11 +283,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         onChange={(e) => setAgreePrivacy(e.target.checked)}
                         className="mt-1 h-4 w-4 rounded border-input text-primary"
                       />
-                      <Label htmlFor="agree-privacy" className="text-sm font-normal">
-                        I agree to the{' '}
+                      <div className="text-sm font-normal">
+                        <Label htmlFor="agree-privacy" className="font-normal inline mr-1">I agree to the</Label>
                         <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
                         <span className="text-red-500 ml-1">*</span>
-                      </Label>
+                      </div>
                     </div>
                   </div>
                   {eligibilityChecked && isEligible && (
