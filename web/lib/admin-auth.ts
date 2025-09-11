@@ -60,7 +60,9 @@ export function verifyAdminToken(token: string | undefined): boolean {
 
 function appendSetCookie(res: NextApiResponse, newCookie: string) {
   const existing = res.getHeader('Set-Cookie');
-  const existingCookies = existing ? (Array.isArray(existing) ? existing : [existing]) : [];
+  const existingCookies = existing 
+    ? (Array.isArray(existing) ? existing.map(String) : [String(existing)]) 
+    : [];
   res.setHeader('Set-Cookie', [...existingCookies, newCookie]);
 }
 
