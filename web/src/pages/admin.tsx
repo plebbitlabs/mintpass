@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { verifyAdminToken } from '../../lib/admin-auth';
 import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PhoneInput } from '../components/ui/phone-input';
@@ -294,6 +295,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
           </PageCard>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

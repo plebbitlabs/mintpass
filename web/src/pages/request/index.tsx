@@ -7,6 +7,7 @@ import { PhoneInput } from '../../components/ui/phone-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
 import { Header } from '../../components/header';
+import { Footer } from '../../components/footer';
 import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
 
@@ -392,6 +393,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               )}
         </PageCard>
       </main>
+      <Footer />
     </div>
   );
 }

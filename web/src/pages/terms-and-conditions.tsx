@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 import { PageCard } from '../components/page-card';
 
 export default function TermsAndConditions() {
@@ -58,6 +59,7 @@ export default function TermsAndConditions() {
           </div>
         </PageCard>
       </main>
+      <Footer />
     </div>
   );
 }

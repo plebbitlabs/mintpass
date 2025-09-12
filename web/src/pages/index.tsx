@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 import { PageCard } from '../components/page-card';
 import { RainbowButton } from '../components/magicui/rainbow-button';
 
@@ -21,6 +22,7 @@ export default function Home() {
           </RainbowButton>
         </PageCard>
       </main>
+      <Footer />
     </div>
   );
 }
