@@ -40,6 +40,7 @@ function HexagonBackground({
   const activeTimersRef = React.useRef<Map<string, number>>(new Map());
   const [activeKeys, setActiveKeys] = React.useState<Set<string>>(new Set());
   const debounceTimerRef = React.useRef<number | null>(null);
+  const expiryMapRef = React.useRef<Map<string, number>>(new Map());
 
   const updateGridDimensions = React.useCallback(() => {
     if (typeof window === 'undefined' || !isValidSize) return;
@@ -81,6 +82,30 @@ function HexagonBackground({
     };
   }, [updateGridDimensions, isValidSize]);
 
+  const clearActiveKey = React.useCallback((key: string) => {
+    const timersMap = activeTimersRef.current;
+    const existingTimeout = timersMap.get(key);
+    if (existingTimeout !== undefined) {
+      window.clearTimeout(existingTimeout);
+      timersMap.delete(key);
+    }
+    expiryMapRef.current.delete(key);
+    setActiveKeys(prev => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }, []);
+
+  const clearAllActive = React.useCallback(() => {
+    const timersMap = activeTimersRef.current;
+    for (const [, id] of timersMap) window.clearTimeout(id);
+    timersMap.clear();
+    expiryMapRef.current.clear();
+    setActiveKeys(new Set());
+  }, []);
+
   const updateActiveFromPoint = React.useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -102,37 +127,48 @@ function HexagonBackground({
         next.add(key);
         return next;
       });
+      // Track hard expiry as an additional failsafe to avoid any stuck actives
+      expiryMapRef.current.set(key, Date.now() + trailDurationMs + 50);
       const timeoutId = window.setTimeout(() => {
-        activeTimersRef.current.delete(key);
-        setActiveKeys(prev => {
-          if (!prev.has(key)) return prev;
-          const next = new Set(prev);
-          next.delete(key);
-          return next;
-        });
+        clearActiveKey(key);
       }, trailDurationMs);
       activeTimersRef.current.set(key, timeoutId);
     }
-  }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft]);
+  }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft, clearActiveKey]);
 
   React.useEffect(() => {
     if (!isValidSize) return;
     const move = (e: MouseEvent) => updateActiveFromPoint(e.clientX, e.clientY);
-    const timersMap = activeTimersRef.current;
-    const leave = () => {
-      for (const [, id] of timersMap) window.clearTimeout(id);
-      timersMap.clear();
-      setActiveKeys(new Set());
-    };
+    const leave = () => clearAllActive();
+    const onVisibility = () => clearAllActive();
     window.addEventListener('mousemove', move, { passive: true });
     window.addEventListener('mouseleave', leave, { passive: true });
+    window.addEventListener('blur', leave);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseleave', leave);
-      for (const [, id] of timersMap) window.clearTimeout(id);
-      timersMap.clear();
+      window.removeEventListener('blur', leave);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearAllActive();
     };
-  }, [updateActiveFromPoint, isValidSize]);
+  }, [updateActiveFromPoint, isValidSize, clearAllActive]);
+
+  // Failsafe GC: periodically clear any overdue actives in case a timeout was throttled/lost
+  React.useEffect(() => {
+    if (!isValidSize) return;
+    const intervalId = window.setInterval(() => {
+      const now = Date.now();
+      const expired: string[] = [];
+      for (const [key, expiry] of expiryMapRef.current) {
+        if (expiry <= now) expired.push(key);
+      }
+      if (expired.length) {
+        for (const key of expired) clearActiveKey(key);
+      }
+    }, 500);
+    return () => window.clearInterval(intervalId);
+  }, [isValidSize, clearActiveKey]);
 
   // Trail is managed with per-hex timeouts; no idle loop needed
 
