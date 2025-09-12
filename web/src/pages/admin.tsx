@@ -207,7 +207,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       <Header />
       <main className="flex-1">
         {!authorized ? (
-          <PageCard title="Admin Login" contentClassName="space-y-4">
+          <PageCard title="Admin Login" titleAs="h1" contentClassName="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Admin Password</Label>
               <Input 
@@ -225,7 +225,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
             </Button>
           </PageCard>
         ) : (
-          <PageCard title="Admin Console" contentClassName="space-y-4">
+          <PageCard title="Admin Console" titleAs="h1" contentClassName="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clear-address">Clear Address (optional)</Label>
               <Input 
