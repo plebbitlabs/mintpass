@@ -38,9 +38,10 @@ function HexagonBackground({
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const trailDurationMs = 700;
   const activeTimersRef = React.useRef<Map<string, number>>(new Map());
-  const [activeKeys, setActiveKeys] = React.useState<Set<string>>(new Set());
+  const activeKeysRef = React.useRef<Set<string>>(new Set());
   const debounceTimerRef = React.useRef<number | null>(null);
   const expiryMapRef = React.useRef<Map<string, number>>(new Map());
+  const hexRefsRef = React.useRef<Map<string, HTMLDivElement>>(new Map());
 
   const updateGridDimensions = React.useCallback(() => {
     if (typeof window === 'undefined' || !isValidSize) return;
@@ -90,21 +91,32 @@ function HexagonBackground({
       timersMap.delete(key);
     }
     expiryMapRef.current.delete(key);
-    setActiveKeys(prev => {
-      if (!prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
+    activeKeysRef.current.delete(key);
+    const el = hexRefsRef.current.get(key);
+    if (el) {
+      el.removeAttribute('data-active');
+    }
   }, []);
 
   const clearAllActive = React.useCallback(() => {
-    const timersMap = activeTimersRef.current;
-    for (const [, id] of timersMap) window.clearTimeout(id);
-    timersMap.clear();
-    expiryMapRef.current.clear();
-    setActiveKeys(new Set());
-  }, []);
+    for (const key of Array.from(activeKeysRef.current)) {
+      clearActiveKey(key);
+    }
+  }, [clearActiveKey]);
+
+  const activateHex = React.useCallback((key: string) => {
+    if (activeKeysRef.current.has(key)) return;
+    activeKeysRef.current.add(key);
+    const el = hexRefsRef.current.get(key);
+    if (el) {
+      el.setAttribute('data-active', 'true');
+    }
+    expiryMapRef.current.set(key, Date.now() + trailDurationMs + 50);
+    const timeoutId = window.setTimeout(() => {
+      clearActiveKey(key);
+    }, trailDurationMs);
+    activeTimersRef.current.set(key, timeoutId);
+  }, [trailDurationMs, clearActiveKey]);
 
   const updateActiveFromPoint = React.useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return;
@@ -121,20 +133,9 @@ function HexagonBackground({
 
     // If this hex is not currently in the trail, add it and schedule removal
     if (!activeTimersRef.current.has(key)) {
-      setActiveKeys(prev => {
-        if (prev.has(key)) return prev;
-        const next = new Set(prev);
-        next.add(key);
-        return next;
-      });
-      // Track hard expiry as an additional failsafe to avoid any stuck actives
-      expiryMapRef.current.set(key, Date.now() + trailDurationMs + 50);
-      const timeoutId = window.setTimeout(() => {
-        clearActiveKey(key);
-      }, trailDurationMs);
-      activeTimersRef.current.set(key, timeoutId);
+      activateHex(key);
     }
-  }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft, clearActiveKey]);
+  }, [gridDimensions.rows, gridDimensions.columns, rowSpacing, hexagonWidth, evenRowMarginLeft, oddRowMarginLeft, activateHex]);
 
   React.useEffect(() => {
     if (!isValidSize) return;
@@ -225,7 +226,14 @@ function HexagonBackground({
                     'hover:before:bg-neutral-200 dark:hover:before:bg-neutral-800 hover:before:opacity-100 hover:before:duration-0 dark:hover:after:bg-neutral-900 hover:after:bg-neutral-100 hover:after:opacity-100 hover:after:duration-0',
                     hexagonProps?.className,
                   )}
-                  data-active={activeKeys.has(`${rowIndex}-${colIndex}`) ? 'true' : undefined}
+                  ref={(el) => {
+                    const key = `${rowIndex}-${colIndex}`;
+                    if (el) {
+                      hexRefsRef.current.set(key, el);
+                    } else {
+                      hexRefsRef.current.delete(key);
+                    }
+                  }}
                 />
               ),
             )}
