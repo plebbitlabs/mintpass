@@ -65,3 +65,5 @@ deployments/local/
 .plebbit/
 
 .playwright-mcp
+
+.cursor/
