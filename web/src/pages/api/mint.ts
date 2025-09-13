@@ -68,9 +68,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           overrides?: { gasLimit?: bigint }
         ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
       };
-      const estimated: bigint = await contract.estimateGas.mint(address, tokenType);
-      const gasLimit: bigint = estimated + (estimated / BigInt(5));
-      const tx = await contract.mint(address, tokenType, { gasLimit });
+      // Ethers v6 compatibility: estimateGas helpers may be stripped depending on build
+      // Use a narrow contract type and fall back to provider auto-estimation when unavailable
+      type MintContract = {
+        estimateGas?: { mint?: (to: string, tokenType: number) => Promise<bigint> };
+        mint: (
+          to: string,
+          tokenType: number,
+          overrides?: { gasLimit?: bigint }
+        ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
+      };
+      const mintContract = contract as unknown as MintContract;
+      const estimated = await mintContract.estimateGas?.mint?.(address, tokenType);
+      const gasOverrides = typeof estimated === 'bigint'
+        ? { gasLimit: estimated + (estimated / BigInt(5)) }
+        : undefined;
+      const tx = gasOverrides
+        ? await mintContract.mint(address, tokenType, gasOverrides)
+        : await mintContract.mint(address, tokenType);
       const receipt = await tx.wait();
       const status = receipt.status;
       if (typeof status === 'number' && status !== 1) {
