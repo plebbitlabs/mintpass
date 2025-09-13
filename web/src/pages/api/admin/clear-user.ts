@@ -6,18 +6,23 @@ import { hashIdentifier } from '../../../../lib/hash';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { createRatelimit } from '../../../../lib/rate-limit';
 
-const Body = z.object({
-  address: z.string().min(1).optional(),
-  phoneE164: z.string().min(5).optional(),
-  clearIpCooldowns: z.boolean().optional(),
-  targetIp: z.string().trim().optional(),
-}).refine(
-  (data) => data.address || data.phoneE164,
-  {
-    message: "Either address or phoneE164 is required",
-    path: ["address", "phoneE164"],
-  }
-);
+const Body = z
+  .object({
+    address: z.string().min(1).optional(),
+    phoneE164: z.string().min(5).optional(),
+    clearIpCooldowns: z.boolean().optional(),
+    targetIp: z.string().trim().optional(),
+  })
+  .refine(
+    (data) =>
+      Boolean(data.address) ||
+      Boolean(data.phoneE164) ||
+      (Boolean(data.clearIpCooldowns) && typeof data.targetIp === 'string' && data.targetIp.trim().length > 0),
+    {
+      message: 'Provide address or phoneE164, or set clearIpCooldowns with targetIp',
+      path: ['address', 'phoneE164', 'targetIp'],
+    }
+  );
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
