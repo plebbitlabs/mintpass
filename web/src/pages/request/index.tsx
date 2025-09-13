@@ -41,8 +41,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
-  const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
-  const [isEligible, setIsEligible] = useState<boolean>(false);
+  type EligibilityResult = { address: string; phone: string; eligible: boolean; reason?: string };
+  const [eligibilityResult, setEligibilityResult] = useState<EligibilityResult | null>(null);
   const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
   const [agreePrivacy, setAgreePrivacy] = useState<boolean>(false);
@@ -89,21 +89,14 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     return () => router.events.off('routeChangeStart', handleRouteChangeStart);
   }, [router.events, isVerificationInProgress]);
 
-
-  // Track previous values to reset eligibility when inputs change
-  const [prevInputs, setPrevInputs] = useState({ address: '', phone: '' });
-  
-  // Reset eligibility state when inputs change (during rendering)
-  if (address !== prevInputs.address || phone !== prevInputs.phone) {
-    setPrevInputs({ address, phone });
-    // Only reset if we had actually checked eligibility before
-    if (eligibilityChecked) {
-      setEligibilityChecked(false);
-      setIsEligible(false);
-      setError('');
-      setCooldownSeconds(0);
-    }
-  }
+  // Derive whether current inputs have a fresh eligibility result
+  const isEligibilityForCurrentInputs = !!(
+    eligibilityResult &&
+    eligibilityResult.address === address &&
+    eligibilityResult.phone === phone
+  );
+  const eligibilityChecked = isEligibilityForCurrentInputs;
+  const isEligible = isEligibilityForCurrentInputs && !!eligibilityResult?.eligible;
 
   // Countdown timer effect
   useEffect(() => {
@@ -164,8 +157,12 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         reason?: string; 
       }>('/api/pre-check-eligibility', { address: address.trim(), phoneE164: phone.trim() });
       
-      setEligibilityChecked(true);
-      setIsEligible(result.eligible);
+      setEligibilityResult({
+        address: address.trim(),
+        phone: phone.trim(),
+        eligible: result.eligible,
+        reason: result.reason,
+      });
       
       if (!result.eligible && result.reason) {
         setError(result.reason);
@@ -173,8 +170,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Unable to verify eligibility. Please try again.';
       setError(msg);
-      setEligibilityChecked(false);
-      setIsEligible(false);
+      setEligibilityResult(null);
     } finally {
       setCheckingEligibility(false);
     }
@@ -290,6 +286,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       value={address} 
                       onChange={(e) => {
                         setAddress(e.target.value);
+                        // Clear stale state on input change without an Effect
+                        if (eligibilityResult && eligibilityResult.address !== e.target.value) {
+                          setCooldownSeconds(0);
+                          setError('');
+                        }
                       }} 
                       placeholder="0x..." 
                     />
@@ -300,7 +301,12 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       id="phone" 
                       value={phone}
                       onChange={(value) => {
-                        setPhone(value || '');
+                        const next = value || '';
+                        setPhone(next);
+                        if (eligibilityResult && eligibilityResult.phone !== next) {
+                          setCooldownSeconds(0);
+                          setError('');
+                        }
                       }} 
                       placeholder="Enter phone number"
                       defaultCountry="US"
