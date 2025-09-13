@@ -90,6 +90,22 @@ const CountrySelect = ({
   const [searchValue, setSearchValue] = React.useState("");
   const [isOpen, setIsOpen] = React.useState(false);
 
+  // Detect mobile device - calculated during rendering (not expensive, no need for useMemo)
+  const isMobileDevice = typeof window !== 'undefined' && 
+    /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent);
+
+  // Track whether user has manually clicked the input (to allow manual search on mobile)
+  const [hasUserFocused, setHasUserFocused] = React.useState(false);
+
+  // Helper function to blur input on mobile devices only
+  const blurInputAfterOpen = React.useCallback(() => {
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
+    });
+  }, []);
+
   return (
     <Popover
       open={isOpen}
@@ -98,12 +114,12 @@ const CountrySelect = ({
         setIsOpen(open);
         if (open) {
           setSearchValue("");
-          // Blur the input to prevent auto focus
-          requestAnimationFrame(() => {
-            if (inputRef.current) {
-              inputRef.current.blur();
-            }
-          });
+          setHasUserFocused(false);
+          // Only prevent auto-focus on mobile devices
+          if (isMobileDevice) {
+            blurInputAfterOpen();
+          }
+          // On desktop, allow natural autofocus behavior
         }
       }}
     >
@@ -144,8 +160,21 @@ const CountrySelect = ({
                 }
               });
             }}
+            onFocus={(e) => {
+              // On mobile, prevent automatic focus (but allow it after user clicks the input)
+              if (isMobileDevice && !hasUserFocused) {
+                e.preventDefault();
+                e.target.blur();
+                return false;
+              }
+              // On desktop, allow all focus events naturally
+            }}
+            onClick={() => {
+              // When user clicks the input, allow focus (works on both mobile and desktop)
+              setHasUserFocused(true);
+            }}
             placeholder="Search country..."
-            autoFocus={false}
+            autoFocus={!isMobileDevice}
           />
           <CommandList>
             <ScrollArea ref={scrollAreaRef} className="h-72">
@@ -190,18 +219,23 @@ const CountrySelectOption = ({
     onSelectComplete();
   };
 
+  // Calculate country code during rendering
+  const countryCode = React.useMemo(() => {
+    try {
+      const code = RPNInput.getCountryCallingCode(country);
+      return code ? `+${code}` : null;
+    } catch {
+      return null;
+    }
+  }, [country]);
+
   return (
     <CommandItem className="gap-2" onSelect={handleSelect}>
       <FlagComponent country={country} countryName={countryName} />
       <span className="flex-1 text-sm">{countryName}</span>
-      {(() => {
-        const code = RPNInput.getCountryCallingCode(country) as unknown;
-        if (code == null) return null;
-        const codeStr = String(code);
-        return codeStr.length > 0 ? (
-          <span className="text-sm text-foreground/50">{`+${codeStr}`}</span>
-        ) : null;
-      })()}
+      {countryCode && (
+        <span className="text-sm text-foreground/50">{countryCode}</span>
+      )}
       <CheckIcon
         className={`ml-auto size-4 ${country === selectedCountry ? "opacity-100" : "opacity-0"}`}
       />
