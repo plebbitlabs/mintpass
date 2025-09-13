@@ -1626,6 +1626,8 @@ describe("MintPass Challenge Integration Test", function () {
     const settings = { ...subplebbit.settings };
     const cooldownSettings = createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337);
     cooldownSettings.options.transferCooldownSeconds = '1';
+    // Disable binding here to specifically test cooldown behavior
+    cooldownSettings.options.bindToFirstAuthor = 'false';
     settings.challenges = [cooldownSettings];
     await subplebbit.edit({ settings });
     console.log("✅ Subplebbit configured with cooldown challenge");
@@ -2196,6 +2198,141 @@ describe("MintPass Challenge Integration Test", function () {
     } finally {
       await sub.stop();
       await sub.delete();
+    }
+  });
+
+  it("Test 24: Vote should succeed when author has NFT", async function () {
+    this.timeout(120000);
+    console.log("\n🧪 Test 24: Vote should succeed when author has NFT");
+
+    const authorSigner = await plebbitForPublishing.createSigner();
+    const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address, authorSigner.publicKey);
+
+    // Mint NFT to the author wallet
+    await mintpass.connect(minter).mint(ethWallet.address, SMS_TOKEN_TYPE);
+
+    const subplebbit = await plebbit.createSubplebbit({
+      title: 'MintPass Test Community',
+      description: 'Testing mintpass challenge with vote publication'
+    });
+
+    const settings = { ...subplebbit.settings };
+    settings.challenges = [createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337)];
+    await subplebbit.edit({ settings });
+    await subplebbit.start();
+    await waitForCondition(subplebbit, (s) => typeof s.updatedAt === "number");
+
+    try {
+      // First publish a comment to vote on and capture its CID
+      const comment = await plebbitForPublishing.createComment({
+        signer: authorSigner,
+        subplebbitAddress: subplebbit.address,
+        title: 'Post to vote on',
+        content: 'Vote target',
+        author: { wallets: { base: ethWallet } }
+      });
+
+      let publishedCid = null;
+      comment.on('challenge', () => comment.publishChallengeAnswers(['test']));
+      comment.on('challengeverification', (cv) => {
+        // Prefer publication.cid, fallback to commentUpdate.cid as emitted by current plebbit-js
+        publishedCid = cv?.publication?.cid || cv?.commentUpdate?.cid || cv?.comment?.cid || null;
+      });
+      await comment.publish();
+      await waitForCondition({}, () => Boolean(publishedCid), 30000);
+
+      // Now create a vote publication and expect success
+      const vote = await plebbitForPublishing.createVote({
+        signer: authorSigner,
+        subplebbitAddress: subplebbit.address,
+        commentCid: publishedCid,
+        vote: 1,
+        author: { wallets: { base: ethWallet } }
+      });
+
+      let voteVerificationReceived = false;
+      let voteSuccess = null;
+      vote.on('challenge', () => vote.publishChallengeAnswers(['test']));
+      vote.on('challengeverification', (cv) => { voteVerificationReceived = true; voteSuccess = cv.challengeSuccess; });
+      await vote.publish();
+      await waitForCondition({}, () => voteVerificationReceived, 30000);
+
+      expect(voteSuccess).to.be.true;
+      console.log("✅ Test 24 PASSED: Vote succeeded with NFT");
+    } finally {
+      await subplebbit.stop();
+      await subplebbit.delete();
+    }
+  });
+
+  it("Test 25: Vote should fail when author has no NFT", async function () {
+    this.timeout(120000);
+    console.log("\n🧪 Test 25: Vote should fail when author has no NFT");
+
+    // Create a poster with NFT to publish a target comment
+    const posterSigner = await plebbitForPublishing.createSigner();
+    const posterWallet = await getEthWalletFromPlebbitPrivateKey(posterSigner.privateKey, posterSigner.address, posterSigner.publicKey);
+    await mintpass.connect(minter).mint(posterWallet.address, SMS_TOKEN_TYPE);
+
+    // Create a voter without NFT
+    const voterSigner = await plebbitForPublishing.createSigner();
+    const voterWallet = await getEthWalletFromPlebbitPrivateKey(voterSigner.privateKey, voterSigner.address, voterSigner.publicKey);
+
+    const subplebbit = await plebbit.createSubplebbit({
+      title: 'MintPass Test Community',
+      description: 'Testing mintpass challenge vote fail path'
+    });
+
+    const settings = { ...subplebbit.settings };
+    settings.challenges = [createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337)];
+    await subplebbit.edit({ settings });
+    await subplebbit.start();
+    await waitForCondition(subplebbit, (s) => typeof s.updatedAt === "number");
+
+    try {
+      // Publish the target comment as poster (has NFT)
+      const comment = await plebbitForPublishing.createComment({
+        signer: posterSigner,
+        subplebbitAddress: subplebbit.address,
+        title: 'Post to vote on - no NFT voter',
+        content: 'Vote target',
+        author: { wallets: { base: posterWallet } }
+      });
+      let publishedCid = null;
+      comment.on('challenge', () => comment.publishChallengeAnswers(['test']));
+      comment.on('challengeverification', (cv) => {
+        publishedCid = cv?.publication?.cid || cv?.commentUpdate?.cid || cv?.comment?.cid || null;
+      });
+      await comment.publish();
+      await waitForCondition({}, () => Boolean(publishedCid), 30000);
+
+      // Attempt a vote by voter without NFT → expect failure
+      const vote = await plebbitForPublishing.createVote({
+        signer: voterSigner,
+        subplebbitAddress: subplebbit.address,
+        commentCid: publishedCid,
+        vote: 1,
+        author: { wallets: { base: voterWallet } }
+      });
+
+      let voteVerificationReceived = false;
+      let voteSuccess = null;
+      let voteErrors = null;
+      vote.on('challenge', () => vote.publishChallengeAnswers(['test']));
+      vote.on('challengeverification', (cv) => { 
+        voteVerificationReceived = true; 
+        voteSuccess = cv.challengeSuccess; 
+        voteErrors = cv.challengeErrors; 
+      });
+      await vote.publish();
+      await waitForCondition({}, () => voteVerificationReceived, 30000);
+
+      expect(voteSuccess).to.be.false;
+      expect(String(voteErrors['0'] || '')).to.include('You need a MintPass NFT');
+      console.log("✅ Test 25 PASSED: Vote correctly failed without NFT");
+    } finally {
+      await subplebbit.stop();
+      await subplebbit.delete();
     }
   });
   

@@ -28,9 +28,33 @@ function getPlebbitAddressFromPublicKey(publicKey: string): string {
     return publicKey;
 }
 
-function derivePublicationFromChallengeRequest(challengeRequestMessage: any): any {
-    // Extract publication from challenge request message
-    return challengeRequestMessage.comment;
+function derivePublicationFromChallengeRequest(
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+): PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest | undefined {
+    // Support all publication kinds that can trigger a challenge
+    // Order does not really matter, but keep most common first
+    const possibleKeys = [
+        "comment",
+        "vote",
+        "commentEdit",
+        "commentModeration",
+        "subplebbitEdit"
+    ] as const;
+
+    for (const key of possibleKeys) {
+        const maybe = (challengeRequestMessage as any)[key];
+        if (maybe && typeof maybe === "object") {
+            return maybe as PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest;
+        }
+    }
+
+    // Some implementations may place a generic `publication` field
+    const generic = (challengeRequestMessage as any)?.publication;
+    if (generic && typeof generic === "object") {
+        return generic as PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest;
+    }
+
+    return undefined;
 }
 
 // Challenge option inputs for subplebbit configuration
@@ -536,6 +560,12 @@ const getChallenge = async (
     }
 
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
+    if (!publication) {
+        return {
+            success: false,
+            error: "Could not derive publication from challenge request."
+        };
+    }
     
     const sharedProps = {
         plebbit: subplebbit._plebbit,
