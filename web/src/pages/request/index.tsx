@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
@@ -90,20 +90,20 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [router.events, isVerificationInProgress]);
 
 
-  // Reset eligibility when address or phone changes
-  useEffect(() => {
-    setEligibilityChecked(false);
-    setIsEligible(false);
-    setError(''); // Clear any previous eligibility errors
-    setCooldownSeconds(0); // Clear cooldown when inputs change
-  }, [address, phone]);
-
-  // Clear agreement error when both checkboxes are checked
-  useEffect(() => {
-    if (agreeTerms && agreePrivacy && showAgreementError) {
-      setShowAgreementError(false);
+  // Track previous values to reset eligibility when inputs change
+  const [prevInputs, setPrevInputs] = useState({ address: '', phone: '' });
+  
+  // Reset eligibility state when inputs change (during rendering)
+  if (address !== prevInputs.address || phone !== prevInputs.phone) {
+    setPrevInputs({ address, phone });
+    // Only reset if we had actually checked eligibility before
+    if (eligibilityChecked) {
+      setEligibilityChecked(false);
+      setIsEligible(false);
+      setError('');
+      setCooldownSeconds(0);
     }
-  }, [agreeTerms, agreePrivacy, showAgreementError]);
+  }
 
   // Countdown timer effect
   useEffect(() => {
@@ -122,8 +122,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     }
   }, [cooldownSeconds]);
 
-  // Removed unused eligibility helpers to satisfy linter
-  const canVerify = useMemo(() => code.trim().length === 6, [code]);
+  // Simple calculation during rendering (no need for useMemo)
+  const canVerify = code.trim().length === 6;
+
+  // Calculate whether to show agreement error during rendering
+  const shouldShowAgreementError = showAgreementError && (!agreeTerms || !agreePrivacy);
 
   function handleCheckEligibilityClick() {
     // Clear any previous agreement error
@@ -336,7 +339,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   {eligibilityChecked && isEligible && (
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You&apos;re eligible.</p>
                   )}
-                  {showAgreementError && (
+                  {shouldShowAgreementError && (
                     <p className="text-sm text-destructive">Please agree to both Terms and Conditions and Privacy Policy before proceeding.</p>
                   )}
                   {error && (
