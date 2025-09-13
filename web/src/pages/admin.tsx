@@ -215,7 +215,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
                 type="password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                placeholder="Admin password"
+                placeholder="Enter your password"
                 autoComplete="current-password"
               />
             </div>
