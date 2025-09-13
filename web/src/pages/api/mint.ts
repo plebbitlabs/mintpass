@@ -79,10 +79,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
       };
       const mintContract = contract as unknown as MintContract;
-      const estimated = await mintContract.estimateGas?.mint?.(address, tokenType);
-      const gasOverrides = typeof estimated === 'bigint'
-        ? { gasLimit: estimated + (estimated / BigInt(5)) }
-        : undefined;
+      let gasOverrides: { gasLimit?: bigint } | undefined;
+      try {
+        const estimated = await mintContract.estimateGas?.mint?.(address, tokenType);
+        if (typeof estimated === 'bigint') {
+          gasOverrides = { gasLimit: estimated + (estimated / BigInt(5)) };
+        }
+      } catch (estErr) {
+        console.warn('[mint] estimateGas.mint failed; proceeding without overrides', {
+          address,
+          tokenType,
+          err: estErr instanceof Error ? estErr.message : String(estErr),
+        });
+        gasOverrides = undefined;
+      }
       const tx = gasOverrides
         ? await mintContract.mint(address, tokenType, gasOverrides)
         : await mintContract.mint(address, tokenType);
