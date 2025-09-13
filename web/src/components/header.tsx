@@ -37,10 +37,10 @@ export function Header({ children }: HeaderProps) {
           MintPass
         </button>
         <div className="flex items-center gap-4 md:gap-6">
-          <Button variant="ghost" size="sm" className="text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
+          <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
             <Link href="/privacy-policy">Privacy</Link>
           </Button>
-          <Button variant="ghost" size="sm" className="text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
+          <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
             <Link href="/terms-and-conditions">Terms</Link>
           </Button>
           {children}

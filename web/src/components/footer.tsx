@@ -26,10 +26,8 @@ export function Footer() {
             Contact
           </a>
         </nav>
-        <div className="text-xs text-muted-foreground text-center">MIT License</div>
+        <div className="text-xs text-muted-foreground text-center pt-2">MIT License</div>
       </div>
     </footer>
   );
 }
-
-
