@@ -38,8 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mintedPhone,
     reason: !eligible 
       ? mintedAddr 
-        ? 'Address has already minted an NFT'
-        : 'Phone number has already been used to mint'
+        ? 'Address has already minted a MintPass NFT'
+        : 'Phone number has already been used to mint a MintPass NFT'
       : null
   });
 }
