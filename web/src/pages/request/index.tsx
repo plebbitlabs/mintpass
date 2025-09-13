@@ -10,6 +10,7 @@ import { Header } from '../../components/header';
 import { Footer } from '../../components/footer';
 import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
+import { ExternalLink } from 'lucide-react';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -244,7 +245,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
           title="Request your authentication NFT"
           titleAs="h1"
           footerClassName="flex gap-2"
-          footer={
+          footer={step !== 'done' ? (
             <>
               {step === 'enter' && (
                 <>
@@ -271,11 +272,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   {loading ? 'Verifying…' : 'Verify & mint'}
                 </Button>
               )}
-              {step === 'done' && (
-                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
-              )}
             </>
-          }
+          ) : undefined}
         >
               {step === 'enter' && (
                 <div className="space-y-4">
@@ -383,7 +381,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               )}
 
               {step === 'done' && (
-                <div className="space-y-4 text-center">
+                <div className="space-y-7 text-center">
                   <div className="space-y-2">
                     <h2 className="text-xl font-bold text-[#077b91]">
                       You received your MintPass NFT!
@@ -394,7 +392,18 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     </p>
                   </div>
                   {txHash ? (
-                    <p className="text-sm text-muted-foreground">Tx: {txHash}</p>
+                    <div className="flex justify-center">
+                      <Button asChild>
+                        <a
+                          href={`https://sepolia.basescan.org/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View transaction
+                          <ExternalLink />
+                        </a>
+                      </Button>
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">On-chain mint not configured; recorded as minted.</p>
                   )}
