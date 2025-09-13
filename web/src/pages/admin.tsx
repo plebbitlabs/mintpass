@@ -156,11 +156,12 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       setIpError('');
       if (clearIpCooldowns) {
         const trimmed = targetIp.trim();
-        if (!trimmed) {
-          setError('Target IP is required when clearing IP cooldowns');
+        const hasIdentity = (address.trim().length > 0) || (phone.trim().length > 0);
+        if (!hasIdentity && !trimmed) {
+          setError('Provide a target IP or an address/phone to clear IP cooldowns');
           return;
         }
-        if (!isValidIp(trimmed)) {
+        if (trimmed && !isValidIp(trimmed)) {
           setIpError('Enter a valid IPv4 or IPv6 address');
           return;
         }
@@ -262,17 +263,18 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
 
             {clearIpCooldowns && (
               <div className="space-y-2">
-                <Label htmlFor="clear-target-ip">Target IP (required when clearing IP cooldowns)</Label>
+                <Label htmlFor="clear-target-ip">Target IP (optional if address or phone is provided)</Label>
                 <Input
                   id="clear-target-ip"
                   value={targetIp}
                   onChange={(e) => {
                     const v = e.target.value;
                     setTargetIp(v);
-                    if (v.trim().length === 0) {
-                      setIpError(clearIpCooldowns ? 'Target IP is required when clearing IP cooldowns' : '');
+                    const trimmed = v.trim();
+                    if (trimmed.length === 0) {
+                      setIpError('');
                     } else {
-                      setIpError(isValidIp(v.trim()) ? '' : 'Enter a valid IPv4 or IPv6 address');
+                      setIpError(isValidIp(trimmed) ? '' : 'Enter a valid IPv4 or IPv6 address');
                     }
                   }}
                   placeholder="127.0.0.1 or ::1"

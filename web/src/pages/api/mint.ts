@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted } from '../../../lib/kv';
+import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted, addIpAssociationForPhone, addIpAssociationForAddress } from '../../../lib/kv';
 import { getClientIp } from '../../../lib/request-ip';
 import { isMintIpInCooldown, setMintIpCooldown } from '../../../lib/cooldowns';
 import { env, requireEnv } from '../../../lib/env';
@@ -92,6 +92,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   await markMinted(address, phoneE164);
   await setMintIpCooldown(ip);
+  // Index hashed IP associations for phone and address (mint attempt)
+  try {
+    await Promise.all([
+      addIpAssociationForPhone(phoneE164, ip),
+      addIpAssociationForAddress(address, ip),
+    ]);
+  } catch {}
 
   return res.status(200).json({ ok: true, txHash, tokenType });
 }

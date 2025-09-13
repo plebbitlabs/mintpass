@@ -3,6 +3,7 @@ import net from 'node:net';
 import { z } from 'zod';
 import { kv } from '@vercel/kv';
 import { hashIdentifier } from '../../../../lib/hash';
+import { getHashedIpsForAddress, getHashedIpsForPhone } from '../../../../lib/kv';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { createRatelimit } from '../../../../lib/rate-limit';
 
@@ -14,12 +15,15 @@ const Body = z
     targetIp: z.string().trim().optional(),
   })
   .refine(
-    (data) =>
-      Boolean(data.address) ||
-      Boolean(data.phoneE164) ||
-      (Boolean(data.clearIpCooldowns) && typeof data.targetIp === 'string' && data.targetIp.trim().length > 0),
+    (data) => {
+      const hasIdentity = Boolean(data.address) || Boolean(data.phoneE164);
+      const wantsIpClear = Boolean(data.clearIpCooldowns);
+      const hasTargetIp = typeof data.targetIp === 'string' && data.targetIp.trim().length > 0;
+      // Valid if: provided address/phone for general clear, OR if requesting IP cooldown clear with either a target IP or identity to resolve from
+      return hasIdentity || (wantsIpClear && (hasTargetIp || hasIdentity));
+    },
     {
-      message: 'Provide address or phoneE164, or set clearIpCooldowns with targetIp',
+      message: 'Provide address or phoneE164, or include targetIp when clearing IP cooldowns',
       path: ['address', 'phoneE164', 'targetIp'],
     }
   );
@@ -65,14 +69,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (clearIpCooldowns) {
-    // Require explicit targetIp rather than using requester IP to avoid abuse
+    // If a specific target IP is provided, clear its cooldowns (hashed + legacy plaintext)
     const targetIpRaw = typeof targetIp === 'string' ? targetIp.trim() : undefined;
     if (targetIpRaw) {
       const isValidIp = net.isIP(targetIpRaw) > 0;
       if (!isValidIp) {
         return res.status(400).json({ error: 'Invalid targetIp' });
       }
-      // Audit intent prior to deletion
       try {
         const ts = new Date().toISOString();
         console.info('[AUDIT] admin_clear_ip_cooldowns_intent', { ts, actor: adminIp, targetIp: targetIpRaw });
@@ -80,12 +83,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const hashedIp = hashIdentifier('ip', targetIpRaw);
       keysToDelete.push(
         `cd:mint:ip:${hashedIp}`,
-        `cd:mint:ip:${targetIpRaw}`, // Legacy plaintext fallback
+        `cd:mint:ip:${targetIpRaw}`,
         `cd:sms:ip:${hashedIp}`,
-        `cd:sms:ip:${targetIpRaw}` // Legacy plaintext fallback
+        `cd:sms:ip:${targetIpRaw}`
       );
-    } else {
-      return res.status(400).json({ error: 'targetIp is required when clearIpCooldowns is true' });
+    }
+
+    // Also support resolving hashed IPs associated to the provided address/phone
+    const hashedIps: Set<string> = new Set();
+    try {
+      if (phoneE164) {
+        for (const h of await getHashedIpsForPhone(phoneE164)) hashedIps.add(h);
+      }
+      if (address) {
+        for (const h of await getHashedIpsForAddress(address)) hashedIps.add(h);
+      }
+    } catch {}
+    if (hashedIps.size > 0) {
+      for (const ipHash of hashedIps) {
+        keysToDelete.push(`cd:mint:ip:${ipHash}`, `cd:sms:ip:${ipHash}`);
+      }
+    } else if (!targetIpRaw) {
+      // If no targetIp was supplied and no associations were found, return a helpful error
+      return res.status(404).json({ error: 'No associated IP cooldowns found for the provided address/phone' });
     }
   }
 
