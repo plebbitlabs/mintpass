@@ -107,13 +107,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  // Debug info for development
-  const debugInfo = process.env.NODE_ENV === 'development' ? {
-    keysAttempted: keysToDelete,
-    addressKeys: address ? 4 : 0,
-    phoneKeys: phoneE164 ? 16 : 0, 
-    ipCooldownKeys: clearIpCooldowns ? 8 : 0,
-  } : undefined;
+  // Debug info for development (derive counts from keysToDelete)
+  const debugInfo = process.env.NODE_ENV === 'development' ? ((): {
+    keysAttempted: string[];
+    addressKeys: number;
+    phoneKeys: number;
+    ipCooldownKeys: number;
+  } => {
+    let addressKeys = 0;
+    let phoneKeys = 0;
+    let ipCooldownKeys = 0;
+    if (address) {
+      // Two address keys are added when address is provided
+      addressKeys = keysToDelete.filter((k) => k.startsWith('mint:address:')).length;
+    }
+    if (phoneE164) {
+      // Eight phone-related keys are added when phoneE164 is provided
+      const phonePrefixes = ['mint:phone:', 'sms:code:', 'sms:verified:', 'cd:sms:phone:'];
+      phoneKeys = keysToDelete.filter((k) => phonePrefixes.some((p) => k.startsWith(p))).length;
+    }
+    if (clearIpCooldowns) {
+      // Four IP cooldown keys are added when clearIpCooldowns is set
+      const ipPrefixes = ['cd:mint:ip:', 'cd:sms:ip:'];
+      ipCooldownKeys = keysToDelete.filter((k) => ipPrefixes.some((p) => k.startsWith(p))).length;
+    }
+    return {
+      keysAttempted: keysToDelete,
+      addressKeys,
+      phoneKeys,
+      ipCooldownKeys,
+    };
+  })() : undefined;
 
   // Audit success
   try {
