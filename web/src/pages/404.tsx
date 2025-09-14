@@ -4,23 +4,25 @@ import Link from 'next/link';
 import { Header } from '../components/header';
 import { Footer } from '../components/footer';
 import { PageCard } from '../components/page-card';
-import { RainbowButton } from '../components/magicui/rainbow-button';
-import { Button } from '../components/ui/button';
+ 
 
 export default function NotFoundPage() {
   const router = useRouter();
   const [secondsLeft, setSecondsLeft] = useState(5);
 
   useEffect(() => {
-    if (secondsLeft <= 0) {
-      router.replace('/');
-      return;
-    }
     const interval = setInterval(() => {
-      setSecondsLeft((s) => s - 1);
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          void router.replace('/');
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [secondsLeft, router]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex flex-col">
