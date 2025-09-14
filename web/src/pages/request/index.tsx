@@ -215,8 +215,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
         <PageCard
-          title="Request your authentication NFT"
+          title={step !== 'done' ? "Request your authentication NFT" : "You received your MintPass NFT!"}
           titleAs="h1"
+          titleClassName="text-center text-[#077b91]"
           footerClassName="flex gap-2"
           footer={step !== 'done' ? (
             <>
@@ -319,9 +320,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               {step === 'done' && (
                 <div className="space-y-7 text-center">
                   <div className="space-y-2">
-                    <h2 className="text-xl font-bold text-[#077b91]">
-                      You received your MintPass NFT!
-                    </h2>
+
                     <p className="text-sm text-muted-foreground">
                       You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
                       You can close this page and head back to the Plebbit application of your choice.
