@@ -217,7 +217,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         <PageCard
           title={step !== 'done' ? "Request your authentication NFT" : "You received your MintPass NFT!"}
           titleAs="h1"
-          titleClassName="text-center text-[#077b91]"
+          titleClassName="text-center"
           footerClassName="flex gap-2"
           footer={step !== 'done' ? (
             <>
