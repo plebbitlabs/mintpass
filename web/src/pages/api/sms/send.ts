@@ -59,7 +59,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Reject disposable/VOIP/high-risk numbers if phone intelligence is configured
   const pcheck = await analyzePhone(phoneE164);
-  if (pcheck.isHighRisk) {
+  // Allow high-risk numbers only in Preview environment to enable testing
+  const isPreviewEnv = ((process.env.VERCEL_ENV || '').toLowerCase() === 'preview');
+  if (!isPreviewEnv && pcheck.isHighRisk) {
     return res.status(400).json({ error: 'Phone number not eligible' });
   }
 
