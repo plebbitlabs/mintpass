@@ -44,6 +44,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [txHash, setTxHash] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
+  // Parse query parameters for demo customization
+  const hideNft = router.query['hide-nft'] === 'true';
+
   // Determine if address is prefilled from props or URL
   const addressFromQuery = (router.query['eth-address'] as string) || '';
   const isAddressPrefilled = !!(prefilledAddress || addressFromQuery);
@@ -215,7 +218,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
         <PageCard
-          title={step !== 'done' ? "Request your authentication NFT" : "You received your MintPass NFT!"}
+          title={step !== 'done' ? (hideNft ? "Request your authentication" : "Request your authentication NFT") : hideNft ? "Authentication complete!" : "You received your MintPass NFT!"}
           titleAs="h1"
           titleClassName="text-center"
           footerClassName="flex gap-2"
@@ -316,12 +319,13 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               {step === 'done' && (
                 <div className="space-y-7 text-center">
                   <div className="space-y-2">
-
                     <p className="text-sm text-muted-foreground">
                       You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
                       You can close this page and head back to the Plebbit application of your choice.
                     </p>
                   </div>
+                  {!hideNft && (
+                    <>
                   {txHash ? (
                     <div className="flex justify-center">
                       <Button asChild>
@@ -337,6 +341,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">On-chain mint not configured; recorded as minted.</p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
