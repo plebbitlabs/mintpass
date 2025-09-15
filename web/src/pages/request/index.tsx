@@ -116,6 +116,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   // Simple calculation during rendering (no need for useMemo)
   const canVerify = code.trim().length === 6;
 
+  function handleOtpComplete(value: string) {
+    if (loading) return;
+    const normalized = (value || '').trim();
+    if (normalized.length === 6) {
+      setCode(normalized);
+      void handleVerifyAndMint();
+    }
+  }
+
 
   async function handleSendCodeClick() {
     // Determine current address based on whether input is shown and has value
@@ -305,7 +314,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
                     <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus>
+                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus onComplete={handleOtpComplete}>
                         <InputOTPGroup>
                           <InputOTPSlot index={0} />
                           <InputOTPSlot index={1} />
