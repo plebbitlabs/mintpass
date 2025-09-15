@@ -240,13 +240,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         >
               {step === 'enter' && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Ethereum address</Label>
-                    {isAddressPrefilled ? (
-                      <p className="text-sm font-mono bg-muted px-3 py-2 rounded-md">
-                        {prefilledAddressValue}
-                      </p>
-                    ) : (
+                  {!isAddressPrefilled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Ethereum address</Label>
                       <Input 
                         id="address" 
                         value={address} 
@@ -258,8 +254,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         }} 
                         placeholder="0x..." 
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone number</Label>
                     <PhoneInput 
