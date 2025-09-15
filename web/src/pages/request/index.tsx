@@ -46,11 +46,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   // Parse query parameters for demo customization
   const hideNft = router.query['hide-nft'] === 'true';
+  const hideAddress = router.query['hide-address'] !== 'false'; // defaults to true
 
   // Determine if address is prefilled from props or URL
   const addressFromQuery = (router.query['eth-address'] as string) || '';
   const isAddressPrefilled = !!(prefilledAddress || addressFromQuery);
   const prefilledAddressValue = prefilledAddress || addressFromQuery;
+  
+  // Determine if address input should be shown
+  const shouldShowAddressInput = !hideAddress || !isAddressPrefilled;
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
@@ -114,11 +118,13 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
 
   async function handleSendCodeClick() {
-    // Use prefilled address if available, otherwise use input value
-    const currentAddress = isAddressPrefilled ? prefilledAddressValue : address;
+    // Determine current address based on whether input is shown and has value
+    const currentAddress = shouldShowAddressInput 
+      ? (address.trim() || prefilledAddressValue) 
+      : prefilledAddressValue;
     
     // Validate address
-    if (currentAddress.trim().length === 0) {
+    if (!currentAddress || currentAddress.trim().length === 0) {
       setError('Please enter an Ethereum address');
       return;
     }
@@ -176,7 +182,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     try {
       setError('');
       setLoading(true);
-      const currentAddress = isAddressPrefilled ? prefilledAddressValue : address;
+      const currentAddress = shouldShowAddressInput 
+        ? (address.trim() || prefilledAddressValue) 
+        : prefilledAddressValue;
       
       await postJson<unknown>('/api/sms/verify', { phoneE164: phone, code });
       const elig = await postJson<{ 
@@ -243,7 +251,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
         >
               {step === 'enter' && (
                 <div className="space-y-4">
-                  {!isAddressPrefilled && (
+                  {shouldShowAddressInput && (
                     <div className="space-y-2">
                       <Label htmlFor="address">Ethereum address</Label>
                       <Input 
