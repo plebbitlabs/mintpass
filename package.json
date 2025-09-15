@@ -1,10 +1,17 @@
 {
-  "name": "MintPass",
+  "name": "@plebbitlabs/mintpass",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "NFT-based authentication system for Plebbit communities",
   "author": "Plebbit Labs",
   "license": "MIT",
+  "exports": {
+    "./challenges/v1": {
+      "types": "./dist/challenges/v1/index.d.ts",
+      "default": "./dist/challenges/v1/index.js"
+    }
+  },
   "workspaces": [
     "contracts",
     "challenges"
@@ -13,9 +20,10 @@
     "install:all": "yarn install && yarn install:contracts && yarn install:challenges",
     "install:contracts": "cd contracts && yarn install",
     "install:challenges": "cd challenges && yarn install",
-    "build": "yarn build:contracts && yarn build:challenges",
+    "build": "yarn build:contracts && yarn build:challenges && yarn publish:challenges",
     "build:contracts": "cd contracts && yarn compile",
     "build:challenges": "cd challenges && yarn build",
+    "publish:challenges": "rm -rf dist/challenges/v1 && mkdir -p dist/challenges/v1 && cp -R challenges/dist/* dist/challenges/v1/",
     "test": "yarn test:contracts",
     "test:contracts": "cd contracts && yarn test",
     "test:challenges": "cd challenges && yarn test",
@@ -34,6 +42,13 @@
     "base",
     "ethereum"
   ],
+  "dependencies": {
+    "@keyv/sqlite": "^4.0.5",
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14",
+    "env-paths": "^3.0.0",
+    "keyv": "5.5.0",
+    "viem": "2.0.0"
+  },
   "devDependencies": {
     "typescript": "^5.3.0"
   },
