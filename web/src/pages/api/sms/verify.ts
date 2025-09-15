@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { clearSmsCode, markPhoneVerified, readSmsCode } from '../../../../lib/kv';
+import { clearSmsCode, markPhoneVerified, readSmsCode, addIpAssociationForPhone } from '../../../../lib/kv';
 import { env } from '../../../../lib/env';
 import { globalIpRatelimit } from '../../../../lib/rate-limit';
 import { getClientIp } from '../../../../lib/request-ip';
@@ -45,6 +45,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   await markPhoneVerified(phoneE164);
   await clearSmsCode(phoneE164);
+  // Index hashed IP association on verify as well (covers flows where send indexing failed)
+  try {
+    const ip = getClientIp(req);
+    await addIpAssociationForPhone(phoneE164, ip);
+  } catch {}
   return res.status(200).json({ ok: true });
 }
 

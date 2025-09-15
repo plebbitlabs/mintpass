@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { verifyAdminToken } from '../../lib/admin-auth';
 import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PhoneInput } from '../components/ui/phone-input';
@@ -155,11 +156,12 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       setIpError('');
       if (clearIpCooldowns) {
         const trimmed = targetIp.trim();
-        if (!trimmed) {
-          setError('Target IP is required when clearing IP cooldowns');
+        const hasIdentity = (address.trim().length > 0) || (phone.trim().length > 0);
+        if (!hasIdentity && !trimmed) {
+          setError('Provide a target IP or an address/phone to clear IP cooldowns');
           return;
         }
-        if (!isValidIp(trimmed)) {
+        if (trimmed && !isValidIp(trimmed)) {
           setIpError('Enter a valid IPv4 or IPv6 address');
           return;
         }
@@ -206,7 +208,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       <Header />
       <main className="flex-1">
         {!authorized ? (
-          <PageCard title="Admin Login" contentClassName="space-y-4">
+          <PageCard title="Admin Login" titleAs="h1" contentClassName="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Admin Password</Label>
               <Input 
@@ -214,7 +216,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
                 type="password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                placeholder="Admin password"
+                placeholder="Enter your password"
                 autoComplete="current-password"
               />
             </div>
@@ -224,7 +226,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
             </Button>
           </PageCard>
         ) : (
-          <PageCard title="Admin Console" contentClassName="space-y-4">
+          <PageCard title="Admin Console" titleAs="h1" contentClassName="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clear-address">Clear Address (optional)</Label>
               <Input 
@@ -261,17 +263,18 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
 
             {clearIpCooldowns && (
               <div className="space-y-2">
-                <Label htmlFor="clear-target-ip">Target IP (required when clearing IP cooldowns)</Label>
+                <Label htmlFor="clear-target-ip">Target IP (optional if address or phone is provided)</Label>
                 <Input
                   id="clear-target-ip"
                   value={targetIp}
                   onChange={(e) => {
                     const v = e.target.value;
                     setTargetIp(v);
-                    if (v.trim().length === 0) {
-                      setIpError(clearIpCooldowns ? 'Target IP is required when clearing IP cooldowns' : '');
+                    const trimmed = v.trim();
+                    if (trimmed.length === 0) {
+                      setIpError('');
                     } else {
-                      setIpError(isValidIp(v.trim()) ? '' : 'Enter a valid IPv4 or IPv6 address');
+                      setIpError(isValidIp(trimmed) ? '' : 'Enter a valid IPv4 or IPv6 address');
                     }
                   }}
                   placeholder="127.0.0.1 or ::1"
@@ -294,6 +297,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
           </PageCard>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function PageCard({
   }
   
   return (
-    <div className={cn('mx-auto max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl px-4 md:px-6 lg:px-8 py-8 md:py-10 lg:py-12 pointer-events-auto', containerClassName)}>
+    <div className={cn('mx-auto max-w-md md:max-w-lg lg:max-w-xl px-4 md:px-6 lg:px-8 py-8 md:py-10 lg:py-12 pointer-events-auto', containerClassName)}>
       <Card>
         <CardHeader>
           <TitleTag className={cn(getDefaultTitleClasses(titleAs), titleClassName)}>

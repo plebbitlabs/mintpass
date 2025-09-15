@@ -78,4 +78,58 @@ export async function hasPhoneMinted(phoneE164: string) {
   return typeof v === 'string' && v.length > 0;
 }
 
+// --- Associations: phone/address -> hashed IPs ---
+function phoneIpsKey(phoneE164: string) {
+  const h = hashIdentifier('phone', phoneE164);
+  return `assoc:phone:ips:${h}`;
+}
+
+function addressIpsKey(address: string) {
+  const lower = address.toLowerCase();
+  const h = hashIdentifier('addr', lower);
+  return `assoc:addr:ips:${h}`;
+}
+
+/**
+ * Record the hashed IP used with a given phone number.
+ * Stores only the hashed IP to avoid retaining plaintext IPs.
+ */
+export async function addIpAssociationForPhone(phoneE164: string, ip: string) {
+  const ipHash = hashIdentifier('ip', ip);
+  try {
+    await kv.sadd(phoneIpsKey(phoneE164), ipHash);
+  } catch {}
+}
+
+/**
+ * Record the hashed IP used with a given wallet address.
+ * Stores only the hashed IP to avoid retaining plaintext IPs.
+ */
+export async function addIpAssociationForAddress(address: string, ip: string) {
+  const ipHash = hashIdentifier('ip', ip);
+  try {
+    await kv.sadd(addressIpsKey(address), ipHash);
+  } catch {}
+}
+
+/** Get all hashed IPs associated with a given phone number. */
+export async function getHashedIpsForPhone(phoneE164: string): Promise<string[]> {
+  try {
+    const ips = await kv.smembers<string[]>(phoneIpsKey(phoneE164));
+    return Array.isArray(ips) ? ips.filter((v): v is string => typeof v === 'string' && v.length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Get all hashed IPs associated with a given wallet address. */
+export async function getHashedIpsForAddress(address: string): Promise<string[]> {
+  try {
+    const ips = await kv.smembers<string[]>(addressIpsKey(address));
+    return Array.isArray(ips) ? ips.filter((v): v is string => typeof v === 'string' && v.length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
 

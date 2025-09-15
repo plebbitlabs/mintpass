@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { globalIpRatelimit } from '../../../../lib/rate-limit';
-import { saveSmsCode } from '../../../../lib/kv';
+import { saveSmsCode, addIpAssociationForPhone, addIpAssociationForAddress } from '../../../../lib/kv';
 import { assessIpReputation } from '../../../../lib/ip-reputation';
 import { analyzePhone } from '../../../../lib/phone-intel';
 import { getClientIp } from '../../../../lib/request-ip';
@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const parse = Body.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
-  const { phoneE164 } = parse.data;
+  const { phoneE164, address } = parse.data;
 
   // Reject VPNs/proxies/cloud-provider IPs if IP intelligence is configured
   const rep = await assessIpReputation(req);
@@ -59,13 +59,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Reject disposable/VOIP/high-risk numbers if phone intelligence is configured
   const pcheck = await analyzePhone(phoneE164);
-  if (pcheck.isHighRisk) {
+  // Allow high-risk numbers only in Preview environment to enable testing
+  const isPreviewEnv = ((process.env.VERCEL_ENV || '').toLowerCase() === 'preview');
+  if (!isPreviewEnv && pcheck.isHighRisk) {
     return res.status(400).json({ error: 'Phone number not eligible' });
   }
 
   const code = generateCode();
   await saveSmsCode(phoneE164, code);
   await setSmsSendCooldown(ip, phoneE164);
+
+  // Index hashed IP associations for phone and address for admin tooling
+  try {
+    await Promise.all([
+      addIpAssociationForPhone(phoneE164, ip),
+      addIpAssociationForAddress(address, ip),
+    ]);
+  } catch {}
 
   // Attempt to send via configured SMS provider (Twilio preferred)
   // We do not include OTP or secrets in logs or responses.

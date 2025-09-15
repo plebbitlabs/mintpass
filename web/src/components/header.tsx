@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import Image from 'next/image';
 import { AnimatedThemeToggler } from './magicui/animated-theme-toggler';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 type HeaderProps = {
   /** Additional content to show in the navigation area (like links) */
@@ -36,12 +37,12 @@ export function Header({ children }: HeaderProps) {
           MintPass
         </button>
         <div className="flex items-center gap-4 md:gap-6">
-          <Link href="/privacy-policy" className="text-sm md:text-base text-muted-foreground hover:underline">
-            Privacy
-          </Link>
-          <Link href="/terms-and-conditions" className="text-sm md:text-base text-muted-foreground hover:underline">
-            Terms
-          </Link>
+          <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
+            <Link href="/privacy-policy">Privacy</Link>
+          </Button>
+          <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
+            <Link href="/terms-and-conditions">Terms</Link>
+          </Button>
           {children}
           <AnimatedThemeToggler />
         </div>

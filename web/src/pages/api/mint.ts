@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted } from '../../../lib/kv';
+import { hasMinted, hasPhoneMinted, isPhoneVerified, markMinted, addIpAssociationForPhone, addIpAssociationForAddress } from '../../../lib/kv';
 import { getClientIp } from '../../../lib/request-ip';
 import { isMintIpInCooldown, setMintIpCooldown } from '../../../lib/cooldowns';
 import { env, requireEnv } from '../../../lib/env';
@@ -68,9 +68,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           overrides?: { gasLimit?: bigint }
         ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
       };
-      const estimated: bigint = await contract.estimateGas.mint(address, tokenType);
-      const gasLimit: bigint = estimated + (estimated / BigInt(5));
-      const tx = await contract.mint(address, tokenType, { gasLimit });
+      // Ethers v6 compatibility: estimateGas helpers may be stripped depending on build
+      // Use a narrow contract type and fall back to provider auto-estimation when unavailable
+      type MintContract = {
+        estimateGas?: { mint?: (to: string, tokenType: number) => Promise<bigint> };
+        mint: (
+          to: string,
+          tokenType: number,
+          overrides?: { gasLimit?: bigint }
+        ) => Promise<{ hash: string; wait: () => Promise<{ hash?: string; status?: number; transactionHash?: string }>; }>;
+      };
+      const mintContract = contract as unknown as MintContract;
+      let gasOverrides: { gasLimit?: bigint } | undefined;
+      try {
+        const estimated = await mintContract.estimateGas?.mint?.(address, tokenType);
+        if (typeof estimated === 'bigint') {
+          gasOverrides = { gasLimit: estimated + (estimated / BigInt(5)) };
+        }
+      } catch (estErr) {
+        console.warn('[mint] estimateGas.mint failed; proceeding without overrides', {
+          address,
+          tokenType,
+          err: estErr instanceof Error ? estErr.message : String(estErr),
+        });
+        gasOverrides = undefined;
+      }
+      const tx = gasOverrides
+        ? await mintContract.mint(address, tokenType, gasOverrides)
+        : await mintContract.mint(address, tokenType);
       const receipt = await tx.wait();
       const status = receipt.status;
       if (typeof status === 'number' && status !== 1) {
@@ -92,6 +117,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   await markMinted(address, phoneE164);
   await setMintIpCooldown(ip);
+  // Index hashed IP associations for phone and address (mint attempt)
+  try {
+    await Promise.all([
+      addIpAssociationForPhone(phoneE164, ip),
+      addIpAssociationForAddress(address, ip),
+    ]);
+  } catch {}
 
   return res.status(200).json({ ok: true, txHash, tokenType });
 }

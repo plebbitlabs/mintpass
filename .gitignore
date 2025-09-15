@@ -7,10 +7,15 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Production builds
-dist/
+dist/*
 build/
 out/
 .next/
+
+# Allow published challenge artifacts
+!dist/challenges/
+!dist/challenges/v1/
+!dist/challenges/v1/**
 
 # Environment variables
 .env
@@ -65,3 +70,5 @@ deployments/local/
 .plebbit/
 
 .playwright-mcp
+
+.cursor/

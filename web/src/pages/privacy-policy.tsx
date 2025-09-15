@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 import { PageCard } from '../components/page-card';
 
 export default function PrivacyPolicy() {
@@ -87,6 +88,7 @@ export default function PrivacyPolicy() {
           </div>
         </PageCard>
       </main>
+      <Footer />
     </div>
   );
 }

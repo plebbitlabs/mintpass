@@ -15,6 +15,9 @@ Serverless backend scaffolding for SMS verification and NFT minting.
  - **Cooldowns**: Per-IP mint cooldown and per-IP/phone SMS send cooldowns configurable via env.
  - **Keyed hashing (pepper)**: If `HASH_PEPPER` is set, phone numbers and IPs are stored as HMAC-SHA256 digests (domain-separated) in KV keys to reduce offline brute-force risk if a DB-only leak occurs.
 
+#### Preview-only testing behavior
+- In Vercel Preview deployments (`VERCEL_ENV=preview`), the disposable/VOIP/high-risk phone check is bypassed in `POST /api/sms/send` to allow testing with temporary numbers. Production (`VERCEL_ENV=production`) remains strict and continues to block such numbers.
+
 ### Vercel Setup (exact steps)
 1. Create a new Vercel project and select this repo. Set root directory to `web`.
 2. Add storage via Marketplace: Upstash → Redis. Create separate databases per environment (recommended):

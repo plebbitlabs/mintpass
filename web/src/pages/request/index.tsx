@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
@@ -7,8 +7,10 @@ import { PhoneInput } from '../../components/ui/phone-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
 import { Header } from '../../components/header';
+import { Footer } from '../../components/footer';
 import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
+import { ExternalLink } from 'lucide-react';
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -40,20 +42,25 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
-  const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
-  const [isEligible, setIsEligible] = useState<boolean>(false);
-  const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
-  const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
-  const [agreePrivacy, setAgreePrivacy] = useState<boolean>(false);
-  const [showAgreementError, setShowAgreementError] = useState<boolean>(false);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+
+  // Parse query parameters for demo customization
+  const hideNft = router.query['hide-nft'] === 'true';
+  const hideAddress = router.query['hide-address'] !== 'false'; // defaults to true
+
+  // Determine if address is prefilled from props or URL
+  const addressFromQuery = (router.query['eth-address'] as string) || '';
+  const isAddressPrefilled = !!(prefilledAddress || addressFromQuery);
+  const prefilledAddressValue = prefilledAddress || addressFromQuery;
+  
+  // Determine if address input should be shown
+  const shouldShowAddressInput = !hideAddress || !isAddressPrefilled;
 
   useEffect(() => {
     // Hydrate address from query if not passed as prop
-    const qAddr = (router.query.address as string) || '';
-    const initial = prefilledAddress || qAddr;
+    const initial = prefilledAddressValue;
     if (initial) setAddress(initial);
-  }, [router.query.address, prefilledAddress]);
+  }, [prefilledAddressValue]);
 
   // Navigation protection during SMS verification
   const isVerificationInProgress = step === 'code';
@@ -89,21 +96,6 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [router.events, isVerificationInProgress]);
 
 
-  // Reset eligibility when address or phone changes
-  useEffect(() => {
-    setEligibilityChecked(false);
-    setIsEligible(false);
-    setError(''); // Clear any previous eligibility errors
-    setCooldownSeconds(0); // Clear cooldown when inputs change
-  }, [address, phone]);
-
-  // Clear agreement error when both checkboxes are checked
-  useEffect(() => {
-    if (agreeTerms && agreePrivacy && showAgreementError) {
-      setShowAgreementError(false);
-    }
-  }, [agreeTerms, agreePrivacy, showAgreementError]);
-
   // Countdown timer effect
   useEffect(() => {
     if (cooldownSeconds > 0) {
@@ -121,15 +113,18 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     }
   }, [cooldownSeconds]);
 
-  // Removed unused eligibility helpers to satisfy linter
-  const canVerify = useMemo(() => code.trim().length === 6, [code]);
+  // Simple calculation during rendering (no need for useMemo)
+  const canVerify = code.trim().length === 6;
 
-  function handleCheckEligibilityClick() {
-    // Clear any previous agreement error
-    setShowAgreementError(false);
+
+  async function handleSendCodeClick() {
+    // Determine current address based on whether input is shown and has value
+    const currentAddress = shouldShowAddressInput 
+      ? (address.trim() || prefilledAddressValue) 
+      : prefilledAddressValue;
     
     // Validate address
-    if (address.trim().length === 0) {
+    if (!currentAddress || currentAddress.trim().length === 0) {
       setError('Please enter an Ethereum address');
       return;
     }
@@ -140,47 +135,32 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       return;
     }
     
-    // Check if user has agreed to both terms and privacy
-    if (!agreeTerms || !agreePrivacy) {
-      setShowAgreementError(true);
-      setError('');
-      return;
-    }
-    
-    // All validations passed, proceed with eligibility check
-    handleCheckEligibility();
+    // All validations passed, check eligibility and send code
+    await handleCheckEligibilityAndSendCode(currentAddress);
   }
 
-  async function handleCheckEligibility() {
+  async function handleCheckEligibilityAndSendCode(currentAddress: string) {
     try {
-      setCheckingEligibility(true);
+      setLoading(true);
       setError('');
+      
+      // First check eligibility
       const result = await postJson<{ 
         eligible: boolean; 
         reason?: string; 
-      }>('/api/pre-check-eligibility', { address: address.trim(), phoneE164: phone.trim() });
+      }>('/api/pre-check-eligibility', { address: currentAddress.trim(), phoneE164: phone.trim() });
       
-      setEligibilityChecked(true);
-      setIsEligible(result.eligible);
-      
-      if (!result.eligible && result.reason) {
-        setError(result.reason);
+      if (!result.eligible) {
+        if (result.reason) {
+          setError(result.reason);
+        } else {
+          setError('Not eligible to mint');
+        }
+        return;
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unable to verify eligibility. Please try again.';
-      setError(msg);
-      setEligibilityChecked(false);
-      setIsEligible(false);
-    } finally {
-      setCheckingEligibility(false);
-    }
-  }
-
-  async function handleSendCode() {
-    try {
-      setError('');
-      setLoading(true);
-      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address });
+      
+      // If eligible, send SMS code
+      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress });
       setStep('code');
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -197,17 +177,22 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     }
   }
 
+
   async function handleVerifyAndMint() {
     try {
       setError('');
       setLoading(true);
+      const currentAddress = shouldShowAddressInput 
+        ? (address.trim() || prefilledAddressValue) 
+        : prefilledAddressValue;
+      
       await postJson<unknown>('/api/sms/verify', { phoneE164: phone, code });
       const elig = await postJson<{ 
         eligible: boolean; 
         mintedAddr: boolean; 
         mintedPhone: boolean; 
         verified: boolean; 
-      }>('/api/check-eligibility', { address, phoneE164: phone });
+      }>('/api/check-eligibility', { address: currentAddress, phoneE164: phone });
       
       if (!elig.eligible) {
         if (!elig.verified) {
@@ -223,7 +208,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       }
       const mint = await postJson<{ ok: boolean; txHash?: string }>(
         '/api/mint',
-        { address, phoneE164: phone, authorAddress: address }
+        { address: currentAddress, phoneE164: phone, authorAddress: currentAddress }
       );
       setTxHash(mint.txHash || null);
       setStep('done');
@@ -241,103 +226,70 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
         <PageCard
-          title="Request your authentication NFT"
+          title={step !== 'done' ? (hideNft ? "Request your authentication" : "Request your authentication NFT") : hideNft ? "Authentication complete!" : "You received your MintPass NFT!"}
           titleAs="h1"
+          titleClassName="text-center"
           footerClassName="flex gap-2"
-          footer={
+          footer={step !== 'done' ? (
             <>
               {step === 'enter' && (
-                <>
-                  <Button 
-                    className="w-full"
-                    onClick={eligibilityChecked && isEligible ? handleSendCode : handleCheckEligibilityClick} 
-                    disabled={checkingEligibility || loading}
-                  >
-                    {loading ? 'Sending…' : 
-                     checkingEligibility ? 'Checking…' : 
-                     eligibilityChecked && isEligible ? 'Send code' : 'Check eligibility'}
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    className="w-full"
-                    onClick={() => router.push('/')}
-                  >
-                    Go back
-                  </Button>
-                </>
+                <Button 
+                  className="w-full"
+                  onClick={handleSendCodeClick} 
+                  disabled={loading}
+                >
+                  {loading ? 'Sending…' : 'Send code'}
+                </Button>
               )}
               {step === 'code' && (
                 <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
                   {loading ? 'Verifying…' : 'Verify & mint'}
                 </Button>
               )}
-              {step === 'done' && (
-                <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
-              )}
             </>
-          }
+          ) : undefined}
         >
               {step === 'enter' && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Ethereum address</Label>
-                    <Input 
-                      id="address" 
-                      value={address} 
-                      onChange={(e) => {
-                        setAddress(e.target.value);
-                      }} 
-                      placeholder="0x..." 
-                    />
-                  </div>
+                  {shouldShowAddressInput && (
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Ethereum address</Label>
+                      <Input 
+                        id="address" 
+                        value={address} 
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          // Clear error and cooldown on input change
+                          setCooldownSeconds(0);
+                          setError('');
+                        }} 
+                        placeholder="0x..." 
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone number</Label>
                     <PhoneInput 
                       id="phone" 
                       value={phone}
                       onChange={(value) => {
-                        setPhone(value || '');
+                        const next = value || '';
+                        setPhone(next);
+                        // Clear error and cooldown on input change
+                        setCooldownSeconds(0);
+                        setError('');
                       }} 
                       placeholder="Enter phone number"
                       defaultCountry="US"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <input
-                        id="agree-terms"
-                        type="checkbox"
-                        checked={agreeTerms}
-                        onChange={(e) => setAgreeTerms(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-input text-primary"
-                      />
-                      <div className="text-sm font-normal">
-                        <Label htmlFor="agree-terms" className="font-normal inline mr-1">I agree to the</Label>
-                        <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
-                        <span className="text-red-500 ml-1">*</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <input
-                        id="agree-privacy"
-                        type="checkbox"
-                        checked={agreePrivacy}
-                        onChange={(e) => setAgreePrivacy(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-input text-primary"
-                      />
-                      <div className="text-sm font-normal">
-                        <Label htmlFor="agree-privacy" className="font-normal inline mr-1">I agree to the</Label>
-                        <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
-                        <span className="text-red-500 ml-1">*</span>
-                      </div>
-                    </div>
-                  </div>
-                  {eligibilityChecked && isEligible && (
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Success! You&apos;re eligible.</p>
-                  )}
-                  {showAgreementError && (
-                    <p className="text-sm text-destructive">Please agree to both Terms and Conditions and Privacy Policy before proceeding.</p>
-                  )}
+                  <p className="text-[0.5rem] text-muted-foreground">
+                    By clicking &ldquo;Send code&rdquo;, you agree to the{' '}
+                    <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
+                    {' '}and consent to receive a one‑time SMS to verify your phone number.
+                  </p>
                   {error && (
                     <p className="text-sm text-destructive">
                       {cooldownSeconds > 0 && error.includes('Please wait') 
@@ -353,7 +305,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
                     <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={code} onChange={setCode}>
+                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus>
                         <InputOTPGroup>
                           <InputOTPSlot index={0} />
                           <InputOTPSlot index={1} />
@@ -373,25 +325,38 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
               )}
 
               {step === 'done' && (
-                <div className="space-y-4 text-center">
+                <div className="space-y-7 text-center">
                   <div className="space-y-2">
-                    <h2 className="text-xl font-bold text-[#077b91]">
-                      You received your MintPass NFT!
-                    </h2>
                     <p className="text-sm text-muted-foreground">
                       You are now authenticated by all subplebbits that use MintPass as anti-spam challenge. 
                       You can close this page and head back to the Plebbit application of your choice.
                     </p>
                   </div>
+                  {!hideNft && (
+                    <>
                   {txHash ? (
-                    <p className="text-sm text-muted-foreground">Tx: {txHash}</p>
+                    <div className="flex justify-center">
+                      <Button asChild>
+                        <a
+                          href={`https://sepolia.basescan.org/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View transaction
+                          <ExternalLink />
+                        </a>
+                      </Button>
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">On-chain mint not configured; recorded as minted.</p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
         </PageCard>
       </main>
+      <Footer />
     </div>
   );
 }
