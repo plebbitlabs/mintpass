@@ -45,7 +45,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
   // Determine if address is prefilled from props or URL
-  const addressFromQuery = (router.query.address as string) || '';
+  const addressFromQuery = (router.query['eth-address'] as string) || '';
   const isAddressPrefilled = !!(prefilledAddress || addressFromQuery);
   const prefilledAddressValue = prefilledAddress || addressFromQuery;
 
