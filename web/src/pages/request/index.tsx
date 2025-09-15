@@ -276,7 +276,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       defaultCountry="US"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[0.5rem] text-muted-foreground">
                     By clicking &ldquo;Send code&rdquo;, you agree to the{' '}
                     <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
                     {' '}and{' '}
