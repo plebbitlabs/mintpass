@@ -106,6 +106,11 @@ const CountrySelect = ({
     });
   }, []);
 
+  // Filter to only show allowed countries
+  const filteredCountryList = countryList.filter(({ value }) => 
+    value && ALLOWED_COUNTRIES.includes(value)
+  );
+
   return (
     <Popover
       open={isOpen}
@@ -177,10 +182,10 @@ const CountrySelect = ({
             autoFocus={!isMobileDevice}
           />
           <CommandList>
-            <ScrollArea ref={scrollAreaRef} className="h-72">
+            <ScrollArea ref={scrollAreaRef} className="h-32">
               <CommandEmpty>No country found.</CommandEmpty>
               <CommandGroup>
-                {countryList.map(({ value, label }) =>
+                {filteredCountryList.map(({ value, label }) =>
                   value ? (
                     <CountrySelectOption
                       key={value}
@@ -193,6 +198,11 @@ const CountrySelect = ({
                   ) : null,
                 )}
               </CommandGroup>
+              <div className="border-t px-3 py-2 text-center">
+                <span className="text-xs text-muted-foreground">
+                  More countries coming soon
+                </span>
+              </div>
             </ScrollArea>
           </CommandList>
         </Command>
@@ -200,6 +210,9 @@ const CountrySelect = ({
     </Popover>
   );
 };
+
+// Allowed countries - only Italy and USA for now
+const ALLOWED_COUNTRIES: RPNInput.Country[] = ["IT", "US"];
 
 interface CountrySelectOptionProps extends RPNInput.FlagProps {
   selectedCountry: RPNInput.Country;
