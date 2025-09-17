@@ -326,7 +326,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
                     <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus onComplete={handleOtpComplete}>
+                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus onComplete={handleOtpComplete} disabled={loading}>
                         <InputOTPGroup>
                           <InputOTPSlot index={0} />
                           <InputOTPSlot index={1} />
