@@ -13,25 +13,38 @@ import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
 import { ExternalLink } from 'lucide-react';
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => ({}))) as unknown;
-  if (!res.ok) {
-    const data = json as { error?: string; cooldownSeconds?: unknown };
-    const errMsg = data?.error || 'Request failed';
-    const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
-    // Attach cooldown data to error if present
-    const cooldownSecondsValue = data?.cooldownSeconds;
-    if (typeof cooldownSecondsValue === 'number') {
-      error.cooldownSeconds = cooldownSecondsValue;
+async function postJson<T>(path: string, body: unknown, opts?: { timeoutMs?: number }): Promise<T> {
+  const timeoutMs = typeof opts?.timeoutMs === 'number' && opts.timeoutMs > 0 ? opts.timeoutMs : 10000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const json = (await res.json().catch(() => ({}))) as unknown;
+    if (!res.ok) {
+      const data = json as { error?: string; cooldownSeconds?: unknown };
+      const errMsg = data?.error || 'Request failed';
+      const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+      const cooldownSecondsValue = data?.cooldownSeconds;
+      if (typeof cooldownSecondsValue === 'number') {
+        error.cooldownSeconds = cooldownSecondsValue;
+      }
+      throw error;
     }
-    throw error;
+    return json as T;
+  } catch (e: unknown) {
+    const name = (e as { name?: string } | null)?.name || '';
+    if (name === 'AbortError') {
+      throw new Error('Network timeout. Please try again.');
+    }
+    throw e as Error;
+  } finally {
+    clearTimeout(timer);
   }
-  return json as T;
 }
 
 export default function RequestPage({ prefilledAddress = '' }: { prefilledAddress?: string }) {
@@ -116,7 +129,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [cooldownSeconds]);
 
   // Simple calculation during rendering (no need for useMemo)
-  const canVerify = code.trim().length === 6;
+  // const canVerify = code.trim().length === 6;
   
   // Check if selected country is supported
   const isCountrySupported = !selectedCountry || ALLOWED_COUNTRIES.includes(selectedCountry as RPNInput.Country);
@@ -174,7 +187,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       }
       
       // If eligible, send SMS code
-      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress });
+      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress }, { timeoutMs: 15000 });
       setStep('code');
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -304,11 +317,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
                     {' '}and consent to receive a one‑time SMS to verify your phone number.
                   </p>
-                  {(error || !isCountrySupported) && (
+                  {(error || !isCountrySupported || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
                       {!isCountrySupported
                         ? 'This service is not available in the selected country. More countries coming soon.'
-                        : cooldownSeconds > 0 && error.includes('Please wait') 
+                        : cooldownSeconds > 0
                         ? `Please wait ${cooldownSeconds}s before requesting another code`
                         : error}
                     </p>
