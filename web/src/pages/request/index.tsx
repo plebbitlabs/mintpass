@@ -256,7 +256,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                 </Button>
               )}
               {step === 'code' && (
-                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
+                <Button className="w-full" onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
                   {loading ? 'Verifying…' : 'Verify & mint'}
                 </Button>
               )}
