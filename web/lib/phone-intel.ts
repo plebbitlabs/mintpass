@@ -22,7 +22,10 @@ export async function analyzePhone(phoneE164: string): Promise<PhoneCheck> {
   if (key) {
     try {
       const url = `https://phonevalidation.abstractapi.com/v1/?api_key=${encodeURIComponent(key)}&phone=${encodeURIComponent(phoneE164)}`;
-      const res = await fetch(url);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
       const data = await res.json();
       const parsed = AbstractPhoneResp.safeParse(data);
       if (parsed.success) {

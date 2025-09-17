@@ -79,10 +79,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Attempt to send via configured SMS provider (Twilio preferred)
   // We do not include OTP or secrets in logs or responses.
-  try {
-    await sendOtpSms(phoneE164, code);
-  } catch {
-    // Swallow provider errors to avoid leaking details; rate limiting and cooldowns still apply.
+  const result = await sendOtpSms(phoneE164, code, {
+    timeoutMs: 5000,
+    maxRetries: 1,
+    baseDelayMs: 300,
+  });
+
+  if (!result.ok) {
+    // Compute remaining cooldown to help the client display a countdown if needed
+    let remainingSeconds = 0;
+    try {
+      remainingSeconds = await getSmsSendCooldownRemaining(ip, phoneE164);
+    } catch {
+      remainingSeconds = 0;
+    }
+
+    // Map provider errors to generic client-facing messages without leaking details
+    const isClientError = typeof result.status === 'number' && result.status >= 400 && result.status < 500;
+    const statusCode = isClientError ? 400 : 502;
+    const errorMessage = isClientError
+      ? 'Unable to deliver SMS to this number. Service is not available for this destination yet.'
+      : 'SMS provider error. Please try again later.';
+
+    // Log minimal diagnostic info with hashed phone (no PII or OTP)
+    try {
+      console.warn('SMS send failed', {
+        phone: hashIdentifier('phone', phoneE164),
+        status: result.status,
+        provider: result.provider,
+      });
+    } catch {}
+
+    return res.status(statusCode).json({ error: errorMessage, cooldownSeconds: remainingSeconds });
   }
 
   // If a smoke test token is configured and provided via header, echo the code for debugging only

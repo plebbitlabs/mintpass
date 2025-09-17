@@ -22,7 +22,10 @@ export async function assessIpReputation(req: NextApiRequest): Promise<IpReputat
   if (ipqsKey && ip && ip !== 'unknown') {
     try {
       const url = `https://ipqualityscore.com/api/json/ip/${encodeURIComponent(ipqsKey)}/${encodeURIComponent(ip)}?strictness=1&allow_public_access_points=false`;
-      const res = await fetch(url, { method: 'GET' });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(url, { method: 'GET', signal: controller.signal });
+      clearTimeout(timer);
       const data = (await res.json()) as {
         vpn?: boolean;
         proxy?: boolean;

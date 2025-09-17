@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { PhoneInput } from '../../components/ui/phone-input';
+import { PhoneInput, ALLOWED_COUNTRIES } from '../../components/ui/phone-input';
+import * as RPNInput from 'react-phone-number-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
 import { Header } from '../../components/header';
@@ -12,25 +13,38 @@ import { PageCard } from '../../components/page-card';
 import { ConfettiCelebration } from '../../components/confetti-celebration';
 import { ExternalLink } from 'lucide-react';
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => ({}))) as unknown;
-  if (!res.ok) {
-    const data = json as { error?: string; cooldownSeconds?: unknown };
-    const errMsg = data?.error || 'Request failed';
-    const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
-    // Attach cooldown data to error if present
-    const cooldownSecondsValue = data?.cooldownSeconds;
-    if (typeof cooldownSecondsValue === 'number') {
-      error.cooldownSeconds = cooldownSecondsValue;
+async function postJson<T>(path: string, body: unknown, opts?: { timeoutMs?: number }): Promise<T> {
+  const timeoutMs = typeof opts?.timeoutMs === 'number' && opts.timeoutMs > 0 ? opts.timeoutMs : 10000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const json = (await res.json().catch(() => ({}))) as unknown;
+    if (!res.ok) {
+      const data = json as { error?: string; cooldownSeconds?: unknown };
+      const errMsg = data?.error || 'Request failed';
+      const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+      const cooldownSecondsValue = data?.cooldownSeconds;
+      if (typeof cooldownSecondsValue === 'number') {
+        error.cooldownSeconds = cooldownSecondsValue;
+      }
+      throw error;
     }
-    throw error;
+    return json as T;
+  } catch (e: unknown) {
+    const name = (e as { name?: string } | null)?.name || '';
+    if (name === 'AbortError') {
+      throw new Error('Network timeout. Please try again.');
+    }
+    throw e as Error;
+  } finally {
+    clearTimeout(timer);
   }
-  return json as T;
 }
 
 export default function RequestPage({ prefilledAddress = '' }: { prefilledAddress?: string }) {
@@ -43,6 +57,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+  const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
 
   // Parse query parameters for demo customization
   const hideNft = router.query['hide-nft'] === 'true';
@@ -114,7 +129,10 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [cooldownSeconds]);
 
   // Simple calculation during rendering (no need for useMemo)
-  const canVerify = code.trim().length === 6;
+  // const canVerify = code.trim().length === 6;
+  
+  // Check if selected country is supported
+  const isCountrySupported = !selectedCountry || ALLOWED_COUNTRIES.includes(selectedCountry as RPNInput.Country);
 
   function handleOtpComplete(value: string) {
     if (loading) return;
@@ -169,7 +187,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       }
       
       // If eligible, send SMS code
-      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress });
+      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress }, { timeoutMs: 15000 });
       setStep('code');
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -245,14 +263,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                 <Button 
                   className="w-full"
                   onClick={handleSendCodeClick} 
-                  disabled={loading}
+                  disabled={loading || !isCountrySupported}
                 >
                   {loading ? 'Sending…' : 'Send code'}
-                </Button>
-              )}
-              {step === 'code' && (
-                <Button onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
-                  {loading ? 'Verifying…' : 'Verify & mint'}
                 </Button>
               )}
             </>
@@ -287,7 +300,12 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         // Clear error and cooldown on input change
                         setCooldownSeconds(0);
                         setError('');
-                      }} 
+                      }}
+                      onCountryChange={(country) => {
+                        setSelectedCountry(country);
+                        // Clear error when country changes
+                        setError('');
+                      }}
                       placeholder="Enter phone number"
                       defaultCountry="US"
                     />
@@ -299,9 +317,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
                     {' '}and consent to receive a one‑time SMS to verify your phone number.
                   </p>
-                  {error && (
+                  {(error || !isCountrySupported || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
-                      {cooldownSeconds > 0 && error.includes('Please wait') 
+                      {!isCountrySupported
+                        ? 'This service is not available in the selected country. More countries coming soon.'
+                        : cooldownSeconds > 0
                         ? `Please wait ${cooldownSeconds}s before requesting another code`
                         : error}
                     </p>
@@ -314,7 +334,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   <div className="space-y-2 text-center">
                     <Label>We sent an SMS code to {phone}</Label>
                     <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus onComplete={handleOtpComplete}>
+                      <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus onComplete={handleOtpComplete} disabled={loading}>
                         <InputOTPGroup>
                           <InputOTPSlot index={0} />
                           <InputOTPSlot index={1} />
@@ -328,6 +348,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
+                    <p className="text-sm text-muted-foreground pt-4">
+                      {loading 
+                        ? 'Verifying... please don\'t close this page' 
+                        : 'Please enter the 6-digit code to proceed with verification'}
+                    </p>
                   </div>
                   {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>

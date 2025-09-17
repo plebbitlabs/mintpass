@@ -2,8 +2,16 @@
   "name": "@mintpass/challenges",
   "version": "1.0.0",
   "description": "MintPass plebbit-js challenge implementation",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,12 +27,12 @@
   },
   "dependencies": {
     "@keyv/sqlite": "^4.0.5",
-    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14",
     "env-paths": "^3.0.0",
     "keyv": "5.5.0",
-    "kubo": "0.36.0",
-    "tempy": "^3.1.0",
     "viem": "2.0.0"
+  },
+  "peerDependencies": {
+    "@plebbit/plebbit-js": ">=0.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.0",
@@ -33,7 +41,10 @@
     "chai": "^4.2.0",
     "ethers": "6.4.0",
     "hardhat": "^2.19.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "kubo": "0.36.0",
+    "tempy": "^3.1.0",
+    "@plebbit/plebbit-js": "https://github.com/plebbit/plebbit-js.git#d29c607ca27200467101e64e637755565a5d6c14"
   },
   "keywords": [
     "plebbit",
