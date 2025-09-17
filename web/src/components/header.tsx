@@ -38,10 +38,7 @@ export function Header({ children }: HeaderProps) {
         </button>
         <div className="flex items-center gap-4 md:gap-6">
           <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
-            <Link href="/privacy-policy">Privacy</Link>
-          </Button>
-          <Button variant="ghost" size="sm" className="px-0 h-auto text-sm md:text-base text-muted-foreground hover:text-foreground/80 hover:bg-transparent" asChild>
-            <Link href="/terms-and-conditions">Terms</Link>
+            <Link href="https://t.me/mintpassdev" target="_blank" rel="noopener noreferrer">Updates</Link>
           </Button>
           {children}
           <AnimatedThemeToggler />
