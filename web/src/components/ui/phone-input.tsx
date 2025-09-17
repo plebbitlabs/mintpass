@@ -2,6 +2,7 @@ import * as React from "react";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import * as RPNInput from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
+import { parsePhoneNumber } from "react-phone-number-input";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,11 +28,12 @@ type PhoneInputProps = Omit<
 > &
   Omit<RPNInput.Props<typeof RPNInput.default>, "onChange"> & {
     onChange?: (value: RPNInput.Value) => void;
+    onCountryChange?: (country: RPNInput.Country | undefined) => void;
   };
 
 const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
   React.forwardRef<React.ElementRef<typeof RPNInput.default>, PhoneInputProps>(
-    ({ className, onChange, value, ...props }, ref) => {
+    ({ className, onChange, onCountryChange, value, ...props }, ref) => {
       return (
         <RPNInput.default
           ref={ref}
@@ -50,7 +52,24 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
            *
            * @param {E164Number | undefined} value - The entered value
            */
-          onChange={(value) => onChange?.(value || ("" as RPNInput.Value))}
+          onChange={(value) => {
+            const phoneValue = value || ("" as RPNInput.Value);
+            onChange?.(phoneValue);
+            
+            // Extract country from phone number and call onCountryChange
+            if (onCountryChange) {
+              let country: RPNInput.Country | undefined;
+              try {
+                if (phoneValue) {
+                  const parsed = parsePhoneNumber(phoneValue);
+                  country = parsed?.country;
+                }
+              } catch {
+                // If parsing fails, country remains undefined
+              }
+              onCountryChange(country);
+            }
+          }}
           {...props}
         />
       );
@@ -268,4 +287,4 @@ const FlagComponent = ({ country, countryName }: RPNInput.FlagProps) => {
   );
 };
 
-export { PhoneInput };
+export { PhoneInput, ALLOWED_COUNTRIES };
