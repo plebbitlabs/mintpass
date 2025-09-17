@@ -255,11 +255,6 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   {loading ? 'Sending…' : 'Send code'}
                 </Button>
               )}
-              {step === 'code' && (
-                <Button className="w-full" onClick={handleVerifyAndMint} disabled={!canVerify || loading}>
-                  {loading ? 'Verifying…' : 'Verify & mint'}
-                </Button>
-              )}
             </>
           ) : undefined}
         >
@@ -340,6 +335,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
+                    <p className="text-sm text-muted-foreground pt-4">
+                      {loading 
+                        ? 'Verifying... please don\'t close this page' 
+                        : 'Please enter the 6-digit code to proceed with verification'}
+                    </p>
                   </div>
                   {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>
