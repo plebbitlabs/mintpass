@@ -211,7 +211,7 @@ const CountrySelect = ({
             autoFocus={!isMobileDevice}
           />
           <CommandList>
-            <ScrollArea ref={scrollAreaRef} className="h-32">
+            <ScrollArea ref={scrollAreaRef} className="h-72">
               <CommandEmpty>No country found.</CommandEmpty>
               <CommandGroup>
                 {filteredCountryList.map(({ value, label }) =>
