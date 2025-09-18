@@ -34,7 +34,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!requireAdmin(req, res)) return;
 
   const parse = Body.safeParse(req.body);
-  if (!parse.success) return res.status(400).json({ error: 'Invalid body' });
+  if (!parse.success) {
+    const firstIssue = parse.error.issues?.[0];
+    const message = firstIssue?.message || 'Invalid body';
+    return res.status(400).json({ error: message });
+  }
 
   const { address, phoneE164, clearIpCooldowns, targetIp } = parse.data;
   const adminIp = (req.headers['cf-connecting-ip'] as string) || (req.headers['x-real-ip'] as string) || req.socket.remoteAddress || 'unknown';

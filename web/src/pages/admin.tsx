@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { verifyAdminToken } from '../../lib/admin-auth';
 import { Header } from '../components/header';
@@ -101,6 +101,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   const [error, setError] = useState('');
   const [targetIp, setTargetIp] = useState('');
   const [ipError, setIpError] = useState('');
+  const clearInFlightRef = useRef<boolean>(false);
 
   // Simple IPv4/IPv6 validators
   const isValidIPv4 = (ip: string) => /^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(ip);
@@ -150,6 +151,8 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
   }
 
   async function handleClearUser() {
+    // Prevent accidental double-submits by ignoring while in flight
+    if (clearInFlightRef.current) return;
     try {
       setError('');
       setMessage('');
@@ -166,6 +169,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
           return;
         }
       }
+      clearInFlightRef.current = true;
       setLoading(true);
       
       const result = await postJson<{ 
@@ -200,6 +204,7 @@ export default function AdminPage({ authorized: initialAuthorized }: Props) {
       setError(msg);
     } finally {
       setLoading(false);
+      clearInFlightRef.current = false;
     }
   }
 
