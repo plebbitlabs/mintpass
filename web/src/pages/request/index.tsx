@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { PhoneInput, ALLOWED_COUNTRIES } from '../../components/ui/phone-input';
+import { PhoneInput } from '../../components/ui/phone-input';
 import * as RPNInput from 'react-phone-number-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
@@ -139,8 +139,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   // Simple calculation during rendering (no need for useMemo)
   // const canVerify = code.trim().length === 6;
   
-  // Check if selected country is supported
-  const isCountrySupported = !selectedCountry || ALLOWED_COUNTRIES.includes(selectedCountry as RPNInput.Country);
+  const isCountrySupported = true;
 
   function handleOtpComplete(value: string) {
     if (loading) return;
@@ -382,11 +381,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
                     {' '}and consent to receive a one‑time SMS to verify your phone number.
                   </p>
-                  {(error || !isCountrySupported || cooldownSeconds > 0) && (
+                  {(error || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
-                      {!isCountrySupported
-                        ? 'This service is not available in the selected country. More countries coming soon.'
-                        : cooldownSeconds > 0
+                      {cooldownSeconds > 0
                         ? `Please wait ${cooldownSeconds}s before requesting another code`
                         : error}
                     </p>
