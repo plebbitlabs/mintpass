@@ -26,12 +26,17 @@ async function postJson<T>(path: string, body: unknown, opts?: { timeoutMs?: num
     });
     const json = (await res.json().catch(() => ({}))) as unknown;
     if (!res.ok) {
-      const data = json as { error?: string; cooldownSeconds?: unknown };
+      const data = json as { error?: string; cooldownSeconds?: unknown; providerError?: unknown };
       const errMsg = data?.error || 'Request failed';
-      const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+      const error = new Error(errMsg) as Error & { cooldownSeconds?: number; providerError?: unknown; status?: number };
+      error.status = res.status;
       const cooldownSecondsValue = data?.cooldownSeconds;
       if (typeof cooldownSecondsValue === 'number') {
         error.cooldownSeconds = cooldownSecondsValue;
+      }
+      const providerErrorValue = (data as { providerError?: unknown })?.providerError;
+      if (providerErrorValue && typeof providerErrorValue === 'object') {
+        (error as { providerError?: unknown }).providerError = providerErrorValue;
       }
       throw error;
     }
@@ -52,12 +57,15 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [address, setAddress] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [code, setCode] = useState<string>('');
-  const [step, setStep] = useState<'enter' | 'code' | 'done'>('enter');
+  const [step, setStep] = useState<'enter' | 'sending' | 'code' | 'done'>('enter');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
+  // Keep SID internally for potential debugging, but avoid unused variable warnings
+  const [_, setSmsSid] = useState<string | undefined>(undefined);
+  const [deliveryStatus, setDeliveryStatus] = useState<string | undefined>(undefined);
 
   // Parse query parameters for demo customization
   const hideNft = router.query['hide-nft'] === 'true';
@@ -187,21 +195,78 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       }
       
       // If eligible, send SMS code
-      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress }, { timeoutMs: 15000 });
-      setStep('code');
+      const sendResp = await postJson<{ ok: boolean; sid?: string; initialStatus?: string; debugCode?: string }>(
+        '/api/sms/send',
+        { phoneE164: phone, address: currentAddress },
+        { timeoutMs: 15000 }
+      );
+      const sid = sendResp.sid;
+      const initial = sendResp.initialStatus;
+      if (sid) {
+        setSmsSid(sid);
+        setDeliveryStatus(initial);
+        setStep('sending');
+        // Poll delivery status until delivered or failed/undelivered or timeout
+        await pollUntilDeliveredOrFailed(sid);
+      } else {
+        // No provider configured or no SID returned -> proceed immediately
+        setStep('code');
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
-        const errorWithCooldown = e as Error & { cooldownSeconds?: number };
-        if (errorWithCooldown.cooldownSeconds && typeof errorWithCooldown.cooldownSeconds === 'number') {
+        const errorWithCooldown = e as Error & { status?: number; cooldownSeconds?: number; providerError?: { provider?: string; status?: number; code?: number | string; message?: string } };
+        const pe = errorWithCooldown.providerError;
+        // Prefer provider message/code if present
+        if (pe && (pe.message || pe.code)) {
+          const prov = pe.provider ? `${pe.provider} ` : '';
+          const codePart = pe.code !== undefined && pe.code !== null ? ` (code ${String(pe.code)})` : '';
+          const detail = `${prov}${pe.message || 'delivery error'}${codePart}`;
+          setError(`${e.message} — ${detail}`);
+        } else if (errorWithCooldown.status === 429 && typeof errorWithCooldown.cooldownSeconds === 'number' && errorWithCooldown.cooldownSeconds > 0) {
+          // Only show cooldown countdown on explicit 429
           setCooldownSeconds(errorWithCooldown.cooldownSeconds);
+          setError(e.message);
+        } else {
+          // Generic error fallback
+          setError(e.message);
         }
-        setError(e.message);
       } else {
         setError('Failed to send code');
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function pollUntilDeliveredOrFailed(sid: string) {
+    const start = Date.now();
+    const timeoutMs = 60_000; // 60s timeout
+    let delay = 1200;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await fetch(`/api/sms/status?sid=${encodeURIComponent(sid)}`, { method: 'GET' });
+        const json = (await res.json().catch(() => ({}))) as { status?: string; errorCode?: number | string; errorMessage?: string };
+        const status = (json.status || '').toString();
+        setDeliveryStatus(status);
+        if (status.toLowerCase() === 'delivered') {
+          setStep('code');
+          return;
+        }
+        if (status.toLowerCase() === 'undelivered' || status.toLowerCase() === 'failed') {
+          const codeStr = json.errorCode !== undefined && json.errorCode !== null ? ` (code ${String(json.errorCode)})` : '';
+          const msg = json.errorMessage ? ` ${json.errorMessage}` : '';
+          setError(`SMS could not be delivered.${msg}${codeStr}`);
+          // Go back to enter step to allow corrections
+          setStep('enter');
+          return;
+        }
+      } catch {}
+      await new Promise((r) => setTimeout(r, delay));
+      // backoff a little but keep it snappy
+      delay = Math.min(2500, Math.floor(delay * 1.2));
+    }
+    // Timeout reached; allow user to proceed to code entry to try manually
+    setStep('code');
   }
 
 
@@ -326,6 +391,19 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                         : error}
                     </p>
                   )}
+                </div>
+              )}
+
+              {step === 'sending' && (
+                <div className="space-y-4">
+                  <div className="space-y-2 text-center">
+                    <Label>Sending SMS to {phone}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {deliveryStatus ? `Current status: ${deliveryStatus}` : 'Waiting for delivery status...'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">We will show the code input once your SMS is delivered.</p>
+                  </div>
+                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>
               )}
 

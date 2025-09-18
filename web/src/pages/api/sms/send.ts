@@ -79,10 +79,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Attempt to send via configured SMS provider (Twilio preferred)
   // We do not include OTP or secrets in logs or responses.
+  const baseUrl = (req.headers['x-forwarded-proto'] ? `${req.headers['x-forwarded-proto']}` : 'https') + '://' + (req.headers['x-forwarded-host'] || req.headers['host'] || '');
+  const statusCallbackUrl = baseUrl ? `${baseUrl}/api/sms/status-callback` : undefined;
+
   const result = await sendOtpSms(phoneE164, code, {
     timeoutMs: 5000,
     maxRetries: 1,
     baseDelayMs: 300,
+    statusCallbackUrl,
   });
 
   if (!result.ok) {
@@ -107,19 +111,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         phone: hashIdentifier('phone', phoneE164),
         status: result.status,
         provider: result.provider,
+        code: result.errorCode,
+        message: result.errorMessage,
       });
     } catch {}
 
-    return res.status(statusCode).json({ error: errorMessage, cooldownSeconds: remainingSeconds });
+    // Include safe provider diagnostic so the client can display it to the user
+    const providerError = result.provider
+      ? {
+          provider: result.provider,
+          status: result.status,
+          code: result.errorCode,
+          message: result.errorMessage,
+        }
+      : undefined;
+
+    return res.status(statusCode).json({ error: errorMessage, cooldownSeconds: remainingSeconds, providerError });
   }
 
   // If a smoke test token is configured and provided via header, echo the code for debugging only
   const smokeHeader = (req.headers['x-smoke-test-token'] as string) || '';
   if (env.SMOKE_TEST_TOKEN && smokeHeader && env.SMOKE_TEST_TOKEN === smokeHeader) {
-    return res.status(200).json({ ok: true, debugCode: code });
+    return res.status(200).json({ ok: true, debugCode: code, sid: result.sid, initialStatus: result.initialStatus });
   }
 
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, sid: result.sid, initialStatus: result.initialStatus });
 }
 
 
