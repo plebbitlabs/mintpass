@@ -22,8 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     body = (req.body || {}) as Record<string, unknown>;
   }
 
-  const messageSid = String(body['MessageSid'] || body['MessageSid'.toLowerCase()] || body['sid'] || '');
-  const messageStatus = String(body['MessageStatus'] || body['MessageStatus'.toLowerCase()] || body['status'] || '');
+  const rawSid = (body['MessageSid'] ?? body['messagesid'] ?? body['sid'] ?? '') as unknown;
+  const rawStatus = (body['MessageStatus'] ?? body['messagestatus'] ?? body['status'] ?? '') as unknown;
+  const messageSid = String(rawSid || '');
+  const messageStatus = String(rawStatus || '');
   const errorCode = body['ErrorCode'] ?? body['errorCode'] ?? body['error_code'];
   const errorMessage = body['ErrorMessage'] ?? body['errorMessage'] ?? body['error_message'];
 
