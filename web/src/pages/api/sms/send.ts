@@ -79,8 +79,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Attempt to send via configured SMS provider (Twilio preferred)
   // We do not include OTP or secrets in logs or responses.
-  const baseUrl = (req.headers['x-forwarded-proto'] ? `${req.headers['x-forwarded-proto']}` : 'https') + '://' + (req.headers['x-forwarded-host'] || req.headers['host'] || '');
-  const statusCallbackUrl = baseUrl ? `${baseUrl}/api/sms/status-callback` : undefined;
+  // For local dev (localhost/127.0.0.1/.local), skip StatusCallback because Twilio cannot reach it.
+  const hostHeader = String(req.headers['x-forwarded-host'] || req.headers['host'] || '').trim();
+  const lowerHost = hostHeader.toLowerCase();
+  const isLocalHost = !lowerHost || lowerHost.includes('localhost') || lowerHost.startsWith('127.0.0.1') || lowerHost.startsWith('[::1]') || lowerHost.endsWith('.local');
+  const xfp = (req.headers['x-forwarded-proto'] as string | undefined) || 'https';
+  const proto = (xfp.includes(',') ? xfp.split(',')[0] : xfp).trim();
+  const scheme = proto === 'http' && !isLocalHost ? 'https' : proto; // prefer https when not local
+  const statusCallbackUrl = isLocalHost || !hostHeader ? undefined : `${scheme}://${hostHeader}/api/sms/status-callback`;
 
   const result = await sendOtpSms(phoneE164, code, {
     timeoutMs: 5000,
