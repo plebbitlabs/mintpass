@@ -22,6 +22,19 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+// Countries that Twilio doesn't support for SMS due to security/regulatory reasons
+const UNSUPPORTED_COUNTRIES: RPNInput.Country[] = [
+  "AF", // Afghanistan
+  "BY", // Belarus
+  "CU", // Cuba
+  "IR", // Iran
+  "KP", // North Korea
+  "MM", // Myanmar
+  "RU", // Russia
+  "SY", // Syria
+  "VE", // Venezuela
+];
+
 type PhoneInputProps = Omit<
   React.ComponentProps<"input">,
   "onChange" | "value" | "ref"
@@ -210,6 +223,7 @@ const CountrySelect = ({
                       selectedCountry={selectedCountry}
                       onChange={onChange}
                       onSelectComplete={() => setIsOpen(false)}
+                      isSupported={!UNSUPPORTED_COUNTRIES.includes(value)}
                     />
                   ) : null,
                 )}
@@ -226,6 +240,7 @@ interface CountrySelectOptionProps extends RPNInput.FlagProps {
   selectedCountry: RPNInput.Country;
   onChange: (country: RPNInput.Country) => void;
   onSelectComplete: () => void;
+  isSupported: boolean;
 }
 
 const CountrySelectOption = ({
@@ -234,8 +249,10 @@ const CountrySelectOption = ({
   selectedCountry,
   onChange,
   onSelectComplete,
+  isSupported,
 }: CountrySelectOptionProps) => {
   const handleSelect = () => {
+    if (!isSupported) return; // Don't allow selection of unsupported countries
     onChange(country);
     onSelectComplete();
   };
@@ -251,12 +268,21 @@ const CountrySelectOption = ({
   }, [country]);
 
   return (
-    <CommandItem className="gap-2" onSelect={handleSelect}>
+    <CommandItem 
+      className={cn(
+        "gap-2", 
+        !isSupported && "opacity-50 cursor-not-allowed"
+      )} 
+      onSelect={handleSelect}
+      disabled={!isSupported}
+    >
       <FlagComponent country={country} countryName={countryName} />
       <span className="flex-1 text-sm">{countryName}</span>
-      {countryCode && (
+      {!isSupported ? (
+        <span className="text-xs text-muted-foreground">not available</span>
+      ) : countryCode ? (
         <span className="text-sm text-foreground/50">{countryCode}</span>
-      )}
+      ) : null}
       <CheckIcon
         className={`ml-auto size-4 ${country === selectedCountry ? "opacity-100" : "opacity-0"}`}
       />
@@ -276,4 +302,4 @@ const FlagComponent = ({ country, countryName }: RPNInput.FlagProps) => {
   );
 };
 
-export { PhoneInput };
+export { PhoneInput, UNSUPPORTED_COUNTRIES };
