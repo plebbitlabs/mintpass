@@ -358,6 +358,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                           setError('');
                         }} 
                         placeholder="0x..." 
+                        disabled={loading}
                       />
                     </div>
                   )}
@@ -380,6 +381,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       }}
                       placeholder="Enter phone number"
                       defaultCountry="US"
+                      disabled={loading}
                     />
                   </div>
                   <p className="text-[0.5rem] text-muted-foreground">
