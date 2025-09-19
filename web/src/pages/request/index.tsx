@@ -240,7 +240,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
 
   async function pollUntilDeliveredOrFailed(sid: string) {
     const start = Date.now();
-    const timeoutMs = 60_000; // 60s timeout
+    const timeoutMs = 30_000; // 30s timeout
     let delay = 1200;
     console.log(`Starting SMS delivery polling for SID: ${sid}`);
     
