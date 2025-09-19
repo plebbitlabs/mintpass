@@ -57,7 +57,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [address, setAddress] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [code, setCode] = useState<string>('');
-  const [step, setStep] = useState<'enter' | 'sending' | 'code' | 'done'>('enter');
+  const [step, setStep] = useState<'enter' | 'code' | 'done'>('enter');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [prefilledAddressValue]);
 
   // Navigation protection during SMS verification
-  const isVerificationInProgress = step === 'code';
+  const isVerificationInProgress = step === 'code' || (loading && step === 'enter');
 
   // Protect against tab closing during verification
   useEffect(() => {
@@ -205,8 +205,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       if (sid) {
         setSmsSid(sid);
         setDeliveryStatus(initial);
-        setStep('sending');
         // Poll delivery status until delivered or failed/undelivered or timeout
+        // Keep loading=true during this process - don't change step yet
         await pollUntilDeliveredOrFailed(sid);
       } else {
         // No provider configured or no SID returned -> proceed immediately
@@ -242,31 +242,38 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     const start = Date.now();
     const timeoutMs = 60_000; // 60s timeout
     let delay = 1200;
+    console.log(`Starting SMS delivery polling for SID: ${sid}`);
+    
     while (Date.now() - start < timeoutMs) {
       try {
         const res = await fetch(`/api/sms/status?sid=${encodeURIComponent(sid)}`, { method: 'GET' });
         const json = (await res.json().catch(() => ({}))) as { status?: string; errorCode?: number | string; errorMessage?: string };
         const status = (json.status || '').toString();
+        console.log(`SMS status poll result:`, { status, errorCode: json.errorCode, errorMessage: json.errorMessage });
         setDeliveryStatus(status);
+        
         if (status.toLowerCase() === 'delivered') {
+          console.log('SMS delivered successfully, proceeding to code entry');
           setStep('code');
           return;
         }
         if (status.toLowerCase() === 'undelivered' || status.toLowerCase() === 'failed') {
           const codeStr = json.errorCode !== undefined && json.errorCode !== null ? ` (code ${String(json.errorCode)})` : '';
           const msg = json.errorMessage ? ` ${json.errorMessage}` : '';
+          console.log('SMS delivery failed:', { status, errorCode: json.errorCode, errorMessage: json.errorMessage });
           setError(`SMS could not be delivered.${msg}${codeStr}`);
-          // Go back to enter step to allow corrections
-          setStep('enter');
-          return;
+          return; // Stay on enter step, don't change step
         }
-      } catch {}
+      } catch (pollError) {
+        console.error('Error polling SMS status:', pollError);
+      }
       await new Promise((r) => setTimeout(r, delay));
       // backoff a little but keep it snappy
       delay = Math.min(2500, Math.floor(delay * 1.2));
     }
-    // Timeout reached; allow user to proceed to code entry to try manually
-    setStep('code');
+    // Timeout reached - show error instead of proceeding
+    console.log('SMS delivery status polling timed out after 60s');
+    setError('Unable to confirm SMS delivery. Please check your phone number and try again.');
   }
 
 
@@ -330,7 +337,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   onClick={handleSendCodeClick} 
                   disabled={loading || !isCountrySupported}
                 >
-                  {loading ? 'Sending…' : 'Send code'}
+{loading ? 'Sending code…' : 'Send code'}
                 </Button>
               )}
             </>
@@ -394,18 +401,6 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                 </div>
               )}
 
-              {step === 'sending' && (
-                <div className="space-y-4">
-                  <div className="space-y-2 text-center">
-                    <Label>Sending SMS to {phone}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {deliveryStatus ? `Current status: ${deliveryStatus}` : 'Waiting for delivery status...'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">We will show the code input once your SMS is delivered.</p>
-                  </div>
-                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
-                </div>
-              )}
 
               {step === 'code' && (
                 <div className="space-y-4">
