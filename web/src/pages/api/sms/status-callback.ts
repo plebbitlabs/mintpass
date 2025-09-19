@@ -35,13 +35,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const errorCode = body['ErrorCode'] ?? body['errorCode'] ?? body['error_code'];
   const errorMessage = body['ErrorMessage'] ?? body['errorMessage'] ?? body['error_message'];
 
+  console.log('=== WEBHOOK RECEIVED ===');
+  console.log('Full webhook body:', JSON.stringify(body, null, 2));
+  console.log('All webhook keys:', Object.keys(body));
+  
+  // Check all possible error message fields in webhook
+  const possibleErrorFields = [
+    'ErrorMessage', 'errorMessage', 'error_message', 'Error_Message',
+    'ErrorCode', 'errorCode', 'error_code', 'Error_Code',
+    'Message', 'message', 'Detail', 'detail', 'Reason', 'reason'
+  ];
+  console.log('All error-related fields in webhook:');
+  possibleErrorFields.forEach(field => {
+    if (body[field] !== undefined) {
+      console.log(`  ${field}:`, body[field]);
+    }
+  });
+  
   console.log('Webhook parsed data:', { 
     messageSid, 
     messageStatus, 
     errorCode, 
     errorMessage,
-    fullBody: body,
   });
+  console.log('=== END WEBHOOK ===');
 
   if (!messageSid) return res.status(400).json({ error: 'Missing MessageSid' });
   if (!messageStatus) return res.status(400).json({ error: 'Missing MessageStatus' });

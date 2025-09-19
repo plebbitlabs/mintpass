@@ -247,9 +247,20 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     while (Date.now() - start < timeoutMs) {
       try {
         const res = await fetch(`/api/sms/status?sid=${encodeURIComponent(sid)}`, { method: 'GET' });
-        const json = (await res.json().catch(() => ({}))) as { status?: string; errorCode?: number | string; errorMessage?: string };
+        const json = (await res.json().catch(() => ({}))) as { 
+          status?: string; 
+          errorCode?: number | string; 
+          errorMessage?: string;
+          _debug?: { source?: string; timestamp?: string };
+        };
         const status = (json.status || '').toString();
-        console.log(`SMS status poll result:`, { status, errorCode: json.errorCode, errorMessage: json.errorMessage });
+        console.log(`SMS status poll result:`, { 
+          status, 
+          errorCode: json.errorCode, 
+          errorMessage: json.errorMessage,
+          dataSource: json._debug?.source,
+          timestamp: json._debug?.timestamp 
+        });
         setDeliveryStatus(status);
         
         if (status.toLowerCase() === 'delivered') {
@@ -272,7 +283,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       delay = Math.min(2500, Math.floor(delay * 1.2));
     }
     // Timeout reached - show error instead of proceeding
-    console.log('SMS delivery status polling timed out after 60s');
+    console.log('SMS delivery status polling timed out after 30s');
     setError('Unable to confirm SMS delivery. Please check your phone number and try again.');
   }
 
