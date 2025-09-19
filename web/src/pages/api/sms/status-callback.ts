@@ -13,6 +13,12 @@ export const config = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  console.log('Webhook received:', { 
+    contentType: req.headers['content-type'],
+    userAgent: req.headers['user-agent'],
+    bodyKeys: Object.keys(req.body || {}),
+  });
+
   // Accept either JSON or form-encoded; Twilio typically sends form-encoded
   let body: Record<string, unknown> = {};
   if (typeof req.headers['content-type'] === 'string' && req.headers['content-type'].includes('application/json')) {
@@ -29,6 +35,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const errorCode = body['ErrorCode'] ?? body['errorCode'] ?? body['error_code'];
   const errorMessage = body['ErrorMessage'] ?? body['errorMessage'] ?? body['error_message'];
 
+  console.log('Webhook parsed data:', { 
+    messageSid, 
+    messageStatus, 
+    errorCode, 
+    errorMessage,
+    fullBody: body,
+  });
+
   if (!messageSid) return res.status(400).json({ error: 'Missing MessageSid' });
   if (!messageStatus) return res.status(400).json({ error: 'Missing MessageStatus' });
 
@@ -41,7 +55,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await setSmsDeliveryStatus(messageSid, status);
-  } catch {}
+    console.log(`Successfully stored status for ${messageSid}:`, status);
+  } catch (e) {
+    console.error(`Failed to store status for ${messageSid}:`, e);
+  }
 
   // Twilio expects 2xx; keep response minimal
   return res.status(200).json({ ok: true });

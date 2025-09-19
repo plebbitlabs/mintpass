@@ -88,6 +88,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const scheme = proto === 'http' && !isLocalHost ? 'https' : proto; // prefer https when not local
   const statusCallbackUrl = isLocalHost || !hostHeader ? undefined : `${scheme}://${hostHeader}/api/sms/status-callback`;
 
+  console.log('SMS send configuration:', {
+    host: hostHeader,
+    isLocalHost,
+    scheme,
+    statusCallbackUrl,
+    phone: hashIdentifier('phone', phoneE164),
+  });
+
   const result = await sendOtpSms(phoneE164, code, {
     timeoutMs: 5000,
     maxRetries: 1,
