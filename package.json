@@ -7,9 +7,9 @@
   "author": "Plebbit Labs",
   "license": "MIT",
   "exports": {
-    "./challenge/v1": {
-      "types": "./dist/challenge/v1/index.d.ts",
-      "default": "./dist/challenge/v1/index.js"
+    "./challenge": {
+      "types": "./dist/challenge/index.d.ts",
+      "default": "./dist/challenge/index.js"
     }
   },
   "workspaces": [
@@ -23,7 +23,7 @@
     "build": "yarn build:contracts && yarn build:challenge && yarn publish:challenge",
     "build:contracts": "cd contracts && yarn compile",
     "build:challenge": "cd challenge && yarn build",
-    "publish:challenge": "rm -rf dist/challenge/v1 && mkdir -p dist/challenge/v1 && cp -R challenge/dist/* dist/challenge/v1/",
+    "publish:challenge": "rm -rf dist/challenge && mkdir -p dist/challenge && cp -R challenge/dist/* dist/challenge/",
     "test": "yarn test:contracts",
     "test:contracts": "cd contracts && yarn test",
     "test:challenge": "cd challenge && yarn test",
