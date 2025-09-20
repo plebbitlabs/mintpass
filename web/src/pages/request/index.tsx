@@ -64,7 +64,9 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
   // Keep SID internally for potential debugging, but avoid unused variable warnings
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setSmsSid] = useState<string | undefined>(undefined);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [deliveryStatus, setDeliveryStatus] = useState<string | undefined>(undefined);
 
   // Parse query parameters for demo customization

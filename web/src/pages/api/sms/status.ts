@@ -68,7 +68,9 @@ async function getTwilioMessageStatus(messageSid: string): Promise<SmsDeliverySt
 
     // Add error code if present
     if (errorCode !== undefined && errorCode !== null) {
-      status.errorCode = errorCode;
+      if (typeof errorCode === 'string' || typeof errorCode === 'number') {
+        status.errorCode = errorCode;
+      }
     }
     
     // Add error message if present - only use official Twilio messages
