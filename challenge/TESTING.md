@@ -22,11 +22,11 @@ yarn install:all
 Copy the example environment file:
 
 ```bash
-cd challenges
+cd challenge
 cp .env.example .env
 ```
 
-Edit `challenges/.env` and set your RPC_URL:
+Edit `challenge/.env` and set your RPC_URL:
 
 ```env
 # For local hardhat testing
@@ -54,7 +54,7 @@ This will deploy the MintPassV1 contract and mint test NFTs.
 
 ```bash
 # Build and run the automated integration test
-cd challenges
+cd challenge
 yarn test
 ```
 
@@ -121,7 +121,7 @@ yarn add file:../mintpass/challenges
 
 ```javascript
 // In plebbit-js/src/runtime/node/subplebbit/challenges/index.js
-import mintpassChallenge from '@mintpass/challenges/mintpass';
+import mintpassChallenge from '@mintpass/challenge/mintpass';
 
 // Add to challenges export
 export const plebbitJsChallenges = {

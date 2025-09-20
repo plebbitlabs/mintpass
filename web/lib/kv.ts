@@ -132,4 +132,36 @@ export async function getHashedIpsForAddress(address: string): Promise<string[]>
   }
 }
 
+// --- SMS Delivery Status by Message SID ---
+function smsStatusKey(messageSid: string) {
+  // We hash the SID to avoid leaking raw identifiers in DB keys
+  const h = hashIdentifier('generic', messageSid);
+  return `sms:status:${h}`;
+}
+
+export type SmsDeliveryStatus = {
+  status: string; // queued, sending, sent, delivered, undelivered, failed, etc.
+  errorCode?: number | string;
+  errorMessage?: string;
+  updatedAt: number; // epoch ms
+};
+
+export async function setSmsDeliveryStatus(messageSid: string, status: SmsDeliveryStatus) {
+  try {
+    await kv.set(smsStatusKey(messageSid), status, { ex: 60 * 60 }); // keep for 1 hour
+  } catch {}
+}
+
+export async function getSmsDeliveryStatus(messageSid: string): Promise<SmsDeliveryStatus | null> {
+  try {
+    const v = await kv.get<SmsDeliveryStatus>(smsStatusKey(messageSid));
+    if (v && typeof v === 'object' && typeof (v as { status?: unknown }).status === 'string') {
+      return v as SmsDeliveryStatus;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 

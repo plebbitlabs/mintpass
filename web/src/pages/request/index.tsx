@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { PhoneInput, ALLOWED_COUNTRIES } from '../../components/ui/phone-input';
+import { PhoneInput, UNSUPPORTED_COUNTRIES } from '../../components/ui/phone-input';
 import * as RPNInput from 'react-phone-number-input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '../../components/ui/input-otp';
 import { Label } from '../../components/ui/label';
@@ -26,12 +26,17 @@ async function postJson<T>(path: string, body: unknown, opts?: { timeoutMs?: num
     });
     const json = (await res.json().catch(() => ({}))) as unknown;
     if (!res.ok) {
-      const data = json as { error?: string; cooldownSeconds?: unknown };
+      const data = json as { error?: string; cooldownSeconds?: unknown; providerError?: unknown };
       const errMsg = data?.error || 'Request failed';
-      const error = new Error(errMsg) as Error & { cooldownSeconds?: number };
+      const error = new Error(errMsg) as Error & { cooldownSeconds?: number; providerError?: unknown; status?: number };
+      error.status = res.status;
       const cooldownSecondsValue = data?.cooldownSeconds;
       if (typeof cooldownSecondsValue === 'number') {
         error.cooldownSeconds = cooldownSecondsValue;
+      }
+      const providerErrorValue = (data as { providerError?: unknown })?.providerError;
+      if (providerErrorValue && typeof providerErrorValue === 'object') {
+        (error as { providerError?: unknown }).providerError = providerErrorValue;
       }
       throw error;
     }
@@ -58,6 +63,11 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   const [txHash, setTxHash] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
+  // Keep SID internally for potential debugging, but avoid unused variable warnings
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setSmsSid] = useState<string | undefined>(undefined);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [deliveryStatus, setDeliveryStatus] = useState<string | undefined>(undefined);
 
   // Parse query parameters for demo customization
   const hideNft = router.query['hide-nft'] === 'true';
@@ -78,7 +88,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   }, [prefilledAddressValue]);
 
   // Navigation protection during SMS verification
-  const isVerificationInProgress = step === 'code';
+  const isVerificationInProgress = step === 'code' || (loading && step === 'enter');
 
   // Protect against tab closing during verification
   useEffect(() => {
@@ -131,8 +141,8 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
   // Simple calculation during rendering (no need for useMemo)
   // const canVerify = code.trim().length === 6;
   
-  // Check if selected country is supported
-  const isCountrySupported = !selectedCountry || ALLOWED_COUNTRIES.includes(selectedCountry as RPNInput.Country);
+  // Check if selected country is supported by SMS provider
+  const isCountrySupported = !selectedCountry || !UNSUPPORTED_COUNTRIES.includes(selectedCountry as RPNInput.Country);
 
   function handleOtpComplete(value: string) {
     if (loading) return;
@@ -187,21 +197,96 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       }
       
       // If eligible, send SMS code
-      await postJson<unknown>('/api/sms/send', { phoneE164: phone, address: currentAddress }, { timeoutMs: 15000 });
-      setStep('code');
+      const sendResp = await postJson<{ ok: boolean; sid?: string; initialStatus?: string; debugCode?: string }>(
+        '/api/sms/send',
+        { phoneE164: phone, address: currentAddress },
+        { timeoutMs: 15000 }
+      );
+      const sid = sendResp.sid;
+      const initial = sendResp.initialStatus;
+      if (sid) {
+        setSmsSid(sid);
+        setDeliveryStatus(initial);
+        // Poll delivery status until delivered or failed/undelivered or timeout
+        // Keep loading=true during this process - don't change step yet
+        await pollUntilDeliveredOrFailed(sid);
+      } else {
+        // No provider configured or no SID returned -> proceed immediately
+        setStep('code');
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
-        const errorWithCooldown = e as Error & { cooldownSeconds?: number };
-        if (errorWithCooldown.cooldownSeconds && typeof errorWithCooldown.cooldownSeconds === 'number') {
+        const errorWithCooldown = e as Error & { status?: number; cooldownSeconds?: number; providerError?: { provider?: string; status?: number; code?: number | string; message?: string } };
+        const pe = errorWithCooldown.providerError;
+        // Prefer provider message/code if present
+        if (pe && (pe.message || pe.code)) {
+          const prov = pe.provider ? `${pe.provider} ` : '';
+          const codePart = pe.code !== undefined && pe.code !== null ? ` (code ${String(pe.code)})` : '';
+          const detail = `${prov}${pe.message || 'delivery error'}${codePart}`;
+          setError(`${e.message} — ${detail}`);
+        } else if (errorWithCooldown.status === 429 && typeof errorWithCooldown.cooldownSeconds === 'number' && errorWithCooldown.cooldownSeconds > 0) {
+          // Only show cooldown countdown on explicit 429
           setCooldownSeconds(errorWithCooldown.cooldownSeconds);
+          setError(e.message);
+        } else {
+          // Generic error fallback
+          setError(e.message);
         }
-        setError(e.message);
       } else {
         setError('Failed to send code');
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function pollUntilDeliveredOrFailed(sid: string) {
+    const start = Date.now();
+    const timeoutMs = 30_000; // 30s timeout
+    let delay = 1200;
+    console.log(`Starting SMS delivery polling for SID: ${sid}`);
+    
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await fetch(`/api/sms/status?sid=${encodeURIComponent(sid)}`, { method: 'GET' });
+        const json = (await res.json().catch(() => ({}))) as { 
+          status?: string; 
+          errorCode?: number | string; 
+          errorMessage?: string;
+          _debug?: { source?: string; timestamp?: string };
+        };
+        const status = (json.status || '').toString();
+        console.log(`SMS status poll result:`, { 
+          status, 
+          errorCode: json.errorCode, 
+          errorMessage: json.errorMessage,
+          dataSource: json._debug?.source,
+          timestamp: json._debug?.timestamp 
+        });
+        setDeliveryStatus(status);
+        
+        if (status.toLowerCase() === 'delivered') {
+          console.log('SMS delivered successfully, proceeding to code entry');
+          setStep('code');
+          return;
+        }
+        if (status.toLowerCase() === 'undelivered' || status.toLowerCase() === 'failed') {
+          const codeStr = json.errorCode !== undefined && json.errorCode !== null ? ` (code ${String(json.errorCode)})` : '';
+          const msg = json.errorMessage ? ` ${json.errorMessage}` : '';
+          console.log('SMS delivery failed:', { status, errorCode: json.errorCode, errorMessage: json.errorMessage });
+          setError(`SMS could not be delivered.${msg}${codeStr}`);
+          return; // Stay on enter step, don't change step
+        }
+      } catch (pollError) {
+        console.error('Error polling SMS status:', pollError);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+      // backoff a little but keep it snappy
+      delay = Math.min(2500, Math.floor(delay * 1.2));
+    }
+    // Timeout reached - show error instead of proceeding
+    console.log('SMS delivery status polling timed out after 30s');
+    setError('Unable to confirm SMS delivery. Please check your phone number and try again.');
   }
 
 
@@ -265,7 +350,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   onClick={handleSendCodeClick} 
                   disabled={loading || !isCountrySupported}
                 >
-                  {loading ? 'Sending…' : 'Send code'}
+{loading ? 'Sending code…' : 'Send code'}
                 </Button>
               )}
             </>
@@ -286,6 +371,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                           setError('');
                         }} 
                         placeholder="0x..." 
+                        disabled={loading}
                       />
                     </div>
                   )}
@@ -308,6 +394,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       }}
                       placeholder="Enter phone number"
                       defaultCountry="US"
+                      disabled={loading}
                     />
                   </div>
                   <p className="text-[0.5rem] text-muted-foreground">
@@ -320,7 +407,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   {(error || !isCountrySupported || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
                       {!isCountrySupported
-                        ? 'This service is not available in the selected country. More countries coming soon.'
+                        ? 'SMS verification is not available for the selected country due to security restrictions.'
                         : cooldownSeconds > 0
                         ? `Please wait ${cooldownSeconds}s before requesting another code`
                         : error}
@@ -328,6 +415,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                   )}
                 </div>
               )}
+
 
               {step === 'code' && (
                 <div className="space-y-4">

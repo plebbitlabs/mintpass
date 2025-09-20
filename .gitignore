@@ -13,9 +13,9 @@ out/
 .next/
 
 # Allow published challenge artifacts
-!dist/challenges/
-!dist/challenges/v1/
-!dist/challenges/v1/**
+!dist/challenge/
+!dist/challenge/v1/
+!dist/challenge/v1/**
 
 # Environment variables
 .env

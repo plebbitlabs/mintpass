@@ -70,12 +70,12 @@ done
 # Run the tests
 echo -e "${YELLOW}🧪 Running integration tests...${NC}"
 cd ../contracts
-npx hardhat test ../challenges/test/mintpass-integration.test.js --network localhost
+npx hardhat test ../challenge/test/mintpass-integration.test.js --network localhost
 
 # Store exit code to return it at the end
 TEST_EXIT_CODE=$?
 
-cd ../challenges
+cd ../challenge
 
 if [ $TEST_EXIT_CODE -eq 0 ]; then
     echo -e "${GREEN}✅ All tests passed!${NC}"

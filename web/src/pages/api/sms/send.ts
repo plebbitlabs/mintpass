@@ -79,10 +79,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Attempt to send via configured SMS provider (Twilio preferred)
   // We do not include OTP or secrets in logs or responses.
+  // For local dev (localhost/127.0.0.1/.local), skip StatusCallback because Twilio cannot reach it.
+  const hostHeader = String(req.headers['x-forwarded-host'] || req.headers['host'] || '').trim();
+  const lowerHost = hostHeader.toLowerCase();
+  const isLocalHost = !lowerHost || lowerHost.includes('localhost') || lowerHost.startsWith('127.0.0.1') || lowerHost.startsWith('[::1]') || lowerHost.endsWith('.local');
+  const xfp = (req.headers['x-forwarded-proto'] as string | undefined) || 'https';
+  const proto = (xfp.includes(',') ? xfp.split(',')[0] : xfp).trim();
+  const scheme = proto === 'http' && !isLocalHost ? 'https' : proto; // prefer https when not local
+  const statusCallbackUrl = isLocalHost || !hostHeader ? undefined : `${scheme}://${hostHeader}/api/sms/status-callback`;
+
+  console.log('SMS send configuration:', {
+    host: hostHeader,
+    isLocalHost,
+    scheme,
+    statusCallbackUrl,
+    phone: hashIdentifier('phone', phoneE164),
+  });
+
   const result = await sendOtpSms(phoneE164, code, {
     timeoutMs: 5000,
     maxRetries: 1,
     baseDelayMs: 300,
+    statusCallbackUrl,
   });
 
   if (!result.ok) {
@@ -107,19 +125,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         phone: hashIdentifier('phone', phoneE164),
         status: result.status,
         provider: result.provider,
+        code: result.errorCode,
+        message: result.errorMessage,
       });
     } catch {}
 
-    return res.status(statusCode).json({ error: errorMessage, cooldownSeconds: remainingSeconds });
+    // Include safe provider diagnostic so the client can display it to the user
+    const providerError = result.provider
+      ? {
+          provider: result.provider,
+          status: result.status,
+          code: result.errorCode,
+          message: result.errorMessage,
+        }
+      : undefined;
+
+    return res.status(statusCode).json({ error: errorMessage, cooldownSeconds: remainingSeconds, providerError });
   }
 
   // If a smoke test token is configured and provided via header, echo the code for debugging only
   const smokeHeader = (req.headers['x-smoke-test-token'] as string) || '';
   if (env.SMOKE_TEST_TOKEN && smokeHeader && env.SMOKE_TEST_TOKEN === smokeHeader) {
-    return res.status(200).json({ ok: true, debugCode: code });
+    return res.status(200).json({ ok: true, debugCode: code, sid: result.sid, initialStatus: result.initialStatus });
   }
 
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, sid: result.sid, initialStatus: result.initialStatus });
 }
 
 

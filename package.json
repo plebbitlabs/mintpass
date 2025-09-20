@@ -7,32 +7,32 @@
   "author": "Plebbit Labs",
   "license": "MIT",
   "exports": {
-    "./challenges/v1": {
-      "types": "./dist/challenges/v1/index.d.ts",
-      "default": "./dist/challenges/v1/index.js"
+    "./challenge": {
+      "types": "./dist/challenge/index.d.ts",
+      "default": "./dist/challenge/index.js"
     }
   },
   "workspaces": [
     "contracts",
-    "challenges"
+    "challenge"
   ],
   "scripts": {
-    "install:all": "yarn install && yarn install:contracts && yarn install:challenges",
+    "install:all": "yarn install && yarn install:contracts && yarn install:challenge",
     "install:contracts": "cd contracts && yarn install",
-    "install:challenges": "cd challenges && yarn install",
-    "build": "yarn build:contracts && yarn build:challenges && yarn publish:challenges",
+    "install:challenge": "cd challenge && yarn install",
+    "build": "yarn build:contracts && yarn build:challenge && yarn publish:challenge",
     "build:contracts": "cd contracts && yarn compile",
-    "build:challenges": "cd challenges && yarn build",
-    "publish:challenges": "rm -rf dist/challenges/v1 && mkdir -p dist/challenges/v1 && cp -R challenges/dist/* dist/challenges/v1/",
+    "build:challenge": "cd challenge && yarn build",
+    "publish:challenge": "rm -rf dist/challenge && mkdir -p dist/challenge && cp -R challenge/dist/* dist/challenge/",
     "test": "yarn test:contracts",
     "test:contracts": "cd contracts && yarn test",
-    "test:challenges": "cd challenges && yarn test",
-    "test:challenges:local": "cd challenges && yarn test:local",
+    "test:challenge": "cd challenge && yarn test",
+    "test:challenge:local": "cd challenge && yarn test:local",
     "deploy:base-sepolia": "cd contracts && yarn deploy:base-sepolia",
     "deploy:base": "cd contracts && yarn deploy:base",
-    "clean": "yarn clean:contracts && yarn clean:challenges",
+    "clean": "yarn clean:contracts && yarn clean:challenge",
     "clean:contracts": "cd contracts && yarn clean",
-    "clean:challenges": "cd challenges && yarn clean"
+    "clean:challenge": "cd challenge && yarn clean"
   },
   "keywords": [
     "nft",

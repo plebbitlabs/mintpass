@@ -11,7 +11,7 @@ MintPass is an NFT-based authentication system that provides verified identity p
 ```
 mintpass/
 ├── contracts/           # Smart contracts (MintPassV1 NFT contract)
-├── challenges/          # Plebbit challenge implementations
+├── challenge/           # Plebbit challenge implementation
 ├── web/                 # Next.js website (mintpass.org)
 ├── docs/                # Documentation and specifications
 ├── tests/               # Cross-component integration tests
@@ -68,14 +68,14 @@ Privacy and data handling (summary):
 ## Docs & Subprojects
 
 - Contracts: `contracts/` — see `contracts/README.md`
-- Challenge (plebbit-js): `challenges/` — see `challenges/README.md`
+- Challenge (plebbit-js): `challenge/` — see `challenge/README.md`
 - Website backend (Next.js): `web/` — see `web/README.md`
 - Docs and specs: `docs/` — see `docs/README.md` and `docs/milestones.md`
 
 ## Getting Started
 
 - Smart contracts: see `contracts/README.md` for local deploy and tests
-- Challenge (plebbit-js): see `challenges/README.md` for building and tests
+- Challenge (plebbit-js): see `challenge/README.md` for building and tests
 - Web backend: see `web/README.md` for Vercel/KV setup, env vars, and API routes
 
 This repository is actively in development. Follow the milestones above to track progress.

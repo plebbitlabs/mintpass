@@ -6,6 +6,12 @@ export type SendResult = {
   provider?: 'twilio';
   status?: number;
   error?: string;
+  // Optional provider-specific diagnostics (safe to return to client)
+  errorCode?: number | string;
+  errorMessage?: string;
+  // Twilio message SID when available
+  sid?: string;
+  initialStatus?: string;
 };
 
 function toUrlEncoded(params: Record<string, string>): string {
@@ -18,6 +24,7 @@ type SendOptions = {
   timeoutMs?: number; // per-attempt timeout
   maxRetries?: number; // number of retries on transient errors (not counting first attempt)
   baseDelayMs?: number; // base backoff delay
+  statusCallbackUrl?: string; // Twilio StatusCallback URL to receive delivery updates
 };
 
 function sleep(ms: number) {
@@ -39,6 +46,9 @@ export async function sendOtpSms(
       To: phoneE164,
       Body: `Your MintPass verification code: ${code}`,
     };
+    if (options.statusCallbackUrl && typeof options.statusCallbackUrl === 'string' && options.statusCallbackUrl.length > 0) {
+      bodyParams.StatusCallback = options.statusCallbackUrl;
+    }
     if (env.TWILIO_MESSAGING_SERVICE_SID) {
       bodyParams.MessagingServiceSid = env.TWILIO_MESSAGING_SERVICE_SID;
     } else if (env.SMS_SENDER_ID) {
@@ -71,10 +81,51 @@ export async function sendOtpSms(
 
         // Do not retry client errors (4xx)
         if (res.ok) {
-          return { attempted: true, ok: true, provider: 'twilio', status: res.status };
+          // Parse Twilio message resource response to extract SID and status
+          let sid: string | undefined;
+          let initialStatus: string | undefined;
+          try {
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const json = (await res.json()) as { sid?: string; status?: string } | undefined;
+              if (json) {
+                if (typeof json.sid === 'string') sid = json.sid;
+                if (typeof json.status === 'string') initialStatus = json.status;
+              }
+            }
+          } catch {
+            // Ignore parse errors; SID is optional for our flow
+          }
+          return { attempted: true, ok: true, provider: 'twilio', status: res.status, sid, initialStatus };
         }
         if (res.status >= 400 && res.status < 500) {
-          return { attempted: true, ok: false, provider: 'twilio', status: res.status, error: `Twilio responded with ${res.status}` };
+          // Attempt to parse Twilio error payload for code/message
+          let errorCode: number | string | undefined;
+          let errorMessage: string | undefined;
+          try {
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const json = (await res.json()) as { code?: number; message?: string } | undefined;
+              if (json) {
+                if (typeof json.code === 'number' || typeof json.code === 'string') errorCode = json.code;
+                if (typeof json.message === 'string') errorMessage = json.message;
+              }
+            } else {
+              const text = await res.text();
+              errorMessage = typeof text === 'string' && text.length > 0 ? text.slice(0, 300) : undefined;
+            }
+          } catch {
+            // Ignore parse errors; fall back to generic messaging
+          }
+          return {
+            attempted: true,
+            ok: false,
+            provider: 'twilio',
+            status: res.status,
+            error: `Twilio responded with ${res.status}`,
+            errorCode,
+            errorMessage,
+          };
         }
 
         // 5xx - retry
