@@ -21,7 +21,7 @@ git clone https://github.com/your-username/mintpass.git
 # Build the challenge
 cd mintpass
 yarn install:all
-yarn build:challenges
+yarn build:challenge
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ yarn build:challenges
 ```javascript
 // Import via file path (not package import)
 const challengeSettings = {
-  path: '../mintpass/challenges/dist/mintpass.js', // Relative path to built challenge
+  path: '../mintpass/challenge/dist/mintpass.js', // Relative path to built challenge
   options: {
     chainTicker: 'base',
     contractAddress: '0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9',
@@ -52,7 +52,7 @@ Your project should look like:
 your-project/
 ├── plebbit-js/           # Your plebbit-js fork
 └── mintpass/             # Cloned mintpass repo
-    └── challenges/
+    └── challenge/
         └── dist/
             └── mintpass.js  # Built challenge file
 ```
