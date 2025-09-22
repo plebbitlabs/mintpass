@@ -402,7 +402,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                     <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
                     {' '}and{' '}
                     <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
-                    {' '}and consent to receive a one‑time SMS to verify your phone number.
+                    {' '}and consent to receive a one‑time SMS to verify your phone number. Message and data rates may apply.
                   </p>
                   {(error || !isCountrySupported || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
