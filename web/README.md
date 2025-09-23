@@ -1,6 +1,17 @@
-## MintPass Web (Milestone 3)
+## MintPass Web
 
-Serverless backend scaffolding for SMS verification and NFT minting.
+Serverless website and API that power the SMS verification flow and NFT minting at `mintpass.org`.
+
+### How it works (code map)
+- UI: `src/pages/request/` — phone + OTP form, error handling, and success state
+- API routes:
+  - `POST /api/sms/send` → generate OTP, rate‑limit, optional IP/phone risk checks, send via provider
+  - `POST /api/sms/verify` → verify OTP, mark phone as verified
+  - `POST /api/pre-check-eligibility` → quick check before sending code
+  - `POST /api/check-eligibility` → final eligibility check before mint
+  - `POST /api/mint` → on‑chain mint (when envs set) or record as minted
+  - `GET /api/sms/status` and `POST /api/sms/status-callback` → delivery telemetry (webhook + polling)
+- Libraries and helpers: `lib/` — KV (Upstash), rate‑limits, cooldowns, hashing, SMS provider adapter, IP/phone intelligence, and admin auth/session utilities
 
 ### Anti-Sybil and Security Requirements
 - **Phone number database**: Track used numbers; prevent reuse for minting.
@@ -68,8 +79,7 @@ Serverless backend scaffolding for SMS verification and NFT minting.
 - `POST /api/sms/send` → request SMS code (rate-limited; sends via Twilio if configured)
 - `POST /api/sms/verify` → verify code and mark phone as verified
 - `POST /api/check-eligibility` → confirm address + phone can mint
-- `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state
- - `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state. Requires `authorAddress` string; country is derived from `x-vercel-ip-country` header.
+- `POST /api/mint` → on-chain mint on Base Sepolia when envs are set; otherwise records local minted state. Requires `authorAddress` string; country is derived from `x-vercel-ip-country` header.
 
 ### Local Development
 ```bash
@@ -148,8 +158,9 @@ Optional for smoke testing (Preview only):
 - `HASH_PEPPER` (optional; if set, `scripts/smoke-test.sh` derives the hashed OTP KV key via OpenSSL when available)
 
 ### Next Steps
-- Add abuse heuristics (velocity checks per phone/IP, simple device fingerprinting if needed).
-- Enhance UI with additional features (error handling, loading states, success animations).
+- Add additional authentication methods beyond SMS (e.g., pay‑to‑mint, others).
+- Add abuse heuristics (velocity checks per phone/IP, lightweight device signals if needed).
+- Continue UI polish and success animations; broaden admin tooling and observability.
 
 This project includes both backend APIs and frontend UI components built with shadcn/ui and mobile-first responsive design.
 
