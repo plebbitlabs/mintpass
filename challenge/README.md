@@ -62,7 +62,7 @@ your-project/
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `chainTicker` | string | `"base"` | Chain where MintPass contract is deployed |
-| `contractAddress` | string | Required | MintPass contract address |
+| `contractAddress` | string | Optional on supported chains | If omitted and `chainTicker` is supported, defaults to the known MintPass deployment for that chain (e.g., Base Sepolia) |
 | `requiredTokenType` | string | `"0"` | Required token type (0=SMS, 1=Email, etc.) |
 | `transferCooldownSeconds` | string | `"604800"` | Cooldown period after NFT transfer (1 week) |
 | `error` | string | Default message | Custom error message for users without NFT |
@@ -74,6 +74,16 @@ your-project/
 - **Type 2+**: Future verification methods
 
 ### Transfer Cooldown
+### Wallet selection and EVM fallback
+
+- When `chainTicker` is `"base"` or `"eth"`, the challenge first looks for `author.wallets[chainTicker]`.
+- If that specific wallet is missing, it automatically falls back between `base` and `eth` (e.g., `base → eth` or `eth → base`).
+- This makes EVM wallet usage robust when clients store a single EVM wallet entry.
+
+### Default contract addresses
+
+- If `contractAddress` is omitted and `chainTicker` is supported, the challenge uses a known default for that chain (e.g., Base Sepolia reference deployment).
+- You can still override `contractAddress` explicitly in settings.
 
 The challenge tracks when NFTs are used by different plebbit accounts and enforces a cooldown period to prevent:
 - Quick transfers to bypass bans

@@ -115,6 +115,13 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
 
 const description = "Verify that the author owns a MintPass NFT of the required type, with transfer cooldown protection.";
 
+// Default deployed contract addresses per supported chain ticker
+// Note: Defaults are intentionally minimal to avoid accidental misconfiguration on unsupported chains.
+// Base Sepolia (testnet) reference deployment
+const DEFAULT_CONTRACTS: Record<string, string> = {
+    base: "0x13d41d6B8EA5C86096bb7a94C3557FCF184491b9"
+};
+
 // MintPass contract ABI - only the functions we need
 const MINTPASS_ABI = [
     {
@@ -276,7 +283,15 @@ const verifyAuthorMintPass = async (props: {
     bindToFirstAuthor: boolean;
 }): Promise<string | undefined> => {
     
-    const authorWallet = props.publication.author.wallets?.[props.chainTicker];
+    // Prefer wallet matching the specified chainTicker, but fall back between
+    // EVM-compatible tickers (base <-> eth) if one is missing.
+    const wallets: any = props.publication.author.wallets || {};
+    let authorWallet: any = wallets[props.chainTicker];
+
+    if (!authorWallet && (props.chainTicker === "base" || props.chainTicker === "eth")) {
+        authorWallet = wallets[props.chainTicker === "base" ? "eth" : "base"];
+    }
+
     if (typeof authorWallet?.address !== "string") {
         return "Author wallet address is not defined. Please set your wallet address in settings.";
     }
@@ -543,9 +558,10 @@ const getChallenge = async (
         bindToFirstAuthor = "true"
     } = subplebbitChallengeSettings?.options || {};
     
-
-    if (!contractAddress) {
-        throw Error("Missing option contractAddress");
+    // Apply sensible default contract address for supported chains if not provided
+    const effectiveContractAddress = contractAddress || DEFAULT_CONTRACTS[chainTicker];
+    if (!effectiveContractAddress) {
+        throw Error("Missing option contractAddress and no default available for chainTicker " + chainTicker);
     }
 
     const requiredTokenTypeNum = parseInt(requiredTokenType);
@@ -571,7 +587,7 @@ const getChallenge = async (
         plebbit: subplebbit._plebbit,
         publication,
         chainTicker,
-        contractAddress,
+        contractAddress: effectiveContractAddress,
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
         error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
