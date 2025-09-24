@@ -227,54 +227,30 @@ const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: string, cust
  */
 const createViemClientForChain = async (chainTicker: string, rpcUrl: string) => {
     const { createPublicClient, http } = await import('viem');
-    
-    // Define chain configurations
-    const chainConfigs: Record<string, any> = {
-        eth: {
-            id: 1,
-            name: 'Ethereum',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: [rpcUrl] } }
-        },
-        base: {
-            id: 8453,
-            name: 'Base',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: [rpcUrl] } }
-        },
-        baseSepolia: {
-            id: 84532,
-            name: 'Base Sepolia',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: [rpcUrl] } }
-        },
-        // For local testing (hardhat)
-        hardhat: {
+    const chains: any = await import('viem/chains');
+
+    // Prefer official viem chain configs where available (ens contracts on mainnet)
+    let chain: any;
+    if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
+        // viem doesn't ship a hardhat chain; fall back to a minimal local config
+        chain = {
             id: 1337,
             name: 'Hardhat',
             nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
             rpcUrls: { default: { http: [rpcUrl] } }
-        }
-    };
-
-    // Determine chain config based on RPC URL and chainTicker
-    let chainConfig = chainConfigs[chainTicker];
-
-    // If using localhost, assume it's hardhat regardless of chainTicker
-    if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
-        chainConfig = chainConfigs.hardhat;
-    }
-    // If base ticker but RPC is Base Sepolia, switch to Base Sepolia chain config
-    if (chainTicker === 'base' && rpcUrl.toLowerCase().includes('sepolia')) {
-        chainConfig = chainConfigs.baseSepolia;
+        };
+    } else if (chainTicker === 'eth') {
+        chain = rpcUrl.toLowerCase().includes('sepolia') ? chains.sepolia : chains.mainnet;
+    } else if (chainTicker === 'base') {
+        chain = rpcUrl.toLowerCase().includes('sepolia') ? chains.baseSepolia : chains.base;
     }
 
-    if (!chainConfig) {
+    if (!chain) {
         throw new Error(`Unsupported chain ticker: ${chainTicker}`);
     }
 
     return createPublicClient({
-        chain: chainConfig,
+        chain,
         transport: http(rpcUrl)
     });
 };
