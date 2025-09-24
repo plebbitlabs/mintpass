@@ -526,14 +526,18 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
         return "Author address is not an ENS domain";
     }
 
-    const viemClient = await createViemClientForChain(
-        "eth",
-        _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
-    );
-
-    const ownerOfAddress = await viemClient.getEnsAddress({
-        name: normalize(props.publication.author.address)
-    });
+    let ownerOfAddress: string | null = null;
+    try {
+        const viemClient = await createViemClientForChain(
+            "eth",
+            _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
+        );
+        ownerOfAddress = await viemClient.getEnsAddress({
+            name: normalize(props.publication.author.address)
+        });
+    } catch (_e) {
+        return "Failed to resolve ENS address";
+    }
 
     if (!ownerOfAddress) {
         return "Failed to resolve ENS address";
