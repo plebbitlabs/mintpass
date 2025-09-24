@@ -206,9 +206,10 @@ const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: string, cust
             urls: ["https://rpc.ankr.com/eth"],
             chainId: 1
         },
+        // Default Base to Sepolia since the default contract address points to Base Sepolia
         base: {
-            urls: ["https://mainnet.base.org"],
-            chainId: 8453
+            urls: ["https://sepolia.base.org"],
+            chainId: 84532
         }
     };
     
@@ -241,6 +242,12 @@ const createViemClientForChain = async (chainTicker: string, rpcUrl: string) => 
             nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
             rpcUrls: { default: { http: [rpcUrl] } }
         },
+        baseSepolia: {
+            id: 84532,
+            name: 'Base Sepolia',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: { default: { http: [rpcUrl] } }
+        },
         // For local testing (hardhat)
         hardhat: {
             id: 1337,
@@ -252,10 +259,14 @@ const createViemClientForChain = async (chainTicker: string, rpcUrl: string) => 
 
     // Determine chain config based on RPC URL and chainTicker
     let chainConfig = chainConfigs[chainTicker];
-    
+
     // If using localhost, assume it's hardhat regardless of chainTicker
     if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
         chainConfig = chainConfigs.hardhat;
+    }
+    // If base ticker but RPC is Base Sepolia, switch to Base Sepolia chain config
+    if (chainTicker === 'base' && rpcUrl.toLowerCase().includes('sepolia')) {
+        chainConfig = chainConfigs.baseSepolia;
     }
 
     if (!chainConfig) {
@@ -322,11 +333,21 @@ const verifyAuthorMintPass = async (props: {
     messageToBeSigned["authorAddress"] = props.publication.author.address;
     messageToBeSigned["timestamp"] = authorWallet.timestamp;
 
-    const valid = await viemClient.verifyMessage({
-        address: <"0x${string}">authorWallet.address,
-        message: JSON.stringify(messageToBeSigned),
-        signature: <"0x${string}">authorWallet.signature.signature
-    });
+    // Guard signature presence
+    if (!authorWallet?.signature?.signature || typeof authorWallet.timestamp !== 'number') {
+        return "The signature of the wallet is invalid";
+    }
+
+    let valid = false;
+    try {
+        valid = await viemClient.verifyMessage({
+            address: <"0x${string}">authorWallet.address,
+            message: JSON.stringify(messageToBeSigned),
+            signature: <"0x${string}">authorWallet.signature.signature
+        });
+    } catch (_e) {
+        return "The signature of the wallet is invalid";
+    }
 
     if (!valid) {
         return "The signature of the wallet is invalid";
@@ -398,15 +419,8 @@ const validateMintPassOwnership = async (props: {
                 args: [props.authorWalletAddress, props.requiredTokenType]
             });
             owns = Boolean(result);
-        } catch (networkError: any) {
-            // Handle network connectivity issues gracefully (common in test environments)
-            if (networkError?.message?.includes?.('fetch failed') || 
-                networkError?.message?.includes?.('HTTP request failed') ||
-                networkError?.cause?.message?.includes?.('ECONNREFUSED')) {
-                return "Failed to check MintPass NFT ownership. Please try again.";
-            }
-            // Re-throw unexpected errors
-            throw networkError;
+        } catch (_e: any) {
+            return "Failed to check MintPass NFT ownership. Please try again.";
         }
 
         if (!owns) {
@@ -416,12 +430,17 @@ const validateMintPassOwnership = async (props: {
         }
 
         // Get all tokens owned by the user to perform binding and optional cooldown checks
-        const tokensInfo = await viemClient.readContract({
-            address: <"0x${string}">props.contractAddress,
-            abi: MINTPASS_ABI,
-            functionName: "tokensOfOwner",
-            args: [props.authorWalletAddress]
-        }) as Array<{ tokenId: bigint; tokenType: number }>;
+        let tokensInfo: Array<{ tokenId: bigint; tokenType: number }>;
+        try {
+            tokensInfo = await viemClient.readContract({
+                address: <"0x${string}">props.contractAddress,
+                abi: MINTPASS_ABI,
+                functionName: "tokensOfOwner",
+                args: [props.authorWalletAddress]
+            }) as Array<{ tokenId: bigint; tokenType: number }>;
+        } catch (_e) {
+            return "Failed to check MintPass NFT ownership. Please try again.";
+        }
 
         // Find tokens of the required type
         const requiredTokens = tokensInfo.filter(token => token.tokenType === props.requiredTokenType);
