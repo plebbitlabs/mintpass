@@ -173,9 +173,10 @@ const _getChainProviderWithSafety = (plebbit, chainTicker, customRpcUrl) => {
             urls: ["https://rpc.ankr.com/eth"],
             chainId: 1
         },
+        // Default Base to Sepolia since the default contract address points to Base Sepolia
         base: {
-            urls: ["https://mainnet.base.org"],
-            chainId: 8453
+            urls: ["https://sepolia.base.org"],
+            chainId: 84532
         }
     };
     const defaultProvider = defaultProviders[chainTicker];
@@ -190,39 +191,29 @@ const _getChainProviderWithSafety = (plebbit, chainTicker, customRpcUrl) => {
  */
 const createViemClientForChain = async (chainTicker, rpcUrl) => {
     const { createPublicClient, http } = await import('viem');
-    // Define chain configurations
-    const chainConfigs = {
-        eth: {
-            id: 1,
-            name: 'Ethereum',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: [rpcUrl] } }
-        },
-        base: {
-            id: 8453,
-            name: 'Base',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: [rpcUrl] } }
-        },
-        // For local testing (hardhat)
-        hardhat: {
+    const chains = await import('viem/chains');
+    // Prefer official viem chain configs where available (ens contracts on mainnet)
+    let chain;
+    if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
+        // viem doesn't ship a hardhat chain; fall back to a minimal local config
+        chain = {
             id: 1337,
             name: 'Hardhat',
             nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
             rpcUrls: { default: { http: [rpcUrl] } }
-        }
-    };
-    // Determine chain config based on RPC URL and chainTicker
-    let chainConfig = chainConfigs[chainTicker];
-    // If using localhost, assume it's hardhat regardless of chainTicker
-    if (rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
-        chainConfig = chainConfigs.hardhat;
+        };
     }
-    if (!chainConfig) {
+    else if (chainTicker === 'eth') {
+        chain = rpcUrl.toLowerCase().includes('sepolia') ? chains.sepolia : chains.mainnet;
+    }
+    else if (chainTicker === 'base') {
+        chain = rpcUrl.toLowerCase().includes('sepolia') ? chains.baseSepolia : chains.base;
+    }
+    if (!chain) {
         throw new Error(`Unsupported chain ticker: ${chainTicker}`);
     }
     return createPublicClient({
-        chain: chainConfig,
+        chain,
         transport: http(rpcUrl)
     });
 };
@@ -254,16 +245,26 @@ const verifyAuthorMintPass = async (props) => {
         return "Invalid wallet address format";
     }
     // Verify the wallet signature
-    const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]);
+    const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
     const messageToBeSigned = {};
     messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
     messageToBeSigned["authorAddress"] = props.publication.author.address;
     messageToBeSigned["timestamp"] = authorWallet.timestamp;
-    const valid = await viemClient.verifyMessage({
-        address: authorWallet.address,
-        message: JSON.stringify(messageToBeSigned),
-        signature: authorWallet.signature.signature
-    });
+    // Guard signature presence
+    if (!authorWallet?.signature?.signature || typeof authorWallet.timestamp !== 'number') {
+        return "The signature of the wallet is invalid";
+    }
+    let valid = false;
+    try {
+        valid = await viemClient.verifyMessage({
+            address: authorWallet.address,
+            message: JSON.stringify(messageToBeSigned),
+            signature: authorWallet.signature.signature
+        });
+    }
+    catch (_e) {
+        return "The signature of the wallet is invalid";
+    }
     if (!valid) {
         return "The signature of the wallet is invalid";
     }
@@ -312,15 +313,8 @@ const validateMintPassOwnership = async (props) => {
             });
             owns = Boolean(result);
         }
-        catch (networkError) {
-            // Handle network connectivity issues gracefully (common in test environments)
-            if (networkError?.message?.includes?.('fetch failed') ||
-                networkError?.message?.includes?.('HTTP request failed') ||
-                networkError?.cause?.message?.includes?.('ECONNREFUSED')) {
-                return "Failed to check MintPass NFT ownership. Please try again.";
-            }
-            // Re-throw unexpected errors
-            throw networkError;
+        catch (_e) {
+            return "Failed to check MintPass NFT ownership. Please try again.";
         }
         if (!owns) {
             // Replace {authorAddress} placeholder in error message
@@ -328,12 +322,18 @@ const validateMintPassOwnership = async (props) => {
             return errorMessage;
         }
         // Get all tokens owned by the user to perform binding and optional cooldown checks
-        const tokensInfo = await viemClient.readContract({
-            address: props.contractAddress,
-            abi: MINTPASS_ABI,
-            functionName: "tokensOfOwner",
-            args: [props.authorWalletAddress]
-        });
+        let tokensInfo;
+        try {
+            tokensInfo = await viemClient.readContract({
+                address: props.contractAddress,
+                abi: MINTPASS_ABI,
+                functionName: "tokensOfOwner",
+                args: [props.authorWalletAddress]
+            });
+        }
+        catch (_e) {
+            return "Failed to check MintPass NFT ownership. Please try again.";
+        }
         // Find tokens of the required type
         const requiredTokens = tokensInfo.filter(token => token.tokenType === props.requiredTokenType);
         if (requiredTokens.length === 0) {
@@ -406,10 +406,16 @@ const verifyAuthorENSMintPass = async (props) => {
     if (!props.publication.author.address.endsWith(".eth")) {
         return "Author address is not an ENS domain";
     }
-    const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]);
-    const ownerOfAddress = await viemClient.getEnsAddress({
-        name: normalize(props.publication.author.address)
-    });
+    let ownerOfAddress = null;
+    try {
+        const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
+        ownerOfAddress = await viemClient.getEnsAddress({
+            name: normalize(props.publication.author.address)
+        });
+    }
+    catch (_e) {
+        return "Failed to resolve ENS address";
+    }
     if (!ownerOfAddress) {
         return "Failed to resolve ENS address";
     }
@@ -467,23 +473,38 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         rpcUrl,
         bindToFirstAuthor: String(bindToFirstAuthor).toLowerCase() === 'true' || String(bindToFirstAuthor) === '1'
     };
-    // Try wallet verification first
-    const walletFailureReason = await verifyAuthorMintPass(sharedProps);
-    if (!walletFailureReason) {
-        return { success: true };
+    // Choose verification order based on presence of a wallet entry for the ticker (with EVM fallback)
+    const walletsAny = publication.author.wallets || {};
+    let maybeWallet = walletsAny[chainTicker];
+    if (!maybeWallet && (chainTicker === 'base' || chainTicker === 'eth')) {
+        maybeWallet = walletsAny[chainTicker === 'base' ? 'eth' : 'base'];
     }
-    // Try ENS verification if wallet fails
-    const ensFailureReason = await verifyAuthorENSMintPass(sharedProps);
-    if (!ensFailureReason) {
-        return { success: true };
+    const hasWalletForTicker = typeof maybeWallet?.address === 'string';
+    let firstFailure;
+    let secondFailure;
+    if (hasWalletForTicker) {
+        firstFailure = await verifyAuthorMintPass(sharedProps);
+        if (!firstFailure)
+            return { success: true };
+        secondFailure = await verifyAuthorENSMintPass(sharedProps);
+        if (!secondFailure)
+            return { success: true };
     }
-    // Both verification methods failed
+    else {
+        // No wallet provided: try ENS first for better UX
+        firstFailure = await verifyAuthorENSMintPass(sharedProps);
+        if (!firstFailure)
+            return { success: true };
+        secondFailure = await verifyAuthorMintPass(sharedProps);
+        if (!secondFailure)
+            return { success: true };
+    }
     const errorString = `Author (${publication.author.address}) failed MintPass verification. ` +
-        `Wallet: ${walletFailureReason}, ENS: ${ensFailureReason}`;
+        `First: ${firstFailure}, Second: ${secondFailure}`;
     console.log("MintPass challenge failed:", errorString);
     return {
         success: false,
-        error: walletFailureReason // Show the more user-friendly wallet error
+        error: firstFailure || secondFailure || "Failed to verify MintPass"
     };
 };
 /**

@@ -301,7 +301,7 @@ const verifyAuthorMintPass = async (props: {
     // Verify the wallet signature
     const viemClient = await createViemClientForChain(
         "eth",
-        _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
+        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
     );
 
     const messageToBeSigned: any = {};
@@ -504,10 +504,10 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
 
     let ownerOfAddress: string | null = null;
     try {
-        const viemClient = await createViemClientForChain(
-            "eth",
-            _getChainProviderWithSafety(props.plebbit, "eth", props.rpcUrl).urls[0]
-        );
+    const viemClient = await createViemClientForChain(
+        "eth",
+        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
+    );
         ownerOfAddress = await viemClient.getEnsAddress({
             name: normalize(props.publication.author.address)
         });
@@ -594,28 +594,38 @@ const getChallenge = async (
         bindToFirstAuthor: String(bindToFirstAuthor).toLowerCase() === 'true' || String(bindToFirstAuthor) === '1'
     };
 
-    // Try wallet verification first
-    const walletFailureReason = await verifyAuthorMintPass(sharedProps);
-    if (!walletFailureReason) {
-        return { success: true };
+    // Choose verification order based on presence of a wallet entry for the ticker (with EVM fallback)
+    const walletsAny: any = publication.author.wallets || {};
+    let maybeWallet = walletsAny[chainTicker];
+    if (!maybeWallet && (chainTicker === 'base' || chainTicker === 'eth')) {
+        maybeWallet = walletsAny[chainTicker === 'base' ? 'eth' : 'base'];
+    }
+    const hasWalletForTicker = typeof maybeWallet?.address === 'string';
+
+    let firstFailure: string | undefined;
+    let secondFailure: string | undefined;
+
+    if (hasWalletForTicker) {
+        firstFailure = await verifyAuthorMintPass(sharedProps);
+        if (!firstFailure) return { success: true };
+        secondFailure = await verifyAuthorENSMintPass(sharedProps);
+        if (!secondFailure) return { success: true };
+    } else {
+        // No wallet provided: try ENS first for better UX
+        firstFailure = await verifyAuthorENSMintPass(sharedProps);
+        if (!firstFailure) return { success: true };
+        secondFailure = await verifyAuthorMintPass(sharedProps);
+        if (!secondFailure) return { success: true };
     }
 
-    // Try ENS verification if wallet fails
-    const ensFailureReason = await verifyAuthorENSMintPass(sharedProps);
-    if (!ensFailureReason) {
-        return { success: true };
-    }
-
-    // Both verification methods failed
-    const errorString = 
+    const errorString =
         `Author (${publication.author.address}) failed MintPass verification. ` +
-        `Wallet: ${walletFailureReason}, ENS: ${ensFailureReason}`;
-    
+        `First: ${firstFailure}, Second: ${secondFailure}`;
     console.log("MintPass challenge failed:", errorString);
-    
-    return { 
-        success: false, 
-        error: walletFailureReason // Show the more user-friendly wallet error
+
+    return {
+        success: false,
+        error: firstFailure || secondFailure || "Failed to verify MintPass"
     };
 };
 
