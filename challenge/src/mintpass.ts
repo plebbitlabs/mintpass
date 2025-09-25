@@ -596,6 +596,7 @@ const getChallenge = async (
 
     // Choose verification order based on presence of a wallet entry for the ticker (with EVM fallback)
     const walletsAny: any = publication.author.wallets || {};
+    const isEnsAuthor = typeof publication.author.address === 'string' && publication.author.address.toLowerCase().endsWith('.eth');
     let maybeWallet = walletsAny[chainTicker];
     if (!maybeWallet && (chainTicker === 'base' || chainTicker === 'eth')) {
         maybeWallet = walletsAny[chainTicker === 'base' ? 'eth' : 'base'];
@@ -605,7 +606,13 @@ const getChallenge = async (
     let firstFailure: string | undefined;
     let secondFailure: string | undefined;
 
-    if (hasWalletForTicker) {
+    if (isEnsAuthor) {
+        // Prefer ENS first for ENS authors
+        firstFailure = await verifyAuthorENSMintPass(sharedProps);
+        if (!firstFailure) return { success: true };
+        secondFailure = await verifyAuthorMintPass(sharedProps);
+        if (!secondFailure) return { success: true };
+    } else if (hasWalletForTicker) {
         firstFailure = await verifyAuthorMintPass(sharedProps);
         if (!firstFailure) return { success: true };
         secondFailure = await verifyAuthorENSMintPass(sharedProps);
