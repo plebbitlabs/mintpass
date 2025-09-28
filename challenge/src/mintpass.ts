@@ -609,20 +609,20 @@ const getChallenge = async (
     if (isEnsAuthor) {
         // Prefer ENS first for ENS authors
         firstFailure = await verifyAuthorENSMintPass(sharedProps);
-        if (!firstFailure) return { success: true };
+        if (!firstFailure) return { success: true } as ChallengeResult;
         secondFailure = await verifyAuthorMintPass(sharedProps);
-        if (!secondFailure) return { success: true };
+        if (!secondFailure) return { success: true } as ChallengeResult;
     } else if (hasWalletForTicker) {
         firstFailure = await verifyAuthorMintPass(sharedProps);
-        if (!firstFailure) return { success: true };
+        if (!firstFailure) return { success: true } as ChallengeResult;
         secondFailure = await verifyAuthorENSMintPass(sharedProps);
-        if (!secondFailure) return { success: true };
+        if (!secondFailure) return { success: true } as ChallengeResult;
     } else {
         // No wallet provided: try ENS first for better UX
         firstFailure = await verifyAuthorENSMintPass(sharedProps);
-        if (!firstFailure) return { success: true };
+        if (!firstFailure) return { success: true } as ChallengeResult;
         secondFailure = await verifyAuthorMintPass(sharedProps);
-        if (!secondFailure) return { success: true };
+        if (!secondFailure) return { success: true } as ChallengeResult;
     }
 
     const errorString =
@@ -633,20 +633,21 @@ const getChallenge = async (
     return {
         success: false,
         error: firstFailure || secondFailure || "Failed to verify MintPass"
-    };
+    } as ChallengeResult;
 };
 
 /**
  * Challenge file factory function
  */
-function ChallengeFileFactory(): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings?: SubplebbitChallengeSetting): ChallengeFile {
     const type = <Challenge["type"]>("text/url-iframe");
-    
-    return { 
-        getChallenge, 
-        optionInputs, 
-        type, 
-        description 
+
+    return {
+        getChallenge,
+        optionInputs,
+        type,
+        description,
+        challenge: "https://mintpass.org/request/{authorAddress}"
     };
 }
 

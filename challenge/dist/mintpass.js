@@ -520,13 +520,14 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
 /**
  * Challenge file factory function
  */
-function ChallengeFileFactory() {
+function ChallengeFileFactory(subplebbitChallengeSettings) {
     const type = ("text/url-iframe");
     return {
         getChallenge,
         optionInputs,
         type,
-        description
+        description,
+        challenge: "https://mintpass.org/request/{authorAddress}"
     };
 }
 export default ChallengeFileFactory;
