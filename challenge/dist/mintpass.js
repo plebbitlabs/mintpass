@@ -520,9 +520,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
 /**
  * Challenge file factory function
  */
-function ChallengeFileFactory(subplebbitChallengeSettings) {
-    const { chainTicker = "base" } = subplebbitChallengeSettings?.options || {};
-    const type = ("chain/" + chainTicker);
+function ChallengeFileFactory() {
+    const type = ("text/url-iframe");
     return {
         getChallenge,
         optionInputs,
