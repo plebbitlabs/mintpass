@@ -527,7 +527,7 @@ function ChallengeFileFactory(subplebbitChallengeSettings) {
         optionInputs,
         type,
         description,
-        challenge: "https://mintpass.org/request/{authorAddress}"
+        challenge: "https://mintpass.org/request/{authorAddress}?hide-nft=true&hide-address=true"
     };
 }
 export default ChallengeFileFactory;
