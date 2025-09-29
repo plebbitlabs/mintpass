@@ -245,7 +245,7 @@ const verifyAuthorMintPass = async (props) => {
         return "Invalid wallet address format";
     }
     // Verify the wallet signature
-    const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
+    const viemClient = await createViemClientForChain(props.chainTicker, _getChainProviderWithSafety(props.plebbit, props.chainTicker, props.rpcUrl).urls[0]);
     const messageToBeSigned = {};
     messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
     messageToBeSigned["authorAddress"] = props.publication.author.address;
@@ -408,7 +408,7 @@ const verifyAuthorENSMintPass = async (props) => {
     }
     let ownerOfAddress = null;
     try {
-        const viemClient = await createViemClientForChain("eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
+        const viemClient = await createViemClientForChain(props.chainTicker, _getChainProviderWithSafety(props.plebbit, props.chainTicker, props.rpcUrl).urls[0]);
         ownerOfAddress = await viemClient.getEnsAddress({
             name: normalize(props.publication.author.address)
         });

@@ -477,7 +477,7 @@ describe("MintPass Challenge Integration Test", function () {
       await waitForCondition({}, () => challengeVerificationReceived, 30000);
       
       expect(challengeSuccessValue).to.be.false;
-      expect(challengeErrorsValue['0']).to.include('wallet address is not defined');
+      expect(challengeErrorsValue['0']).to.include('Author address is not an ENS domain');
       console.log("✅ Test 4 PASSED: Challenge correctly failed with no wallet");
       
     } finally {
