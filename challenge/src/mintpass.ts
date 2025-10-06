@@ -16,6 +16,9 @@ import Keyv from "keyv";
 import KeyvSqlite from "@keyv/sqlite";
 import fs from "fs";
 import path from "path";
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { create as createMultihash } from "multiformats/hashes/digest";
 
 // Simple utility function replacements
 function isStringDomain(address: string): boolean {
@@ -23,9 +26,16 @@ function isStringDomain(address: string): boolean {
 }
 
 function getPlebbitAddressFromPublicKey(publicKey: string): string {
-    // For now, return the public key as-is - this is a simplified implementation
-    // In practice, this would involve cryptographic derivation
-    return publicKey;
+    const protobufPublicKeyPrefix = new Uint8Array([8, 1, 18, 32]);
+    const multihashIdentityCode = 0;
+
+    const publicKeyBytes = uint8ArrayFromString(publicKey, "base64");
+    const prefixedPublicKey = new Uint8Array(protobufPublicKeyPrefix.length + publicKeyBytes.length);
+    prefixedPublicKey.set(protobufPublicKeyPrefix, 0);
+    prefixedPublicKey.set(publicKeyBytes, protobufPublicKeyPrefix.length);
+
+    const multihashBytes = createMultihash(multihashIdentityCode, prefixedPublicKey).bytes;
+    return uint8ArrayToString(multihashBytes, "base58btc");
 }
 
 function derivePublicationFromChallengeRequest(

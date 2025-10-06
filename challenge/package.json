@@ -31,6 +31,8 @@
     "@keyv/sqlite": "^4.0.5",
     "env-paths": "^3.0.0",
     "keyv": "5.5.0",
+    "multiformats": "^13.1.0",
+    "uint8arrays": "^4.0.3",
     "viem": "2.0.0"
   },
   "peerDependencies": {
