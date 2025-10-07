@@ -2420,5 +2420,65 @@ describe("MintPass Challenge Integration Test", function () {
       console.log("🧹 Subplebbit cleaned up");
     }
   });
+
+  it("Test 27: Iframe flow re-check passes after mint with empty answer", async function () {
+    this.timeout(120000);
+    console.log("\n🧪 Test 27: Iframe flow re-check passes after mint with empty answer");
+
+    const authorSigner = await plebbitForPublishing.createSigner();
+    const ethWallet = await getEthWalletFromPlebbitPrivateKey(authorSigner.privateKey, authorSigner.address, authorSigner.publicKey);
+
+    // Ensure author does not initially own the NFT
+    const hasInitial = await mintpass.ownsTokenType(ethWallet.address, SMS_TOKEN_TYPE);
+    expect(hasInitial).to.be.false;
+
+    const subplebbit = await plebbit.createSubplebbit({
+      title: 'MintPass Test Community',
+      description: 'Testing iframe challenge flow with re-check'
+    });
+
+    const settings = { ...subplebbit.settings };
+    settings.challenges = [createChallengeSettings(await mintpass.getAddress(), chainProviderUrl, 31337)];
+    await subplebbit.edit({ settings });
+    await subplebbit.start();
+    await waitForCondition(subplebbit, (s) => typeof s.updatedAt === "number");
+
+    try {
+      const comment = await plebbitForPublishing.createComment({
+        signer: authorSigner,
+        subplebbitAddress: subplebbit.address,
+        title: 'Test comment iframe flow',
+        content: 'Should pass after mint during challenge iframe flow',
+        author: { wallets: { base: ethWallet } }
+      });
+
+      let challengeVerificationReceived = false;
+      let challengeSuccessValue = null;
+
+      comment.on('challengeverification', (cv) => {
+        console.log('✅ challengeverification received (Test 27):', cv);
+        challengeSuccessValue = cv.challengeSuccess;
+        challengeVerificationReceived = true;
+      });
+
+      // When we receive the challenge (iframe URL), mint the NFT and then answer with empty string
+      comment.on('challenge', async (chal) => {
+        console.log('✅ challenge received (Test 27):', chal);
+        await mintpass.connect(minter).mint(ethWallet.address, SMS_TOKEN_TYPE);
+        // Answer with empty string as specified by backend dev
+        comment.publishChallengeAnswers(['']);
+      });
+
+      console.log("📤 Publishing comment (Test 27)...");
+      await comment.publish();
+      await waitForCondition({}, () => challengeVerificationReceived, 60000);
+
+      expect(challengeSuccessValue).to.be.true;
+      console.log("✅ Test 27 PASSED: Challenge passed after mint and empty answer re-check");
+    } finally {
+      await subplebbit.stop();
+      await subplebbit.delete();
+    }
+  });
   
 }); 

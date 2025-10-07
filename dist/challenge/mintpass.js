@@ -517,6 +517,56 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         if (!secondFailure)
             return { success: true };
     }
+    // If the only reason of failure is missing NFT ownership, present iframe challenge instead of failing immediately.
+    const ownershipError = (sharedProps.error || '').replace("{authorAddress}", publication.author.address);
+    const failedDueToMissingNFT = (firstFailure === ownershipError) || (secondFailure === ownershipError);
+    if (failedDueToMissingNFT) {
+        // Return a Challenge requiring an answer. The answer can be an empty string "".
+        // On verify, re-check NFT ownership and return the up-to-date result.
+        const challenge = `https://mintpass.org/request/${publication.author.address}?hide-nft=true&hide-address=true`;
+        const type = ("text/url-iframe");
+        return {
+            // Provide the URL to be rendered in an iframe on the client
+            challenge,
+            verify: async (_answer) => {
+                // Re-run verification after the user interacted with the iframe flow
+                let postAnswerFirstFailure;
+                let postAnswerSecondFailure;
+                if (isEnsAuthor) {
+                    postAnswerFirstFailure = await verifyAuthorENSMintPass(sharedProps);
+                    if (!postAnswerFirstFailure)
+                        return { success: true };
+                    postAnswerSecondFailure = await verifyAuthorMintPass(sharedProps);
+                    if (!postAnswerSecondFailure)
+                        return { success: true };
+                }
+                else if (hasWalletForTicker) {
+                    postAnswerFirstFailure = await verifyAuthorMintPass(sharedProps);
+                    if (!postAnswerFirstFailure)
+                        return { success: true };
+                    postAnswerSecondFailure = await verifyAuthorENSMintPass(sharedProps);
+                    if (!postAnswerSecondFailure)
+                        return { success: true };
+                }
+                else {
+                    postAnswerFirstFailure = await verifyAuthorENSMintPass(sharedProps);
+                    if (!postAnswerFirstFailure)
+                        return { success: true };
+                    postAnswerSecondFailure = await verifyAuthorMintPass(sharedProps);
+                    if (!postAnswerSecondFailure)
+                        return { success: true };
+                }
+                const postErrorString = `Author (${publication.author.address}) failed MintPass verification (post-answer). ` +
+                    `First: ${postAnswerFirstFailure}, Second: ${postAnswerSecondFailure}`;
+                console.log("MintPass challenge failed:", postErrorString);
+                return {
+                    success: false,
+                    error: postAnswerFirstFailure || postAnswerSecondFailure || "Failed to verify MintPass"
+                };
+            },
+            type
+        }; // Plebbit accepts either Challenge or ChallengeResult
+    }
     const errorString = `Author (${publication.author.address}) failed MintPass verification. ` +
         `First: ${firstFailure}, Second: ${secondFailure}`;
     console.log("MintPass challenge failed:", errorString);
