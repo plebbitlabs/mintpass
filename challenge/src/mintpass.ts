@@ -316,7 +316,7 @@ const verifyAuthorMintPass = async (props: {
 
     const messageToBeSigned: any = {};
     messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
-    messageToBeSigned["authorAddress"] = props.publication.author.address;
+    messageToBeSigned["authorAddress"] = authorWallet.address;
     messageToBeSigned["timestamp"] = authorWallet.timestamp;
 
     // Guard signature presence
@@ -358,7 +358,7 @@ const verifyAuthorMintPass = async (props: {
         chainTicker: props.chainTicker,
         requiredTokenType: props.requiredTokenType,
         transferCooldownSeconds: props.transferCooldownSeconds,
-        authorAddress: props.publication.author.address,
+        authorAddress: authorWallet.address,
         error: props.error,
         plebbit: props.plebbit,
         rpcUrl: props.rpcUrl,
@@ -536,7 +536,7 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
         chainTicker: props.chainTicker,
         requiredTokenType: props.requiredTokenType,
         transferCooldownSeconds: props.transferCooldownSeconds,
-        authorAddress: props.publication.author.address,
+        authorAddress: ownerOfAddress,
         error: props.error,
         plebbit: props.plebbit,
         rpcUrl: props.rpcUrl,
@@ -545,6 +545,25 @@ const verifyAuthorENSMintPass = async (props: Parameters<typeof verifyAuthorMint
     });
 
     return mintPassValidationFailure;
+};
+
+/**
+ * Get the wallet address to use for author identification
+ */
+const getAuthorWalletAddress = (publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest, chainTicker: string): string => {
+    const wallets: any = publication.author.wallets || {};
+    let authorWallet: any = wallets[chainTicker];
+
+    if (!authorWallet && (chainTicker === "base" || chainTicker === "eth")) {
+        authorWallet = wallets[chainTicker === "base" ? "eth" : "base"];
+    }
+
+    if (typeof authorWallet?.address === "string") {
+        return authorWallet.address;
+    }
+
+    // Fallback to publication.author.address if no wallet found
+    return publication.author.address;
 };
 
 /**
@@ -591,6 +610,8 @@ const getChallenge = async (
             error: "Could not derive publication from challenge request."
         };
     }
+
+    const authorWalletAddress = getAuthorWalletAddress(publication, chainTicker);
     
     const sharedProps = {
         plebbit: subplebbit._plebbit,
@@ -599,7 +620,7 @@ const getChallenge = async (
         contractAddress: effectiveContractAddress,
         requiredTokenType: requiredTokenTypeNum,
         transferCooldownSeconds: cooldownSeconds,
-        error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${publication.author.address} to get verified.`,
+        error: error || `You need a MintPass NFT to post in this community. Visit https://mintpass.org/request/${authorWalletAddress} to get verified.`,
         rpcUrl,
         bindToFirstAuthor: String(bindToFirstAuthor).toLowerCase() === 'true' || String(bindToFirstAuthor) === '1'
     };
@@ -636,13 +657,13 @@ const getChallenge = async (
     }
 
     // If the only reason of failure is missing NFT ownership, present iframe challenge instead of failing immediately.
-    const ownershipError = (sharedProps.error || '').replace("{authorAddress}", publication.author.address);
+    const ownershipError = (sharedProps.error || '').replace("{authorAddress}", authorWalletAddress);
     const failedDueToMissingNFT = (firstFailure === ownershipError) || (secondFailure === ownershipError);
 
     if (failedDueToMissingNFT) {
         // Return a Challenge requiring an answer. The answer can be an empty string "".
         // On verify, re-check NFT ownership and return the up-to-date result.
-        const challenge = `https://mintpass.org/request/${publication.author.address}?hide-nft=true&hide-address=true`;
+        const challenge = `https://mintpass.org/request/${authorWalletAddress}?hide-nft=true&hide-address=true`;
         const type = <Challenge["type"]>("text/url-iframe");
         return {
             // Provide the URL to be rendered in an iframe on the client
@@ -670,7 +691,7 @@ const getChallenge = async (
                 }
 
                 const postErrorString =
-                    `Author (${publication.author.address}) failed MintPass verification (post-answer). ` +
+                    `Author (${authorWalletAddress}) failed MintPass verification (post-answer). ` +
                     `First: ${postAnswerFirstFailure}, Second: ${postAnswerSecondFailure}`;
                 console.log("MintPass challenge failed:", postErrorString);
 
@@ -684,7 +705,7 @@ const getChallenge = async (
     }
 
     const errorString =
-        `Author (${publication.author.address}) failed MintPass verification. ` +
+        `Author (${authorWalletAddress}) failed MintPass verification. ` +
         `First: ${firstFailure}, Second: ${secondFailure}`;
     console.log("MintPass challenge failed:", errorString);
 
