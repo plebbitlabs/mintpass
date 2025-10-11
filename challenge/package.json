@@ -1,6 +1,6 @@
 {
   "name": "@mintpass/challenge",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "MintPass plebbit-js challenge implementation",
   "type": "module",
   "main": "dist/index.js",
