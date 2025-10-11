@@ -46,7 +46,7 @@ echo -e "${YELLOW}🔧 Starting Hardhat node...${NC}"
 cd ../contracts
 npx hardhat node > /dev/null 2>&1 &
 NODE_PID=$!
-cd ../challenges
+cd ../challenge
 
 # Wait for node to be ready
 echo -e "${YELLOW}⏳ Waiting for Hardhat node to be ready...${NC}"

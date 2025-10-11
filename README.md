@@ -2,97 +2,81 @@
 
 <img src="public/mintpass.png" alt="MintPass Logo" width="90" align="left" />
 
-MintPass is an NFT-based authentication system that provides verified identity proofs for Plebbit communities (subplebbits). Users can mint verification NFTs (like SMS verification) that serve as anti-spam and identity verification mechanisms in decentralized communities. MintPass enables subplebbit owners to tell their users apart, counting them, banning them and thus preventing sybil attacks such as fake upvotes/downvotes, fake conversations, etc. 
+MintPass is an NFT-based authentication system that provides verified identity proofs for decentralized communities. It began as an anti‑spam challenge for Plebbit subplebbits, and it works equally well for other protocols and social applications. Users mint a non‑transferable verification NFT (e.g., after SMS OTP) that communities can check to reduce sybil attacks such as fake upvotes/downvotes and fake conversations.
 
 <br clear="left" />
+
+## How people use MintPass
+
+1) Visit `mintpass.org/request`, enter a phone number, and complete SMS OTP.
+2) MintPass mints an NFT (on testnet in this reference deployment) to your wallet or records an equivalent “verified” state when on‑chain minting is disabled.
+3) Communities (e.g., Plebbit subplebbits) check ownership of the NFT to treat you as authenticated for anti‑spam.
+
+The request form looks like this:
+
+<p align="center">
+  <img src="public/mintpass-request.jpg" alt="MintPass request form screenshot" width="862" />
+</p>
+
+## What is Plebbit?
+
+Plebbit is a serverless, adminless, peer‑to‑peer alternative to Reddit built on a pubsub network. Communities are called “subplebbits.” Plebbit does not require a global blockchain to store post history or ordering. Instead, it uses public‑key addressing and a DHT for the latest content, while moderation and anti‑spam are handled at the community edge. Read the whitepaper for the full model: [Plebbit whitepaper](https://github.com/plebbit/whitepaper/discussions/2).
+
+MintPass integrates as a challenge so subplebbits can distinguish real users and limit abuse without central servers. Because the artifact is an NFT, other decentralized apps can use the same credential to authenticate users.
 
 ## Project Structure
 
 ```
 mintpass/
-├── contracts/           # Smart contracts (MintPassV1 NFT contract)
-├── challenge/           # Plebbit challenge implementation
-├── web/                 # Next.js website (mintpass.org)
-├── docs/                # Documentation and specifications
-├── tests/               # Cross-component integration tests
-└── scripts/             # Deployment and utility scripts
+├── contracts/   # MintPassV1 smart contract and tooling
+├── challenge/   # Plebbit challenge implementation (“mintpass”)
+├── web/         # Next.js website + API (mintpass.org)
+├── docs/        # Documentation and specifications
+├── tests/       # Cross‑component integration tests
+└── scripts/     # Deployment and utilities
 ```
 
-## Milestones
+### Subprojects
 
-### Milestone 1 ✅ Contract & Infrastructure  
-- [x] Project structure and documentation
-- [x] MintPassV1 NFT smart contract with role-based access
-- [x] Contract deployment to Base Sepolia testnet
-- [x] Automated tests for smart contract functions
-- [x] Deterministic deployment system (CREATE2)
-- [x] Comprehensive testing scripts and workflows
+- `contracts/`: Solidity contracts (MintPassV1). Versioned, role‑based minting, token types per NFT (type 0 = SMS). See `contracts/README.md`.
+- `challenge/`: The Plebbit challenge that checks for a MintPass NFT and applies additional rules (e.g., transfer cooldowns) to resist sybils.
+- `web/`: The user‑facing site and serverless backend. Sends SMS codes, verifies OTP, and mints or records successful verification. See `web/README.md`.
 
-### Milestone 2 ✅ Challenge Integration
-- [x] Custom "mintpass" challenge for Plebbit
-- [x] Transfer cooldown mechanism  
-- [x] Integration with plebbit-js challenge system
-- [x] Local blockchain testing with full integration
+## Privacy and anti‑sybil design (high level)
 
-### Milestone 3 🔄 Web Backend & Interface
-- [x] Next.js backend at `mintpass.org` (Pages Router, TypeScript)
-- [x] SMS verification flow (send, verify)
-- [x] NFT minting API after verification
-- [x] Anti-sybil controls (rate limits, cooldowns, optional VPN/VOIP checks)
-- [x] Vercel Preview/Production setup with environment variables and Upstash KV (Redis)
-- [x] End-to-end smoke tests (Preview/Prod), hardened with HMAC-pepper, curl failure/timeout handling, and robust OTP parsing
-- [x] Twilio SMS provider integration (Messaging Service with geo-sender routing; verified in Preview/Prod)
-- [x] Public-facing UI at `/request/<eth-address>` (shadcn/ui components, mobile-first design)
+- Short‑lived operational data (OTP codes, verification markers, rate‑limit state) stored in Redis with TTLs.
+- Persistent “mint association” between wallet and phone to prevent duplicate mints.
+- Optional IP reputation (VPN/proxy) and phone‑risk checks, optional geoblocking, and per‑IP cooldowns.
+- Secrets live only in environment variables; logs avoid PII and never include OTPs or private keys.
 
-Anti-sybil summary (backend):
-- Per-IP rate limiting and server-side cooldowns (SMS send and mint attempts)
-- Optional VPN/proxy/cloud IP detection (IPQS)
-- Optional disposable/VOIP phone detection (AbstractAPI)
-- Optional geoblocking via middleware; Cloudflare WAF recommended in front of Vercel
+## Getting started
 
-See `web/README.md` for exact environment variables and Vercel/Cloudflare setup steps.
+- Contracts: `cd contracts && yarn install && yarn test`
+- Challenge: `cd challenge && yarn install && yarn test`
+- Web: `cd web && yarn install && yarn dev` then open `http://localhost:3000/request`
 
-Privacy and data handling (summary):
-- Phone numbers (E.164) and IPs are used strictly for verification, rate limiting, cooldowns, and preventing duplicate mints. No additional PII is collected by default.
-- SMS codes are stored with a short TTL (5 minutes). Verification markers also expire after 5 minutes. SMS send cooldowns default to 120 seconds. IP mint cooldown defaults to 7 days. Rate-limit state is short-lived.
-- Mint state associates wallet address and phone to prevent reuse; by design this record is retained to enforce anti-sybil guarantees. Cooldown and code entries expire automatically.
-- Behind Cloudflare/Vercel, client IP is extracted in this order: `CF-Connecting-IP` → `X-Real-IP` → first `X-Forwarded-For` → socket address. Ensure Cloudflare proxying is enabled so the true client IP is preserved.
-- Logs should redact phone numbers and never include SMS codes or private keys. Secrets are stored only in Vercel environment variables; no secrets in the repository.
-- UI must present a clear notice and obtain consent before sending an SMS, including a link to the privacy policy. Data access/deletion requests should be honored where legally required, noting that removing mint association records weakens anti-sybil protections.
+## Where MintPass is useful
 
-### Milestone 4 📅 UX & Integration
-- [ ] Seamless integration with Seedit
-- [ ] Multiple challenge options UI
-- [ ] Production testing and optimization
+While designed for Plebbit, any decentralized or serverless social app can use MintPass NFTs as a lightweight proof‑of‑personhood. Apps only need to check ownership of a token type (e.g., type 0 for SMS) to gate actions or increase trust in votes and reports.
 
-## Docs & Subprojects
+## Roadmap and considerations
 
-- Contracts: `contracts/` — see `contracts/README.md`
-- Challenge (plebbit-js): `challenge/` — see `challenge/README.md`
-- Website backend (Next.js): `web/` — see `web/README.md`
-- Docs and specs: `docs/` — see `docs/README.md` and `docs/milestones.md`
+We plan to support multiple authentication methods alongside SMS OTP to fit different threat models and UX constraints:
+- Add a “pay‑to‑mint” option with a small fee that is high enough to deter bulk purchases but low enough for regular users.
+- Add additional human‑verification signals (e.g., email, government‑backed KYC providers, or proofs such as biometrics/world‑ID systems) when they can be integrated without compromising decentralization goals.
+- Expand admin tooling, heuristics, and optional device signals to further reduce abuse.
 
-## Getting Started
-
-- Smart contracts: see `contracts/README.md` for local deploy and tests
-- Challenge (plebbit-js): see `challenge/README.md` for building and tests
-- Web backend: see `web/README.md` for Vercel/KV setup, env vars, and API routes
-
-This repository is actively in development. Follow the milestones above to track progress.
+These items are exploratory; concrete work will land incrementally and stay configurable so communities can choose what they trust.
 
 ## Technology Stack
 
 - **Smart Contracts**: Solidity, Hardhat/Foundry
-- **Website**: Next.js, React, Ethereum integration
-- **Challenges**: TypeScript, Plebbit-js integration
-- **Deployment**: Base network (Layer 2)
+- **Website**: Next.js, React, Ethereum (ethers)
+- **Challenges**: TypeScript, Plebbit‑js integration
+- **Deployment**: Base network (L2)
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE).
 
-**Open Source, Commercial Friendly**
-- ✅ Free to use, modify, and distribute
-- ✅ Perfect for developers and researchers  
-- ✅ Encourages ecosystem growth
-- 💰 Commercial plans could be released on [mintpass.org](https://mintpass.org) 
+Open source and commercial‑friendly. A hosted version is available at [mintpass.org](https://mintpass.org).

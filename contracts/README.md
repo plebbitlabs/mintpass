@@ -133,5 +133,5 @@ The contract includes several gas optimizations:
 1. Deploy contract to Base Sepolia for testing
 2. Verify contract on BaseScan
 3. Test minting functionality
-4. Integrate with Plebbit challenge system (Milestone 2)
-5. Build web interface (Milestone 3) 
+4. Integrate with the Plebbit challenge system
+5. Iterate on web integration and tooling

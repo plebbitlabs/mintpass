@@ -2,5 +2,5 @@ import type { ChallengeFile, SubplebbitChallengeSetting } from "@plebbit/plebbit
 /**
  * Challenge file factory function
  */
-declare function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile;
+declare function ChallengeFileFactory(subplebbitChallengeSettings?: SubplebbitChallengeSetting): ChallengeFile;
 export default ChallengeFileFactory;
