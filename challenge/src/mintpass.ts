@@ -605,7 +605,7 @@ const getChallenge = async (
         // Return a Challenge requiring an answer. The answer can be an empty string "".
         // On verify, re-check NFT ownership and return the up-to-date result.
         const challenge = `https://mintpass.org/request/${authorWalletAddress}?hide-nft=true&hide-address=true`;
-        const type = <Challenge["type"]>("text/url-iframe");
+        const type = <Challenge["type"]>("url/iframe");
         return {
             // Provide the URL to be rendered in an iframe on the client
             challenge,
@@ -643,7 +643,7 @@ const getChallenge = async (
  * Challenge file factory function
  */
 function ChallengeFileFactory(subplebbitChallengeSettings?: SubplebbitChallengeSetting): ChallengeFile {
-    const type = <Challenge["type"]>("text/url-iframe");
+    const type = <Challenge["type"]>("url/iframe");
 
     return {
         getChallenge,
