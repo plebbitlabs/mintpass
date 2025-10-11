@@ -28,11 +28,24 @@ const UNSUPPORTED_COUNTRIES: RPNInput.Country[] = [
   "BY", // Belarus
   "CU", // Cuba
   "IR", // Iran
+  "IL", // Israel
   "KP", // North Korea
   "MM", // Myanmar
   "RU", // Russia
   "SY", // Syria
   "VE", // Venezuela
+  "AZ", // Azerbaijan
+  "BD", // Bangladesh
+  "ID", // Indonesia
+  "OM", // Oman
+  "LK", // Sri Lanka
+  "PS", // Palestinian Territory
+  "TJ", // Tajikistan
+  "VN", // Vietnam
+  "PK", // Pakistan
+  "DZ", // Algeria
+  "NG", // Nigeria
+  "TN", // Tunisia
 ];
 
 type PhoneInputProps = Omit<
