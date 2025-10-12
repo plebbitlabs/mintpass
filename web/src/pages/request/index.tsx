@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/button';
@@ -52,7 +53,7 @@ async function postJson<T>(path: string, body: unknown, opts?: { timeoutMs?: num
   }
 }
 
-export default function RequestPage({ prefilledAddress = '' }: { prefilledAddress?: string }) {
+export default function RequestPage({ prefilledAddress = '', isNorthAmerica = false }: { prefilledAddress?: string; isNorthAmerica?: boolean }) {
   const router = useRouter();
   const [address, setAddress] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -397,13 +398,23 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
                       disabled={loading}
                     />
                   </div>
-                  <p className="text-[0.5rem] text-muted-foreground">
-                    By clicking &ldquo;Send code&rdquo;, you agree to the{' '}
-                    <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
-                    {' '}and{' '}
-                    <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
-                    {' '}and consent to receive a one‑time SMS to verify your phone number. Message and data rates may apply.
-                  </p>
+                  {isNorthAmerica ? (
+                    <p className="text-[0.5rem] text-muted-foreground">
+                      By clicking &ldquo;Send code&rdquo;, you agree to the{' '}
+                      <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
+                      {' '}and{' '}
+                      <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
+                      {' '}and consent to receive a one‑time SMS to verify your phone number. Message and data rates may apply.
+                    </p>
+                  ) : (
+                    <p className="text-[0.5rem] text-muted-foreground">
+                      By clicking &ldquo;Send code&rdquo;, you agree to the{' '}
+                      <Link href="/terms-and-conditions" className="underline">Terms and Conditions</Link>
+                      {' '}and{' '}
+                      <Link href="/privacy-policy" className="underline">Privacy Policy</Link>
+                      .
+                    </p>
+                  )}
                   {(error || !isCountrySupported || cooldownSeconds > 0) && (
                     <p className="text-sm text-destructive">
                       {!isCountrySupported
@@ -482,3 +493,10 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const countryHeader = (ctx.req.headers['x-vercel-ip-country'] as string) || '';
+  const country = countryHeader.toUpperCase();
+  const isNorthAmerica = country === 'US' || country === 'CA';
+  return { props: { isNorthAmerica } };
+};
