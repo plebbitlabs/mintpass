@@ -338,7 +338,7 @@ export default function RequestPage({ prefilledAddress = '' }: { prefilledAddres
       {step === 'done' && <ConfettiCelebration />}
       <main className="flex-1">
         <PageCard
-          title={step !== 'done' ? (hideNft ? "Request your authentication" : "Request your authentication NFT") : hideNft ? "Authentication complete!" : "You received your MintPass NFT!"}
+          title={step !== 'done' ? "Confirm you're a human" : hideNft ? "Authentication complete!" : "You received your MintPass NFT!"}
           titleAs="h1"
           titleClassName="text-center"
           footerClassName="flex gap-2"
