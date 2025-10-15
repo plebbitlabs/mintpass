@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 const UNSUPPORTED_COUNTRIES: RPNInput.Country[] = [
   "AF", // Afghanistan
   "BY", // Belarus
+  "CA", // Canada
   "CU", // Cuba
   "IR", // Iran
   "IL", // Israel
@@ -33,6 +34,7 @@ const UNSUPPORTED_COUNTRIES: RPNInput.Country[] = [
   "MM", // Myanmar
   "RU", // Russia
   "SY", // Syria
+  "US", // United States
   "VE", // Venezuela
   "AZ", // Azerbaijan
   "BD", // Bangladesh
