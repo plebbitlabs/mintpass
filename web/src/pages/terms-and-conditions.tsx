@@ -41,7 +41,7 @@ export default function TermsAndConditions() {
             <h2 className="text-lg font-semibold">Assumptions and Risks</h2>
             <ul className="list-disc pl-5 space-y-1 text-sm">
               <li>Crypto transactions are irreversible and may incur gas fees. You are responsible for your wallet security.</li>
-              <li>The project code is open source; hosted deployments still require trust in the operator's configuration.</li>
+              <li>The project code is open source; hosted deployments still require trust in the operator&apos;s configuration.</li>
               <li>The service may change or be discontinued without notice.</li>
             </ul>
           </section>
@@ -49,7 +49,7 @@ export default function TermsAndConditions() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">No Warranty</h2>
             <p className="text-sm">
-              The service is provided "as is," without warranties of any kind. To the maximum extent permitted by law, the operators and contributors disclaim all implied warranties and are not liable for damages arising from the use or inability to use the service.
+              The service is provided &quot;as is,&quot; without warranties of any kind. To the maximum extent permitted by law, the operators and contributors disclaim all implied warranties and are not liable for damages arising from the use or inability to use the service.
             </p>
           </section>
 
