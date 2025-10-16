@@ -10,7 +10,16 @@ export default function PrivacyPolicy() {
       <main className="flex-1">
         <PageCard title="Privacy Policy" titleAs="h1" contentClassName="space-y-6">
           <p className="text-sm text-muted-foreground">
-            This document describes how the MintPass website and backend handle data. It is provided for transparency and is not legal advice.
+            This document describes how the MintPass website and backend handle data. MintPass is operated by{' '}
+            <a 
+              href="https://plebbitlabs.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground/80 transition-colors"
+            >
+              Plebbit Labs, Inc.
+            </a>
+            {' '}This is provided for transparency and is not legal advice.
           </p>
 
           <section className="space-y-2">
@@ -55,7 +64,7 @@ export default function PrivacyPolicy() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">&ldquo;No‑logs&rdquo; Clarification</h2>
             <p className="text-sm">
-              MintPass uses a minimal‑data model rather than a strict “no‑logs” policy. We avoid server request logging for analytics and do not profile users. However, we must keep short‑lived operational keys (e.g., OTPs, verification markers, rate‑limits/cooldowns) and a persistent mint association record to protect against abuse. This means MintPass is not “strict no‑logs,” but it is “no analytics, minimal operational data.”
+              MintPass uses a minimal‑data model rather than a strict "no‑logs" policy. We avoid server request logging for analytics and do not profile users. However, we must keep short‑lived operational keys (e.g., OTPs, verification markers, rate‑limits/cooldowns) and a persistent mint association record to protect against abuse. This means MintPass is not "strict no‑logs," but it is "no analytics, minimal operational data."
             </p>
           </section>
 
@@ -77,7 +86,16 @@ export default function PrivacyPolicy() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Contact</h2>
             <p className="text-sm">
-              For questions about this policy, open an issue on the project repository or contact the maintainers. See the project README for details.
+              For questions about this policy, open an issue on the project repository or contact{' '}
+              <a 
+                href="https://plebbitlabs.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground/80 transition-colors"
+              >
+                Plebbit Labs, Inc.
+              </a>
+              . See the project README for details.
             </p>
           </section>
 
