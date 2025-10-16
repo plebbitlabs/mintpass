@@ -20,7 +20,7 @@ export function Footer() {
             GitHub
           </a>
           <a
-            href="mailto:tom@plebbitlabs.com"
+            href="mailto:contact@plebbitlabs.com"
             className="text-sm md:text-base font-medium text-muted-foreground transition-colors hover:text-foreground/80"
           >
             Contact
